@@ -8,7 +8,7 @@ import (
 	"game_main/mind/encounter"
 	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
-	"game_main/world/worldmap"
+	"game_main/world/worldmap/garrison"
 
 	"github.com/bytearena/ecs"
 )
@@ -127,10 +127,10 @@ func (rr *RaidRunner) SelectRoom(nodeID int) error {
 
 	// Handle non-combat rooms
 	switch room.RoomType {
-	case worldmap.GarrisonRoomRestRoom:
+	case garrison.GarrisonRoomRestRoom:
 		rr.processRestRoom(raidState, room)
 		return nil
-	case worldmap.GarrisonRoomStairs:
+	case garrison.GarrisonRoomStairs:
 		rr.processStairsRoom(raidState, room)
 		return nil
 	}

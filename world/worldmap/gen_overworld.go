@@ -88,7 +88,7 @@ func (g *StrategicOverworldGenerator) Description() string {
 
 func (g *StrategicOverworldGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
 	result := GenerationResult{
-		Tiles:                 createEmptyTiles(width, height, images),
+		Tiles:                 CreateEmptyTiles(width, height, images),
 		Rooms:                 make([]Rect, 0),
 		ValidPositions:        make([]coords.LogicalPosition, 0),
 		POIs:                  make([]POIData, 0),
@@ -113,7 +113,7 @@ func (g *StrategicOverworldGenerator) Generate(width, height int, images TileIma
 
 	// Step 4: Connectivity verification - ensure all walkable areas are connected
 	terrainMap := g.buildTerrainMap(&result, width, height)
-	ensureTerrainConnectivity(terrainMap, width, height)
+	EnsureTerrainConnectivity(terrainMap, width, height)
 	g.applyConnectivityFixes(&result, terrainMap, width, height, elevationMap, moistureMap, images)
 
 	// Step 5: Faction starting positions
@@ -199,7 +199,7 @@ func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, w
 			biome := g.determineBiome(elevation, moisture)
 
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			index := positionToIndex(x, y)
+			index := PositionToIndex(x, y)
 
 			if index < 0 || index >= len(result.Tiles) {
 				continue
@@ -209,18 +209,18 @@ func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, w
 			tile.Biome = biome
 			result.BiomeMap[index] = biome
 
-			wallImages, floorImages := getBiomeImages(images, biome)
+			wallImages, floorImages := GetBiomeImages(images, biome)
 
 			switch biome {
 			case BiomeSwamp, BiomeMountain:
 				tile.TileType = WALL
 				tile.Blocked = true
-				tile.Image = selectRandomImage(wallImages)
+				tile.Image = SelectRandomImage(wallImages)
 
 			case BiomeDesert, BiomeForest, BiomeGrassland:
 				tile.TileType = FLOOR
 				tile.Blocked = false
-				tile.Image = selectRandomImage(floorImages)
+				tile.Image = SelectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			}
 		}
@@ -259,7 +259,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, 
 	terrainMap := make([]bool, width*height)
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if idx < len(result.Tiles) {
 				terrainMap[idx] = !result.Tiles[idx].Blocked
 			}
@@ -272,7 +272,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, 
 func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap [][]float64, images TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if idx >= len(result.Tiles) {
 				continue
 			}
@@ -291,8 +291,8 @@ func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationR
 				tile.TileType = FLOOR
 				tile.Blocked = false
 
-				_, floorImages := getBiomeImages(images, BiomeGrassland)
-				tile.Image = selectRandomImage(floorImages)
+				_, floorImages := GetBiomeImages(images, BiomeGrassland)
+				tile.Image = SelectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			}
 		}
@@ -337,7 +337,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 
 		for y := s.minY; y <= s.maxY; y++ {
 			for x := s.minX; x <= s.maxX; x++ {
-				idx := positionToIndex(x, y)
+				idx := PositionToIndex(x, y)
 				if idx < 0 || idx >= len(result.Tiles) || result.Tiles[idx].Blocked {
 					continue
 				}
@@ -349,7 +349,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 				}
 
 				// Score by number of walkable neighbors in 5-tile radius
-				score := scoreTerrainOpenness(terrainMap, x, y, 5, width, height)
+				score := ScoreTerrainOpenness(terrainMap, x, y, 5, width, height)
 				if score > bestScore {
 					bestScore = score
 					bestPos = coords.LogicalPosition{X: x, Y: y}
@@ -360,7 +360,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 		if bestScore > 0 {
 			result.FactionStartPositions = append(result.FactionStartPositions, FactionStartPosition{
 				Position: bestPos,
-				Biome:    result.BiomeMap[positionToIndex(bestPos.X, bestPos.Y)],
+				Biome:    result.BiomeMap[PositionToIndex(bestPos.X, bestPos.Y)],
 				Sector:   i,
 			})
 		}
@@ -401,7 +401,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 		// Pick random valid position
 		validIdx := common.GetRandomBetween(0, len(result.ValidPositions)-1)
 		pos := result.ValidPositions[validIdx]
-		idx := positionToIndex(pos.X, pos.Y)
+		idx := PositionToIndex(pos.X, pos.Y)
 
 		if idx < 0 || idx >= len(result.Tiles) {
 			continue
@@ -457,7 +457,7 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 
 		validIdx := common.GetRandomBetween(0, len(result.ValidPositions)-1)
 		pos := result.ValidPositions[validIdx]
-		idx := positionToIndex(pos.X, pos.Y)
+		idx := PositionToIndex(pos.X, pos.Y)
 
 		if idx < 0 || idx >= len(result.Tiles) || result.Tiles[idx].Blocked {
 			continue

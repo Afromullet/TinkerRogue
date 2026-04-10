@@ -82,7 +82,7 @@ func (g *CavernGenerator) Description() string {
 
 func (g *CavernGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
 	result := GenerationResult{
-		Tiles:          createEmptyTiles(width, height, images),
+		Tiles:          CreateEmptyTiles(width, height, images),
 		Rooms:          make([]Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -126,7 +126,7 @@ func (g *CavernGenerator) Generate(width, height int, images TileImageSet) Gener
 	g.enforceBorders(terrainMap, width, height)
 
 	// Step 9: Connectivity safety net
-	ensureTerrainConnectivity(terrainMap, width, height)
+	EnsureTerrainConnectivity(terrainMap, width, height)
 	// If connectivity carved L-shaped corridors, smooth them
 	terrainMap = g.cellularAutomataStep(terrainMap, width, height, true)
 	g.enforceBorders(terrainMap, width, height)
@@ -142,7 +142,7 @@ func (g *CavernGenerator) Generate(width, height int, images TileImageSet) Gener
 	factionStarts := g.placeFactionStarts(terrainMap, width, height)
 
 	// Step 13: Convert to tiles
-	convertTerrainMapToTiles(&result, terrainMap, width, height, images, BiomeMountain)
+	ConvertTerrainMapToTiles(&result, terrainMap, width, height, images, BiomeMountain)
 
 	// Record chambers as rooms for compatibility
 	for _, ch := range chambers {
@@ -240,7 +240,7 @@ func (g *CavernGenerator) carveNoiseShape(terrainMap []bool, cx, cy, radius, wid
 			value := (1.0-distFromCenter)*0.7 + normalizedNoise*0.3
 
 			if value > g.config.ShapeThreshold {
-				terrainMap[positionToIndex(x, y)] = true
+				terrainMap[PositionToIndex(x, y)] = true
 			}
 		}
 	}
@@ -257,7 +257,7 @@ func (g *CavernGenerator) setCircularRegion(terrainMap []bool, cx, cy, radius, w
 			dx := x - cx
 			dy := y - cy
 			if dx*dx+dy*dy <= r2 {
-				terrainMap[positionToIndex(x, y)] = value
+				terrainMap[PositionToIndex(x, y)] = value
 			}
 		}
 	}
@@ -267,7 +267,7 @@ func (g *CavernGenerator) setCircularRegion(terrainMap []bool, cx, cy, radius, w
 func (g *CavernGenerator) randomFillOutsideChambers(terrainMap []bool, width, height int) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if terrainMap[idx] {
 				continue // Already carved
 			}
@@ -377,7 +377,7 @@ func (g *CavernGenerator) carveDrunkardTunnel(terrainMap []bool, width, height i
 				}
 				nx, ny := x+dx, y+dy
 				if nx >= 0 && nx < width && ny >= 0 && ny < height {
-					terrainMap[positionToIndex(nx, ny)] = true
+					terrainMap[PositionToIndex(nx, ny)] = true
 				}
 			}
 		}
@@ -469,7 +469,7 @@ func (g *CavernGenerator) cellularAutomataStep(terrainMap []bool, width, height 
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 
 			wallCount := 0
 			for dy := -1; dy <= 1; dy++ {
@@ -482,7 +482,7 @@ func (g *CavernGenerator) cellularAutomataStep(terrainMap []bool, width, height 
 						wallCount++
 						continue
 					}
-					if !terrainMap[positionToIndex(nx, ny)] {
+					if !terrainMap[PositionToIndex(nx, ny)] {
 						wallCount++
 					}
 				}
@@ -515,7 +515,7 @@ func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height 
 
 	for y := 1; y < height-1; y++ {
 		for x := 1; x < width-1; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 
 			walkableCount := 0
 			wallCount := 0
@@ -529,7 +529,7 @@ func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height 
 						wallCount++
 						continue
 					}
-					if terrainMap[positionToIndex(nx, ny)] {
+					if terrainMap[PositionToIndex(nx, ny)] {
 						walkableCount++
 					} else {
 						wallCount++
@@ -566,7 +566,7 @@ func (g *CavernGenerator) enforceBorders(terrainMap []bool, width, height int) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if x < border || x >= width-border || y < border || y >= height-border {
-				terrainMap[positionToIndex(x, y)] = false
+				terrainMap[PositionToIndex(x, y)] = false
 			}
 		}
 	}
@@ -595,7 +595,7 @@ func (g *CavernGenerator) checkWalkableRatio(terrainMap []bool, width, height in
 		// Too closed: relax some walls
 		for y := 1; y < height-1; y++ {
 			for x := 1; x < width-1; x++ {
-				idx := positionToIndex(x, y)
+				idx := PositionToIndex(x, y)
 				if terrainMap[idx] {
 					continue
 				}
@@ -608,7 +608,7 @@ func (g *CavernGenerator) checkWalkableRatio(terrainMap []bool, width, height in
 						}
 						nx, ny := x+dx, y+dy
 						if nx >= 0 && nx < width && ny >= 0 && ny < height {
-							if terrainMap[positionToIndex(nx, ny)] {
+							if terrainMap[PositionToIndex(nx, ny)] {
 								walkableCount++
 							}
 						}
@@ -645,7 +645,7 @@ func (g *CavernGenerator) placePillars(terrainMap []bool, chambers []chamber, wi
 				continue
 			}
 
-			tryPlace2x2PillarOnTerrain(terrainMap, px, py, width, height)
+			TryPlace2x2PillarOnTerrain(terrainMap, px, py, width, height)
 		}
 	}
 }
@@ -658,7 +658,7 @@ func (g *CavernGenerator) placeStalactites(terrainMap []bool, width, height int)
 
 	for y := 2; y < height-2; y++ {
 		for x := 2; x < width-2; x++ {
-			idx := positionToIndex(x, y)
+			idx := PositionToIndex(x, y)
 			if !terrainMap[idx] {
 				continue
 			}
@@ -672,7 +672,7 @@ func (g *CavernGenerator) placeStalactites(terrainMap []bool, width, height int)
 					}
 					nx, ny := x+dx, y+dy
 					if nx >= 0 && nx < width && ny >= 0 && ny < height {
-						if !terrainMap[positionToIndex(nx, ny)] {
+						if !terrainMap[PositionToIndex(nx, ny)] {
 							adjacentWall = true
 						}
 					}
@@ -694,8 +694,8 @@ func (g *CavernGenerator) placeStalactites(terrainMap []bool, width, height int)
 func (g *CavernGenerator) placeFactionStarts(terrainMap []bool, width, height int) []coords.LogicalPosition {
 	var starts []coords.LogicalPosition
 
-	leftBest := findBestOpenPosition(terrainMap, width, height, 0, width/4, 0, height, 6)
-	rightBest := findBestOpenPosition(terrainMap, width, height, 3*width/4, width, 0, height, 6)
+	leftBest := FindBestOpenPosition(terrainMap, width, height, 0, width/4, 0, height, 6)
+	rightBest := FindBestOpenPosition(terrainMap, width, height, 3*width/4, width, 0, height, 6)
 
 	if leftBest.X >= 0 && rightBest.X >= 0 {
 		g.setCircularRegion(terrainMap, leftBest.X, leftBest.Y, 6, width, height, true)

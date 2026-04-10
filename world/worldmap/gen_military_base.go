@@ -61,7 +61,7 @@ func (g *MilitaryBaseGenerator) Description() string {
 
 func (g *MilitaryBaseGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
 	result := GenerationResult{
-		Tiles:          createEmptyTiles(width, height, images),
+		Tiles:          CreateEmptyTiles(width, height, images),
 		Rooms:          make([]Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -89,7 +89,7 @@ func (g *MilitaryBaseGenerator) Generate(width, height int, images TileImageSet)
 	g.scatterDrillYardCover(terrainMap, width, height, cfg, drillYardRect)
 
 	// Step 7: Ensure connectivity
-	ensureTerrainConnectivity(terrainMap, width, height)
+	EnsureTerrainConnectivity(terrainMap, width, height)
 
 	// Step 8: Scatter decorative POIs
 	poiPositions := g.scatterPOIs(terrainMap, width, height, cfg, perimeterRect)
@@ -98,11 +98,11 @@ func (g *MilitaryBaseGenerator) Generate(width, height int, images TileImageSet)
 	factionStarts := g.placeFactionStarts(terrainMap, width, height, cfg, perimeterRect)
 
 	// Step 10: Convert to tiles
-	convertTerrainMapToTiles(&result, terrainMap, width, height, images, cfg.Biome)
+	ConvertTerrainMapToTiles(&result, terrainMap, width, height, images, cfg.Biome)
 
 	// Place POI images on tiles
 	for _, pos := range poiPositions {
-		idx := positionToIndex(pos.X, pos.Y)
+		idx := PositionToIndex(pos.X, pos.Y)
 		if poiImg, ok := images.POIImages[POITown]; ok {
 			result.Tiles[idx].POIType = POITown
 			result.Tiles[idx].Image = poiImg
@@ -133,9 +133,9 @@ func (g *MilitaryBaseGenerator) initializeTerrain(terrainMap []bool, width, heig
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			if x < border || x >= width-border || y < border || y >= height-border {
-				terrainMap[positionToIndex(x, y)] = false
+				terrainMap[PositionToIndex(x, y)] = false
 			} else {
-				terrainMap[positionToIndex(x, y)] = true
+				terrainMap[PositionToIndex(x, y)] = true
 			}
 		}
 	}
@@ -163,7 +163,7 @@ func (g *MilitaryBaseGenerator) buildPerimeterWall(terrainMap []bool, width, hei
 			inRight := x > ox2-thick && x <= ox2
 
 			if inTop || inBottom || inLeft || inRight {
-				terrainMap[positionToIndex(x, y)] = false
+				terrainMap[PositionToIndex(x, y)] = false
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dy := 0; dy < thick; dy++ {
 			for x := gateStart; x < gateStart+gw; x++ {
 				if x >= 0 && x < width && wallY-dy >= 0 {
-					terrainMap[positionToIndex(x, wallY-dy)] = true
+					terrainMap[PositionToIndex(x, wallY-dy)] = true
 				}
 			}
 		}
@@ -196,7 +196,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for x := gateStart; x < gateStart+gw; x++ {
 				y := wallY + dy
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[positionToIndex(x, y)] = true
+					terrainMap[PositionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -208,7 +208,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dy := 0; dy < thick; dy++ {
 			for x := gateStart; x < gateStart+gw; x++ {
 				if x >= 0 && x < width && wallY+dy < height {
-					terrainMap[positionToIndex(x, wallY+dy)] = true
+					terrainMap[PositionToIndex(x, wallY+dy)] = true
 				}
 			}
 		}
@@ -216,7 +216,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for x := gateStart; x < gateStart+gw; x++ {
 				y := wallY - dy
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[positionToIndex(x, y)] = true
+					terrainMap[PositionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -228,7 +228,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dx := 0; dx < thick; dx++ {
 			for y := gateStart; y < gateStart+gw; y++ {
 				if y >= 0 && y < height && wallX-dx >= 0 {
-					terrainMap[positionToIndex(wallX-dx, y)] = true
+					terrainMap[PositionToIndex(wallX-dx, y)] = true
 				}
 			}
 		}
@@ -236,7 +236,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for y := gateStart; y < gateStart+gw; y++ {
 				x := wallX + dx
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[positionToIndex(x, y)] = true
+					terrainMap[PositionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -248,7 +248,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 		for dx := 0; dx < thick; dx++ {
 			for y := gateStart; y < gateStart+gw; y++ {
 				if y >= 0 && y < height && wallX+dx < width {
-					terrainMap[positionToIndex(wallX+dx, y)] = true
+					terrainMap[PositionToIndex(wallX+dx, y)] = true
 				}
 			}
 		}
@@ -256,7 +256,7 @@ func (g *MilitaryBaseGenerator) carveGate(terrainMap []bool, width, height int, 
 			for y := gateStart; y < gateStart+gw; y++ {
 				x := wallX - dx
 				if x >= 0 && x < width && y >= 0 && y < height {
-					terrainMap[positionToIndex(x, y)] = true
+					terrainMap[PositionToIndex(x, y)] = true
 				}
 			}
 		}
@@ -287,7 +287,7 @@ func (g *MilitaryBaseGenerator) placeGuardTowers(terrainMap []bool, width, heigh
 			for dx := 0; dx < ts; dx++ {
 				nx, ny := tx+dx, ty+dy
 				if nx >= 0 && nx < width && ny >= 0 && ny < height {
-					terrainMap[positionToIndex(nx, ny)] = false
+					terrainMap[PositionToIndex(nx, ny)] = false
 				}
 			}
 		}
@@ -382,7 +382,7 @@ func (g *MilitaryBaseGenerator) placeSupplyAreas(terrainMap []bool, width, heigh
 			for dx := 0; dx < bLen; dx++ {
 				nx := bx + dx
 				if nx >= 0 && nx < width && by >= 0 && by < height {
-					terrainMap[positionToIndex(nx, by)] = false
+					terrainMap[PositionToIndex(nx, by)] = false
 				}
 			}
 		}
@@ -396,7 +396,7 @@ func (g *MilitaryBaseGenerator) placeSupplyAreas(terrainMap []bool, width, heigh
 				for dx := 0; dx < 2; dx++ {
 					nx, ny := cx+dx, cy+dy
 					if nx >= 0 && nx < width && ny >= 0 && ny < height {
-						terrainMap[positionToIndex(nx, ny)] = false
+						terrainMap[PositionToIndex(nx, ny)] = false
 					}
 				}
 			}
@@ -438,11 +438,11 @@ func (g *MilitaryBaseGenerator) scatterDrillYardCover(terrainMap []bool, width, 
 		px := common.GetRandomBetween(drillRect.X1+1, drillRect.X2-3)
 		py := common.GetRandomBetween(drillRect.Y1+1, drillRect.Y2-3)
 
-		if isTooCloseToAny(px, py, placed, minSpacing) {
+		if IsTooCloseToAny(px, py, placed, minSpacing) {
 			continue
 		}
 
-		if tryPlace2x2PillarOnTerrain(terrainMap, px, py, width, height) {
+		if TryPlace2x2PillarOnTerrain(terrainMap, px, py, width, height) {
 			placed = append(placed, [2]int{px, py})
 		}
 	}
@@ -461,12 +461,12 @@ func (g *MilitaryBaseGenerator) scatterPOIs(terrainMap []bool, width, height int
 		if x < 0 || x >= width || y < 0 || y >= height {
 			continue
 		}
-		if !terrainMap[positionToIndex(x, y)] {
+		if !terrainMap[PositionToIndex(x, y)] {
 			continue
 		}
 
 		// Check minimum spacing from other POIs
-		if isTooCloseToAny(x, y, placedCoords, minSpacing) {
+		if IsTooCloseToAny(x, y, placedCoords, minSpacing) {
 			continue
 		}
 
@@ -499,8 +499,8 @@ func (g *MilitaryBaseGenerator) placeFactionStarts(terrainMap []bool, width, hei
 	}
 
 	scanRadius := 5
-	attacker := findBestOpenPosition(terrainMap, width, height, attackerRegion[0], attackerRegion[1], attackerRegion[2], attackerRegion[3], scanRadius)
-	defender := findBestOpenPosition(terrainMap, width, height, defenderRegion[0], defenderRegion[1], defenderRegion[2], defenderRegion[3], scanRadius)
+	attacker := FindBestOpenPosition(terrainMap, width, height, attackerRegion[0], attackerRegion[1], attackerRegion[2], attackerRegion[3], scanRadius)
+	defender := FindBestOpenPosition(terrainMap, width, height, defenderRegion[0], defenderRegion[1], defenderRegion[2], defenderRegion[3], scanRadius)
 
 	var starts []coords.LogicalPosition
 	if attacker.X >= 0 && defender.X >= 0 {

@@ -29,7 +29,7 @@ func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images TileImag
 	}
 
 	result := GenerationResult{
-		Tiles:          createEmptyTiles(width, height, images),
+		Tiles:          CreateEmptyTiles(width, height, images),
 		Rooms:          make([]Rect, 0, g.config.MaxRooms),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -39,7 +39,7 @@ func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images TileImag
 		room := g.generateRandomRoom(width, height)
 
 		if g.canPlaceRoom(room, result.Rooms) {
-			carveRoom(&result, room, width, images)
+			CarveRoom(&result, room, width, images)
 
 			// Connect to previous room if not the first
 			if len(result.Rooms) > 0 {
@@ -80,11 +80,11 @@ func (g *RoomsAndCorridorsGenerator) connectRooms(result *GenerationResult, room
 
 	// Randomly choose L-shape orientation
 	if common.GetDiceRoll(2) == 2 {
-		carveHorizontalTunnel(result, x1, x2, y1, width, images)
-		carveVerticalTunnel(result, y1, y2, x2, width, images)
+		CarveHorizontalTunnel(result, x1, x2, y1, width, images)
+		CarveVerticalTunnel(result, y1, y2, x2, width, images)
 	} else {
-		carveVerticalTunnel(result, y1, y2, x1, width, images)
-		carveHorizontalTunnel(result, x1, x2, y2, width, images)
+		CarveVerticalTunnel(result, y1, y2, x1, width, images)
+		CarveHorizontalTunnel(result, x1, x2, y2, width, images)
 	}
 }
 

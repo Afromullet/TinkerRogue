@@ -25,8 +25,8 @@ type GenerationResult struct {
 	ValidPositions        []coords.LogicalPosition
 	POIs                  []POIData              // Typed points of interest
 	FactionStartPositions []FactionStartPosition // Generator-chosen faction positions
-	BiomeMap              []Biome                // Flat array indexed by positionToIndex
-	GarrisonData          *GarrisonFloorData     // Garrison floor metadata (nil for non-garrison generators)
+	BiomeMap              []Biome                // Flat array indexed by PositionToIndex
+	GarrisonData          any                    // Garrison floor metadata (nil for non-garrison generators)
 }
 
 // MapGenerator defines the interface for all map generation algorithms

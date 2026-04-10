@@ -1,15 +1,16 @@
-package worldmap
+package garrison
 
 import (
 	"game_main/common"
 	"game_main/world/coords"
+	"game_main/world/worldmap"
 )
 
 // GarrisonRoomMeta holds metadata for a single placed garrison room.
 type GarrisonRoomMeta struct {
 	RoomIndex      int
 	RoomType       string
-	Rect           Rect
+	Rect           worldmap.Rect
 	PlayerSpawns   []coords.LogicalPosition
 	DefenderSpawns []coords.LogicalPosition
 	OnCriticalPath bool
@@ -42,7 +43,7 @@ func SetGarrisonSpawnCounts(counts map[string][4]int) {
 }
 
 // buildGarrisonFloorData constructs floor metadata from the DAG and placed rooms.
-func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]Rect, floorNumber int, result *GenerationResult, width int) *GarrisonFloorData {
+func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]worldmap.Rect, floorNumber int, result *worldmap.GenerationResult, width int) *GarrisonFloorData {
 	data := &GarrisonFloorData{
 		Rooms:           make([]GarrisonRoomMeta, 0, len(dag.Nodes)),
 		EntryRoomIndex:  dag.EntryNodeID,
@@ -71,7 +72,7 @@ func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]Rect, floorNumber
 }
 
 // computePlayerSpawns finds spawn points in the entry zone of the room using zone-based search.
-func computePlayerSpawns(room Rect, node *FloorNode, dag *FloorDAG, placedRooms map[int]Rect, result *GenerationResult, width int) []coords.LogicalPosition {
+func computePlayerSpawns(room worldmap.Rect, node *FloorNode, dag *FloorDAG, placedRooms map[int]worldmap.Rect, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
 	counts := garrisonSpawnCounts[node.RoomType]
 	targetCount := common.GetRandomBetween(int(counts[0]), int(counts[1]))
 
@@ -101,7 +102,7 @@ func computePlayerSpawns(room Rect, node *FloorNode, dag *FloorDAG, placedRooms 
 }
 
 // computeDefenderSpawns finds spawn points in the defender zone based on room type.
-func computeDefenderSpawns(room Rect, node *FloorNode, result *GenerationResult, width int) []coords.LogicalPosition {
+func computeDefenderSpawns(room worldmap.Rect, node *FloorNode, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
 	counts := garrisonSpawnCounts[node.RoomType]
 	targetCount := common.GetRandomBetween(int(counts[2]), int(counts[3]))
 	if targetCount == 0 {
@@ -148,7 +149,7 @@ func computeDefenderSpawns(room Rect, node *FloorNode, result *GenerationResult,
 
 // findSpawnsInZone searches a rectangular zone for valid spawn positions.
 // Returns up to targetCount positions, each at least minSpacing tiles apart.
-func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *GenerationResult, width int) []coords.LogicalPosition {
+func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
 	spawns := make([]coords.LogicalPosition, 0, targetCount)
 
 	// Collect all valid candidate positions in the zone
@@ -179,7 +180,7 @@ func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *Gener
 			break
 		}
 
-		if !isTooCloseToAny(cand.X, cand.Y, placedCoords, minSpacing) {
+		if !worldmap.IsTooCloseToAny(cand.X, cand.Y, placedCoords, minSpacing) {
 			spawns = append(spawns, cand)
 			placedCoords = append(placedCoords, [2]int{cand.X, cand.Y})
 		}
@@ -189,13 +190,13 @@ func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *Gener
 }
 
 // isSpawnValid checks that a position is walkable and has a 3x3 clear area.
-func isSpawnValid(pos coords.LogicalPosition, result *GenerationResult, width int) bool {
+func isSpawnValid(pos coords.LogicalPosition, result *worldmap.GenerationResult, width int) bool {
 	numTiles := len(result.Tiles)
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
 			nx := pos.X + dx
 			ny := pos.Y + dy
-			idx := positionToIndex(nx, ny)
+			idx := worldmap.PositionToIndex(nx, ny)
 			if idx < 0 || idx >= numTiles {
 				return false
 			}

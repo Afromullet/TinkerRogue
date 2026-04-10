@@ -3,6 +3,7 @@ package gamesetup
 import (
 	"game_main/templates"
 	"game_main/world/worldmap"
+	"game_main/world/worldmap/garrison"
 )
 
 // InitMapGenConfigOverride registers a ConfigOverride hook that creates
@@ -149,14 +150,14 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 		for key, rs := range jgr.RoomSizes {
 			sizes[key] = [4]int{rs.MinW, rs.MaxW, rs.MinH, rs.MaxH}
 		}
-		worldmap.SetGarrisonRoomSizes(sizes)
+		garrison.SetGarrisonRoomSizes(sizes)
 	}
 
 	// Override floor scaling
 	if len(jgr.FloorScaling) > 0 {
-		scaling := make(map[int]worldmap.FloorScalingEntry, len(jgr.FloorScaling))
+		scaling := make(map[int]garrison.FloorScalingEntry, len(jgr.FloorScaling))
 		for _, fs := range jgr.FloorScaling {
-			scaling[fs.Floor] = worldmap.FloorScalingEntry{
+			scaling[fs.Floor] = garrison.FloorScalingEntry{
 				MinCriticalPath: fs.MinCritPath,
 				MaxCriticalPath: fs.MaxCritPath,
 				MinTotalRooms:   fs.MinTotal,
@@ -164,7 +165,7 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 				AllowedTypes:    fs.AllowedTypes,
 			}
 		}
-		worldmap.SetGarrisonFloorScaling(scaling)
+		garrison.SetGarrisonFloorScaling(scaling)
 	}
 
 	// Override spawn counts
@@ -173,6 +174,6 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 		for key, sc := range jgr.SpawnCounts {
 			counts[key] = [4]int{sc.MinPlayer, sc.MaxPlayer, sc.MinDefender, sc.MaxDefender}
 		}
-		worldmap.SetGarrisonSpawnCounts(counts)
+		garrison.SetGarrisonSpawnCounts(counts)
 	}
 }
