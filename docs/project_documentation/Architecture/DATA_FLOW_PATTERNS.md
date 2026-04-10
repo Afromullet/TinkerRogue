@@ -1,6 +1,6 @@
 # Data Flow Patterns
 
-**Last Updated:** 2026-03-12
+**Last Updated:** 2026-04-10
 
 Understanding how data flows through the system is critical for debugging and extending functionality.
 
@@ -99,9 +99,9 @@ Player opens artifact UI (overworld: ArtifactMode, combat: ArtifactActivationHan
 │ EQUIP/UNEQUIP (overworld only)          │
 │                                         │
 │ gui/guisquads/artifactmode.go           │
-│   → gear.EquipArtifact(playerID,        │
+│   → artifacts.EquipArtifact(playerID,   │
 │       squadID, artifactID, manager)     │
-│   → gear.UnequipArtifact(...)           │
+│   → artifacts.UnequipArtifact(...)      │
 │                                         │
 │ Artifacts stored in:                    │
 │   Player: ArtifactInventoryData         │
@@ -115,27 +115,206 @@ Player opens artifact UI (overworld: ArtifactMode, combat: ArtifactActivationHan
 │ COMBAT START                            │
 │                                         │
 │ CombatService.InitializeCombat()        │
-│   → gear.ApplyArtifactStatEffects(      │
+│   → artifacts.ApplyArtifactStatEffects( │
 │       squadIDs, manager)                │
-│   (applies passive stat bonuses)        │
+│   (applies passive stat bonuses as      │
+│    permanent effects via effects pkg)   │
+│   → ArtifactDispatcher created          │
+│     with NewArtifactChargeTracker()     │
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
 │ ACTIVATED ARTIFACTS (during combat)     │
 │                                         │
 │ guiartifacts.ArtifactActivationHandler  │
-│   → gear.AllBehaviors() dispatch        │
-│     (registered in CombatService.       │
-│      setupBehaviorDispatch())           │
-│   → Executes artifact-specific behavior │
-│     (artifactbehaviors_activated.go /   │
-│      artifactbehaviors_passive.go)      │
+│   → artifacts.ActivateArtifact(         │
+│       behavior, targetSquadID, ctx)     │
+│   → Dispatches to registered behavior's │
+│     Activate() method                   │
+│                                         │
+│ ArtifactDispatcher lifecycle hooks:     │
+│   → DispatchPostReset(factionID, squads)│
+│     (fires OnPostReset for all behaviors│
+│      e.g. Deadlock Shackles lock,       │
+│      Saboteur's Hourglass slow)         │
+│   → DispatchOnAttackComplete(attacker,  │
+│       defender, result)                 │
+│     (fires OnAttackComplete for         │
+│      equipped behaviors on attacker,    │
+│      e.g. Engagement Chains)            │
+│   → DispatchOnTurnEnd(round)            │
+│     (fires OnTurnEnd + refreshes round  │
+│      charges via ChargeTracker)         │
 └─────────────────────────────────────────┘
 ```
 
-Key files: `gear/system.go`, `gear/queries.go`, `gear/artifactinventory.go`,
-`gear/artifactbehaviors_activated.go`, `gear/components.go`,
+### Artifact Behavior Types
+
+- **Player-activated** (`IsPlayerActivated() = true`): Triggered via GUI (e.g., Chain of Command, Echo Drums, Twin Strike, Deadlock Shackles, Saboteur's Hourglass)
+- **Passive/event-driven**: Fire on combat events only (e.g., Engagement Chains on kill)
+- **Charge tracking**: `ArtifactChargeTracker` manages `ChargeOncePerBattle` and `ChargeOncePerRound` limits, plus pending effects for deferred behaviors
+
+### Balance Configuration
+
+Artifact tuning values loaded from `gamedata/artifactbalanceconfig.json` into `artifacts.ArtifactBalance`.
+
+Key files: `tactical/powers/artifacts/system.go`, `tactical/powers/artifacts/queries.go`,
+`tactical/powers/artifacts/artifactinventory.go`, `tactical/powers/artifacts/components.go`,
+`tactical/powers/artifacts/artifactbehavior.go`, `tactical/powers/artifacts/dispatcher.go`,
+`tactical/powers/artifacts/artifactbehaviors_activated.go`,
+`tactical/powers/artifacts/artifactbehaviors_passive.go`,
+`tactical/powers/artifacts/artifactcharges.go`, `tactical/powers/artifacts/balanceconfig.go`,
 `gui/guiartifacts/`, `gui/guisquads/artifactmode.go`
+
+---
+
+## Perk System Flow
+
+```
+┌─────────────────────────────────────────┐
+│ EQUIP/UNEQUIP (overworld)               │
+│                                         │
+│ perks.EquipPerk(squadID, perkID,        │
+│     maxSlots, manager)                  │
+│ perks.UnequipPerk(squadID, perkID,      │
+│     manager)                            │
+│                                         │
+│ Storage: PerkSlotData on squad entity   │
+│   → PerkIDs []PerkID (max 3 slots)     │
+│                                         │
+│ Validation:                             │
+│   → Slot capacity check                 │
+│   → Duplicate check                     │
+│   → Mutual exclusivity check            │
+│     (PerkDefinition.ExclusiveWith)      │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ COMBAT START                            │
+│                                         │
+│ perks.InitializePerkRoundStatesForFaction│
+│   (factionSquadIDs, manager)            │
+│   → Creates PerkRoundState component    │
+│     on each squad that has perks        │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ COMBAT — DAMAGE PIPELINE HOOKS          │
+│                                         │
+│ SquadPerkDispatcher (implements         │
+│   combattypes.PerkDispatcher interface) │
+│                                         │
+│ For each equipped perk behavior:        │
+│   → AttackerDamageMod(ctx, modifiers)   │
+│   → DefenderDamageMod(ctx, modifiers)   │
+│   → DefenderCoverMod(ctx, coverBrkdn)   │
+│   → TargetOverride(ctx, targets)        │
+│   → CounterMod(ctx, modifiers)          │
+│   → AttackerPostDamage(ctx, dmg, kill)  │
+│   → DefenderPostDamage(ctx, dmg, kill)  │
+│   → DamageRedirect(ctx)                 │
+│   → DeathOverride(ctx)                  │
+│                                         │
+│ Called by combat system during damage    │
+│ calculation, targeting, and resolution  │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ COMBAT — LIFECYCLE DISPATCH             │
+│                                         │
+│ SquadPerkDispatcher:                    │
+│   → DispatchTurnStart(squadIDs, round)  │
+│     1. ResetPerkRoundStateTurn()        │
+│        (snapshot previous turn state:   │
+│         WasAttackedLastTurn,            │
+│         DidNotAttackLastTurn,           │
+│         WasIdleLastTurn)               │
+│     2. RunTurnStartHooks() per squad    │
+│        (Field Medic heal, Fortify       │
+│         accumulate, Counterpunch arm)   │
+│                                         │
+│   → DispatchRoundEnd(manager)           │
+│     Clears per-round PerkState map      │
+│     (per-battle PerkBattleState kept)   │
+│                                         │
+│   → DispatchAttackTracking(atk, def)    │
+│     Sets AttackedThisTurn / WasAttacked │
+│                                         │
+│   → DispatchMoveTracking(squadID)       │
+│     Sets MovedThisTurn, resets          │
+│     TurnsStationary                     │
+└─────────────────────────────────────────┘
+    ↓
+┌─────────────────────────────────────────┐
+│ COMBAT END                              │
+│                                         │
+│ perks.CleanupRoundState(squadID, mgr)   │
+│   → Removes PerkRoundStateComponent     │
+│     from each squad entity              │
+└─────────────────────────────────────────┘
+```
+
+### Perk State Architecture
+
+Perks use a two-level state system on `PerkRoundState`:
+
+- **Shared tracking fields** (e.g., `MovedThisTurn`, `WasAttackedLastTurn`): Set by the dispatch layer, read by multiple perks. Reset each turn by `ResetPerkRoundStateTurn`.
+- **Per-perk round state** (`PerkState map[PerkID]any`): Isolated state per perk (e.g., `RecklessAssaultState`, `BloodlustState`). Cleared each round by `ResetPerkRoundStateRound`.
+- **Per-perk battle state** (`PerkBattleState map[PerkID]any`): Persists the entire combat (e.g., `OpeningSalvoState`, `ResoluteState`, `GrudgeBearerState`). Only cleaned up at combat end.
+
+### Perk Behavior Organization
+
+Behavior implementations are split by state requirements:
+
+- `behaviors_stateless.go` — Pure functions of `HookContext`, no state tracking (11 perks)
+- `behaviors_stateful_round.go` — Read shared tracking or use per-round `PerkState` (7 perks)
+- `behaviors_stateful_battle.go` — Use per-battle `PerkBattleState` (3 perks)
+
+### Perk Definitions and Balance
+
+- **Definitions**: Loaded from `gamedata/perkdata.json` into `perks.PerkRegistry`. Each perk has tier, category, roles, exclusivity rules, and unlock cost.
+- **Balance values**: Loaded from `gamedata/perkbalanceconfig.json` into `perks.PerkBalance`. All numeric tuning values are data-driven.
+- **Behavior registration**: Each behavior file registers via `init()` → `RegisterPerkBehavior()`. Startup validation (`validateHookCoverage`) ensures JSON definitions and behavior registrations are in sync.
+
+### Perk Hook Ordering in Damage Pipeline
+
+```
+Attacker initiates attack
+    ↓
+TargetOverride (Cleave, Precision Strike)
+    → Modify which units are targeted
+    ↓
+AttackerDamageMod (all attacker perks)
+    → Modify outgoing damage multiplier, crit bonus, hit penalty
+    ↓
+DefenderDamageMod (all defender perks)
+    → Modify incoming damage multiplier, skip crit
+    ↓
+DefenderCoverMod (Brace for Impact, Fortify)
+    → Modify cover reduction
+    ↓
+DamageRedirect (Guardian Protocol)
+    → Redirect portion of damage to another unit
+    ↓
+Damage applied to units
+    ↓
+DeathOverride (Resolute)
+    → Prevent lethal damage (once per battle per unit)
+    ↓
+AttackerPostDamage / DefenderPostDamage
+    → Track kills (Bloodlust), grudge stacks (Grudge Bearer)
+    ↓
+CounterMod (Riposte, Stalwart)
+    → Modify or skip counterattack
+```
+
+Key files: `tactical/powers/perks/system.go`, `tactical/powers/perks/dispatcher.go`,
+`tactical/powers/perks/hooks.go`, `tactical/powers/perks/components.go`,
+`tactical/powers/perks/perkids.go`, `tactical/powers/perks/registry.go`,
+`tactical/powers/perks/behaviors_stateless.go`,
+`tactical/powers/perks/behaviors_stateful_round.go`,
+`tactical/powers/perks/behaviors_stateful_battle.go`,
+`tactical/powers/perks/balanceconfig.go`
 
 ---
 
@@ -178,11 +357,11 @@ Spawn entities (squads, threats, resources)
 Rendering displays map
 ```
 
-Available generators: `gen_rooms_corridors.go`, `gen_cavern.go`, `gen_overworld.go`,
-`gen_garrison.go`, `gen_military_base.go`
+Available generators (in `world/worldgen/`): `gen_rooms_corridors.go`, `gen_cavern.go`,
+`gen_overworld.go`
 
 Key files: `world/worldmap/dungeongen.go`, `world/worldmap/generator.go`,
-`world/worldmap/mapgenconfig.go`, `gamesetup/bootstrap.go`
+`world/worldgen/registry.go`, `setup/gamesetup/mapgenconfig.go`, `setup/gamesetup/bootstrap.go`
 
 ---
 

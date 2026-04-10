@@ -1,4 +1,4 @@
-package rendering
+package combatrender
 
 import (
 	"github.com/bytearena/ecs"

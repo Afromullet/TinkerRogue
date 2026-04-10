@@ -1,6 +1,7 @@
-package rendering
+package combatrender
 
 import (
+	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"image/color"
 
@@ -27,7 +28,7 @@ type SquadHighlightRenderer struct {
 	factionColors   map[ecs.EntityID]color.Color // Maps faction ID to unique color
 	defaultColor    color.Color                  // Fallback color for unknown factions
 	borderThickness int
-	viewport        CachedViewport
+	viewport        rendering.CachedViewport
 }
 
 // NewSquadHighlightRenderer creates a renderer for squad highlights

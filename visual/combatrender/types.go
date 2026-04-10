@@ -1,4 +1,4 @@
-package rendering
+package combatrender
 
 import (
 	"game_main/world/coords"

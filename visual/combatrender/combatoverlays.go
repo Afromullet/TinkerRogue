@@ -1,6 +1,7 @@
-package rendering
+package combatrender
 
 import (
+	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"image"
 	"image/color"
@@ -11,7 +12,7 @@ import (
 // MovementTileRenderer renders valid movement tiles
 type MovementTileRenderer struct {
 	fillColor color.Color
-	viewport  CachedViewport
+	viewport  rendering.CachedViewport
 }
 
 // NewMovementTileRenderer creates a renderer for movement tiles
@@ -38,7 +39,7 @@ type HealthBarRenderer struct {
 	barHeight      int
 	barWidthRatio  float64 // Ratio of tile width for bar width
 	yOffset        int     // Offset above the tile (negative = above)
-	viewport       CachedViewport
+	viewport       rendering.CachedViewport
 	bgImage        *ebiten.Image // Cached background bar image
 	fillImage      *ebiten.Image // Cached fill bar image
 	cachedBarWidth int           // Cached bar width for invalidation
@@ -92,7 +93,7 @@ func (hbr *HealthBarRenderer) Render(screen *ebiten.Image, centerPos coords.Logi
 }
 
 // drawHealthBar draws a single health bar at the given position
-func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, vr *ViewportRenderer, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
+func (hbr *HealthBarRenderer) drawHealthBar(screen *ebiten.Image, vr *rendering.ViewportRenderer, pos coords.LogicalPosition, healthRatio float64, barWidth, tileSize int) {
 	screenX, screenY := vr.LogicalToScreen(pos)
 
 	// Center the bar horizontally above the tile

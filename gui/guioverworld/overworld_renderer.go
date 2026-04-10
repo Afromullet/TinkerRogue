@@ -7,7 +7,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/overworld/core"
 	"game_main/tactical/commander"
-	"game_main/visual/rendering"
+	"game_main/visual/maprender"
 	"game_main/world/coords"
 	"game_main/world/worldmapcore"
 
@@ -70,7 +70,7 @@ func (r *OverworldRenderer) renderOverworldMap(screen *ebiten.Image) {
 	}
 
 	// Render full map with all tiles revealed (strategic view)
-	rendering.DrawMap(screen, r.gameMap, true)
+	maprender.DrawMap(screen, r.gameMap, true)
 }
 
 // renderNodes draws all overworld nodes using the unified OverworldNodeComponent.

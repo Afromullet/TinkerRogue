@@ -17,6 +17,7 @@ import (
 	"game_main/setup/config"
 	"game_main/setup/gamesetup"
 	"game_main/visual/graphics"
+	"game_main/visual/maprender"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmapcore"
@@ -125,12 +126,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Phase 1: Render tactical map only when in tactical context
 	if g.gameModeCoordinator.GetCurrentContext() == framework.ContextTactical {
 		if coords.MAP_SCROLLING_ENABLED {
-			bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+			bounds := maprender.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
 			g.gameMap.RightEdgeX = bounds.RightEdgeX
 			g.gameMap.TopEdgeY = bounds.TopEdgeY
 			rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
 		} else {
-			rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
+			maprender.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
 			rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
 		}
 

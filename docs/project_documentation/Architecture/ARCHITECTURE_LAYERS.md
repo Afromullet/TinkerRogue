@@ -1,6 +1,6 @@
 # TinkerRogue — Architectural Layers
 
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-04-10
 
 A high-level guide to the layered architecture of TinkerRogue. Each layer depends only on layers below it. There are no upward imports and no import cycles across the entire codebase.
 
@@ -20,7 +20,8 @@ Layer 4 — AI & Orchestration       mind/ai, mind/behavior, mind/evaluation
               │
 Layer 3 — Game Systems             tactical/squads/*, tactical/combat/*,
                                    tactical/powers/*, tactical/commander,
-                                   world/worldmap,
+                                   world/worldmapcore, world/worldgen,
+                                   world/garrisongen,
                                    overworld/core, overworld/faction, overworld/garrison,
                                    overworld/influence, overworld/node, overworld/threat,
                                    overworld/tick, overworld/victory, overworld/overworldlog
@@ -69,7 +70,7 @@ The ECS foundation. `common` provides the `EntityManager`, component registratio
 
 ### visual/graphics and visual/rendering
 
-These two packages own the game's drawing pipeline. `visual/graphics` defines the low-level sprite and batch-drawing abstractions. `visual/rendering` sits on top of `visual/graphics` and adds knowledge of world geometry (via `world/worldmap`) to drive tile-by-tile rendering. Neither package knows anything about game logic, factions, units, or combat — they render geometry and sprites, nothing more.
+These two packages own the game's drawing pipeline. `visual/graphics` defines the low-level sprite and batch-drawing abstractions. `visual/rendering` sits on top of `visual/graphics` and adds knowledge of world geometry (via `world/worldmapcore`) to drive tile-by-tile rendering. Neither package knows anything about game logic, factions, units, or combat — they render geometry and sprites, nothing more.
 
 ### templates
 
@@ -83,7 +84,7 @@ Camera controller infrastructure. Currently contains only the camera controller 
 
 ## Layer 3 — Game Systems
 
-**Packages:** `tactical/*`, `world/worldmap`, `overworld/*`
+**Packages:** `tactical/*`, `world/worldmapcore`, `world/worldgen`, `world/garrisongen`, `overworld/*`
 
 Layer 3 is where the actual game rules live. It is divided into three broad sub-domains: the **tactical** domain (squad-based combat, powers, and artifacts), the **world generation** domain, and the **overworld** domain (strategic map).
 
@@ -128,7 +129,13 @@ The tactical packages implement everything that happens on the battle map. The d
 
 ### World generation
 
-`world/worldmap` provides the map-generation registry and all built-in generation algorithms. Generators register themselves via `init()`, so new algorithms can be added without modifying any central wiring file. This package feeds into `visual/rendering` (which draws the generated map) and into Layer 4 packages like `mind/raid` that need to place encounters on maps.
+The world generation domain is split into three packages:
+
+- `world/worldmapcore` — The shared data contract for map generation. Defines the `MapGenerator` interface, `GenerationResult`, `Tile`, `Biome`, and map utility types. This is what `visual/rendering` and other consumers import to work with generated maps. It depends only on `world/coords`.
+- `world/worldgen` — The generation algorithm implementations (cavern, rooms & corridors, overworld) and the generator registry. Generators register themselves via `init()`, so new algorithms can be added without modifying any central wiring file. Depends on `worldmapcore` for shared types.
+- `world/garrisongen` — Garrison-specific map generation. Builds multi-floor garrison layouts using DAG-based room connectivity and terrain placement. Depends on `worldmapcore`, `worldgen`, and `common`.
+
+This three-package split separates the stable interface (`worldmapcore`) from the algorithm implementations (`worldgen`, `garrisongen`), allowing consumers like `visual/rendering` and `mind/raid` to depend on the core types without pulling in generation code.
 
 ### Overworld sub-domain
 
@@ -227,7 +234,7 @@ Three patterns allow the strict layering to remain acyclic even where natural bi
 
 **Callback registration.** `tactical/combat/combatservices` exposes event hooks (`OnAttackComplete`, `OnMoveComplete`, `OnTurnEnd`). GUI modes register closures at initialization time and react to combat events without `combatservices` ever importing GUI packages.
 
-**Self-registration via `init()`.** Worldmap generators and ECS subsystems register themselves by calling `RegisterGenerator` or `common.RegisterSubsystem` inside `init()` functions. `setup/gamesetup` triggers these registrations simply by importing the relevant packages. New generators or subsystems can be added without modifying any central coordinator.
+**Self-registration via `init()`.** Worldmap generators and ECS subsystems register themselves by calling `worldgen.RegisterGenerator` or `common.RegisterSubsystem` inside `init()` functions. `setup/gamesetup` triggers these registrations simply by importing the relevant packages. New generators or subsystems can be added without modifying any central coordinator.
 
 ---
 

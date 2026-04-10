@@ -1,7 +1,8 @@
-package rendering
+package maprender
 
 import (
 	"game_main/visual/graphics"
+	"game_main/visual/rendering"
 	"game_main/world/coords"
 	"game_main/world/worldmapcore"
 
@@ -11,7 +12,7 @@ import (
 // TileRenderer handles rendering of map tiles with batching for performance
 type TileRenderer struct {
 	tiles   []*worldmapcore.Tile
-	batches map[*ebiten.Image]*QuadBatch // Batches tiles by image for efficient rendering
+	batches map[*ebiten.Image]*rendering.QuadBatch // Batches tiles by image for efficient rendering
 
 	// Cache state to avoid rebuilding batches every frame
 	lastCenterX      int
@@ -24,7 +25,7 @@ type TileRenderer struct {
 func NewTileRenderer(tiles []*worldmapcore.Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles:   tiles,
-		batches: make(map[*ebiten.Image]*QuadBatch, TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
+		batches: make(map[*ebiten.Image]*rendering.QuadBatch, rendering.TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
 	}
 }
 
@@ -104,7 +105,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 
 	// Get or create batch for this tile's image
 	if r.batches[tile.Image] == nil {
-		r.batches[tile.Image] = NewQuadBatch(tile.Image, TileVerticeBatchSize, TileIndicesBatchSize)
+		r.batches[tile.Image] = rendering.NewQuadBatch(tile.Image, rendering.TileVerticeBatchSize, rendering.TileIndicesBatchSize)
 	}
 	batch := r.batches[tile.Image]
 

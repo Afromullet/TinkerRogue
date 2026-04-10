@@ -3,7 +3,7 @@ package framework
 import (
 	"game_main/common"
 	"game_main/tactical/squads/squadcore"
-	"game_main/visual/rendering"
+	"game_main/visual/combatrender"
 
 	"github.com/bytearena/ecs"
 )
@@ -16,12 +16,12 @@ func (gq *GUIQueries) GetAllSquadIDs() []ecs.EntityID {
 
 // GetSquadRenderInfo returns minimal squad data for rendering.
 // Satisfies rendering.SquadInfoProvider.
-func (gq *GUIQueries) GetSquadRenderInfo(squadID ecs.EntityID) *rendering.SquadRenderInfo {
+func (gq *GUIQueries) GetSquadRenderInfo(squadID ecs.EntityID) *combatrender.SquadRenderInfo {
 	info := gq.GetSquadInfo(squadID)
 	if info == nil {
 		return nil
 	}
-	return &rendering.SquadRenderInfo{
+	return &combatrender.SquadRenderInfo{
 		ID:          info.ID,
 		Position:    info.Position,
 		FactionID:   info.FactionID,
@@ -39,7 +39,7 @@ func (gq *GUIQueries) GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID {
 
 // GetUnitRenderInfo returns minimal unit data for combat animation rendering.
 // Satisfies rendering.UnitInfoProvider.
-func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *rendering.UnitRenderInfo {
+func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *combatrender.UnitRenderInfo {
 	entity := gq.ECSManager.FindEntityByID(unitID)
 	if entity == nil {
 		return nil
@@ -58,7 +58,7 @@ func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *rendering.UnitRend
 	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
 	isAlive := attr != nil && attr.CurrentHealth > 0
 
-	return &rendering.UnitRenderInfo{
+	return &combatrender.UnitRenderInfo{
 		AnchorRow: gridPos.AnchorRow,
 		AnchorCol: gridPos.AnchorCol,
 		Width:     gridPos.Width,

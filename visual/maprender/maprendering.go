@@ -1,4 +1,4 @@
-package rendering
+package maprender
 
 import (
 	"game_main/world/coords"

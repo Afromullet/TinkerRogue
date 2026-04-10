@@ -9,8 +9,9 @@ import (
 	"game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/squadservices"
+
+	"game_main/visual/combatrender"
 	"game_main/visual/graphics"
-	"game_main/visual/rendering"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -38,7 +39,7 @@ type SquadDeploymentMode struct {
 	pendingPlacement bool
 
 	// Rendering systems
-	highlightRenderer *rendering.SquadHighlightRenderer
+	highlightRenderer *combatrender.SquadHighlightRenderer
 
 	// Input
 	actionMap *framework.ActionMap
@@ -87,7 +88,7 @@ func (sdm *SquadDeploymentMode) Initialize(ctx *framework.UIContext) error {
 	sdm.initializeWidgetReferences()
 
 	// Initialize rendering system AFTER BaseMode is initialized (so Queries is available)
-	sdm.highlightRenderer = rendering.NewSquadHighlightRenderer(sdm.Queries)
+	sdm.highlightRenderer = combatrender.NewSquadHighlightRenderer(sdm.Queries)
 
 	return nil
 }
