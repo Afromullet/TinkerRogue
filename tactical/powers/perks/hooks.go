@@ -2,7 +2,7 @@ package perks
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -28,11 +28,11 @@ type PerkBehavior interface {
 	PerkID() PerkID
 
 	// Damage pipeline hooks
-	AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
-	DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers)
-	DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown)
+	AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers)
+	DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers)
+	DefenderCoverMod(ctx *HookContext, coverBreakdown *combattypes.CoverBreakdown)
 	TargetOverride(ctx *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID
-	CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) (skipCounter bool)
+	CounterMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) (skipCounter bool)
 	AttackerPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
 	DefenderPostDamage(ctx *HookContext, damageDealt int, wasKill bool)
 	TurnStart(ctx *HookContext)
@@ -44,13 +44,13 @@ type PerkBehavior interface {
 // and override only the hooks they need.
 type BasePerkBehavior struct{}
 
-func (BasePerkBehavior) AttackerDamageMod(*HookContext, *combatcore.DamageModifiers)  {}
-func (BasePerkBehavior) DefenderDamageMod(*HookContext, *combatcore.DamageModifiers)  {}
-func (BasePerkBehavior) DefenderCoverMod(*HookContext, *combatcore.CoverBreakdown)    {}
+func (BasePerkBehavior) AttackerDamageMod(*HookContext, *combattypes.DamageModifiers)  {}
+func (BasePerkBehavior) DefenderDamageMod(*HookContext, *combattypes.DamageModifiers)  {}
+func (BasePerkBehavior) DefenderCoverMod(*HookContext, *combattypes.CoverBreakdown)    {}
 func (BasePerkBehavior) AttackerPostDamage(*HookContext, int, bool)                   {}
 func (BasePerkBehavior) DefenderPostDamage(*HookContext, int, bool)                   {}
 func (BasePerkBehavior) TurnStart(*HookContext)                                       {}
-func (BasePerkBehavior) CounterMod(*HookContext, *combatcore.DamageModifiers) bool    { return false }
+func (BasePerkBehavior) CounterMod(*HookContext, *combattypes.DamageModifiers) bool    { return false }
 func (BasePerkBehavior) DeathOverride(*HookContext) bool                              { return false }
 func (BasePerkBehavior) DamageRedirect(*HookContext) (int, ecs.EntityID, int)         { return 0, 0, 0 }
 func (BasePerkBehavior) TargetOverride(_ *HookContext, defaultTargets []ecs.EntityID) []ecs.EntityID {

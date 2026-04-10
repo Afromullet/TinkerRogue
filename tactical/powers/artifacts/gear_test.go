@@ -3,6 +3,7 @@ package artifacts
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
@@ -401,8 +402,8 @@ func TestActivateTwinStrike(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
@@ -445,8 +446,8 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	squadID := createTestSquadWithUnits(manager, "Test Squad", 3)
@@ -497,14 +498,14 @@ func TestActivateSaboteursHourglass(t *testing.T) {
 
 // setupCombatContext creates a standard combat test context with one faction and one squad.
 func setupCombatContext(manager *common.EntityManager, squadName string, unitCount int, pos coords.LogicalPosition) (
-	cache *combatcore.CombatQueryCache,
+	cache *combatstate.CombatQueryCache,
 	factionID ecs.EntityID,
 	squadID ecs.EntityID,
 	charges *ArtifactChargeTracker,
 	ctx *BehaviorContext,
 ) {
-	cache = combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache = combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID = fm.CreateCombatFaction("Player", true)
 	squadID = createTestSquadWithUnits(manager, squadName, unitCount)
 	fm.AddSquadToFaction(factionID, squadID, pos)
@@ -517,8 +518,8 @@ func TestDeadlockShackles_SkipsActivation(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 
 	playerFaction := fm.CreateCombatFaction("Player", true)
 	enemyFaction := fm.CreateCombatFaction("Enemy", false)
@@ -573,8 +574,8 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 		Behavior: BehaviorChainOfCommand,
 	}
 
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 
 	sourceSquad := createTestSquadWithUnits(manager, "Source Squad", 3)

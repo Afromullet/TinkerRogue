@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"game_main/common"
 	"game_main/tactical/combat/battlelog"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
@@ -112,7 +112,7 @@ func RunBattle(manager *common.EntityManager, sideASquadIDs, sideBSquadIDs []ecs
 // selectBestTarget picks the best enemy squad to attack.
 // Priority: most damaged first (focus fire), then smallest squad.
 func selectBestTarget(attackerID ecs.EntityID, enemyFactionID ecs.EntityID, cs *combatservices.CombatService, manager *common.EntityManager) ecs.EntityID {
-	enemySquads := combatcore.GetActiveSquadsForFaction(enemyFactionID, manager)
+	enemySquads := combatstate.GetActiveSquadsForFaction(enemyFactionID, manager)
 	if len(enemySquads) == 0 {
 		return 0
 	}

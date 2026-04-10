@@ -3,7 +3,7 @@ package perks
 import (
 	"game_main/common"
 	testfx "game_main/testing"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -349,14 +349,14 @@ func TestRecklessAssault_Lifecycle(t *testing.T) {
 	}
 
 	// Before attacking: defender mod should not apply (not vulnerable)
-	defMods0 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	defMods0 := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&RecklessAssaultBehavior{}).DefenderDamageMod(ctx,defMods0)
 	if defMods0.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 when not vulnerable, got %v", defMods0.DamageMultiplier)
 	}
 
 	// AttackerDamageMod should boost damage AND set vulnerability
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&RecklessAssaultBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.3 {
 		t.Errorf("Expected 1.3 attack mult, got %v", mods.DamageMultiplier)
@@ -367,7 +367,7 @@ func TestRecklessAssault_Lifecycle(t *testing.T) {
 	}
 
 	// DefenderDamageMod should increase incoming damage when vulnerable
-	defMods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	defMods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&RecklessAssaultBehavior{}).DefenderDamageMod(ctx,defMods)
 	if defMods.DamageMultiplier != 1.2 {
 		t.Errorf("Expected 1.2 defender mult when vulnerable, got %v", defMods.DamageMultiplier)
@@ -398,7 +398,7 @@ func TestCounterpunch_ArmFireReset(t *testing.T) {
 	}
 
 	// DamageMod should fire and disarm
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&CounterpunchBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.4 {
 		t.Errorf("Expected 1.4 damage mult, got %v", mods.DamageMultiplier)
@@ -409,7 +409,7 @@ func TestCounterpunch_ArmFireReset(t *testing.T) {
 	}
 
 	// Second attack should not get bonus
-	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods2 := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&CounterpunchBehavior{}).AttackerDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 damage mult after disarm, got %v", mods2.DamageMultiplier)
@@ -470,7 +470,7 @@ func TestFortify_CoverMod(t *testing.T) {
 	s := &PerkRoundState{TurnsStationary: 2}
 	ctx := &HookContext{RoundState: s}
 
-	cover := &combatcore.CoverBreakdown{TotalReduction: 0.1}
+	cover := &combattypes.CoverBreakdown{TotalReduction: 0.1}
 	(&FortifyBehavior{}).DefenderCoverMod(ctx,cover)
 
 	expected := 0.1 + 2*0.05 // 0.2
@@ -495,7 +495,7 @@ func TestBloodlust_KillTracking(t *testing.T) {
 	}
 
 	// Damage bonus should stack
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&BloodlustBehavior{}).AttackerDamageMod(ctx,mods)
 	expected := 1.0 + 2*0.15 // 1.3
 	if mods.DamageMultiplier != expected {
@@ -512,21 +512,21 @@ func TestAdaptiveArmor_StackingReduction(t *testing.T) {
 	}
 
 	// First hit: no reduction (0 prior hits)
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 on first hit, got %v", mods.DamageMultiplier)
 	}
 
 	// Second hit: 10% reduction (1 prior hit)
-	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods2 := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 0.9 {
 		t.Errorf("Expected 0.9 on second hit, got %v", mods2.DamageMultiplier)
 	}
 
 	// Third hit: 20% reduction (2 prior hits)
-	mods3 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods3 := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&AdaptiveArmorBehavior{}).DefenderDamageMod(ctx,mods3)
 	expected := 1.0 - 2*0.1
 	if mods3.DamageMultiplier != expected {
@@ -540,14 +540,14 @@ func TestOpeningSalvo_FirstAttackOnly(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	// First attack gets bonus
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.35 {
 		t.Errorf("Expected 1.35 on first attack, got %v", mods.DamageMultiplier)
 	}
 
 	// Second attack: no bonus
-	mods2 := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods2 := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods2)
 	if mods2.DamageMultiplier != 1.0 {
 		t.Errorf("Expected 1.0 on second attack, got %v", mods2.DamageMultiplier)
@@ -559,7 +559,7 @@ func TestOpeningSalvo_IgnoresCounterattack(t *testing.T) {
 	s := &PerkRoundState{}
 	ctx := &HookContext{RoundState: s}
 
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0, IsCounterattack: true}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0, IsCounterattack: true}
 	(&OpeningSalvoBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 1.0 {
 		t.Error("Opening Salvo should not trigger on counterattacks")
@@ -574,7 +574,7 @@ func TestStalwart_FullDamageCounterWhenStationary(t *testing.T) {
 	s := &PerkRoundState{MovedThisTurn: false}
 	ctx := &HookContext{RoundState: s}
 
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 0.5} // Default counter penalty
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 0.5} // Default counter penalty
 	skipCounter := (&StalwartBehavior{}).CounterMod(ctx,mods)
 
 	if skipCounter {
@@ -589,7 +589,7 @@ func TestStalwart_NoEffectWhenMoved(t *testing.T) {
 	s := &PerkRoundState{MovedThisTurn: true}
 	ctx := &HookContext{RoundState: s}
 
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 0.5}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 0.5}
 	(&StalwartBehavior{}).CounterMod(ctx,mods)
 
 	if mods.DamageMultiplier != 0.5 {
@@ -718,7 +718,7 @@ func TestMultiPerk_BloodlustPlusOpeningSalvo(t *testing.T) {
 	(&BloodlustBehavior{}).AttackerPostDamage(bloodlustCtx, 20, true) // 1 kill
 
 	// Now run AttackerDamageMod hooks through the pipeline for both perks
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	ctx := buildCombatContext(squadID, 100, 200, squadID, ecs.EntityID(999), manager)
 	if ctx == nil {
 		t.Fatal("Expected combat context")
@@ -762,7 +762,7 @@ func TestMultiPerk_CounterpunchPlusGrudgeBearer(t *testing.T) {
 	})
 
 	// Run combined damage mod hooks
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	ctx := buildCombatContext(squadID, 100, 200, squadID, enemySquadID, manager)
 
 	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
@@ -866,7 +866,7 @@ func TestPerkBalanceConfig_ZeroFieldsAreDetectable(t *testing.T) {
 	ctx := &HookContext{RoundState: s}
 
 	// Should multiply by 0, producing 0 damage — detectable as a bug
-	mods := &combatcore.DamageModifiers{DamageMultiplier: 1.0}
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
 	(&RecklessAssaultBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 0.0 {
 		t.Errorf("Expected 0.0 with zero balance mult, got %v", mods.DamageMultiplier)

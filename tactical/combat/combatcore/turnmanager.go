@@ -12,7 +12,7 @@ import (
 
 type TurnManager struct {
 	manager           *common.EntityManager
-	combatCache       *CombatQueryCache
+	combatCache       *combatstate.CombatQueryCache
 	turnStateEntityID ecs.EntityID
 	movementSystem    *CombatMovementSystem
 
@@ -23,7 +23,7 @@ type TurnManager struct {
 	postResetHook func(factionID ecs.EntityID, squadIDs []ecs.EntityID)
 }
 
-func NewTurnManager(manager *common.EntityManager, cache *CombatQueryCache) *TurnManager {
+func NewTurnManager(manager *common.EntityManager, cache *combatstate.CombatQueryCache) *TurnManager {
 	return &TurnManager{
 		manager:        manager,
 		combatCache:    cache,
@@ -48,7 +48,7 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	combatstate.ShuffleFactionOrder(turnOrder)
 
 	turnEntity := tm.manager.World.NewEntity()
-	turnEntity.AddComponent(combatstate.TurnStateComponent, &TurnStateData{
+	turnEntity.AddComponent(combatstate.TurnStateComponent, &combatstate.TurnStateData{
 		CurrentRound:     1,
 		TurnOrder:        turnOrder,
 		CurrentTurnIndex: 0,
@@ -62,9 +62,9 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// TODO: Abilities are not yet implemented, but I forsee not needing this.
 	// It will overcomplicate things. Abilities should trigger during an attack, not at combat start
 	for _, factionID := range factionIDs {
-		factionSquads := GetSquadsForFaction(factionID, tm.manager)
+		factionSquads := combatstate.GetSquadsForFaction(factionID, tm.manager)
 		for _, squadID := range factionSquads {
-			CreateActionStateForSquad(tm.manager, squadID)
+			combatstate.CreateActionStateForSquad(tm.manager, squadID)
 
 			// Check for combat-start abilities (like Battle Cry)
 			CheckAndTriggerAbilities(squadID, tm.manager)
@@ -79,7 +79,7 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 }
 
 func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
-	factionSquads := GetSquadsForFaction(factionID, tm.manager)
+	factionSquads := combatstate.GetSquadsForFaction(factionID, tm.manager)
 
 	for _, squadID := range factionSquads {
 		actionEntity := tm.combatCache.FindActionStateEntity(squadID)
@@ -87,7 +87,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 			continue
 		}
 
-		actionState := common.GetComponentType[*ActionStateData](actionEntity, combatstate.ActionStateComponent)
+		actionState := common.GetComponentType[*combatstate.ActionStateData](actionEntity, combatstate.ActionStateComponent)
 
 		actionState.HasMoved = false
 		actionState.HasActed = false
@@ -114,7 +114,7 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 }
 
 // getTurnState retrieves the current turn state or returns nil if invalid
-func (tm *TurnManager) getTurnState() *TurnStateData {
+func (tm *TurnManager) getTurnState() *combatstate.TurnStateData {
 	if tm.turnStateEntityID == 0 {
 		return nil // No active combat
 	}
@@ -124,7 +124,7 @@ func (tm *TurnManager) getTurnState() *TurnStateData {
 		return nil // Entity not found
 	}
 
-	return common.GetComponentType[*TurnStateData](turnEntity.Entity, combatstate.TurnStateComponent)
+	return common.GetComponentType[*combatstate.TurnStateData](turnEntity.Entity, combatstate.TurnStateComponent)
 }
 
 func (tm *TurnManager) GetCurrentFaction() ecs.EntityID {

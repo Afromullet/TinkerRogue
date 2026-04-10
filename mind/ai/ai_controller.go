@@ -5,6 +5,7 @@ import (
 	"game_main/mind/behavior"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatservices"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
@@ -18,7 +19,7 @@ type AIController struct {
 	turnManager     *combatcore.TurnManager
 	movementSystem  *combatcore.CombatMovementSystem
 	combatActSystem *combatcore.CombatActionSystem
-	combatCache     *combatcore.CombatQueryCache
+	combatCache     *combatstate.CombatQueryCache
 	threatManager   *behavior.FactionThreatLevelManager
 	layerEvaluators map[ecs.EntityID]*behavior.CompositeThreatEvaluator
 
@@ -42,7 +43,7 @@ func SetupCombatAI(
 	turnManager *combatcore.TurnManager,
 	movementSystem *combatcore.CombatMovementSystem,
 	combatActSystem *combatcore.CombatActionSystem,
-	combatCache *combatcore.CombatQueryCache,
+	combatCache *combatstate.CombatQueryCache,
 ) *CombatAISetup {
 	threatMgr := behavior.NewFactionThreatLevelManager(entityManager, combatCache)
 	layerEvaluators := make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
@@ -89,7 +90,7 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 	aic.updateThreatLayers(currentRound)
 
 	// Get all alive squads in faction
-	aliveSquads := combatcore.GetActiveSquadsForFaction(factionID, aic.entityManager)
+	aliveSquads := combatstate.GetActiveSquadsForFaction(factionID, aic.entityManager)
 
 	if len(aliveSquads) == 0 {
 		return false
@@ -191,7 +192,7 @@ func SelectBestAction(actions []ScoredAction) *ScoredAction {
 type ActionContext struct {
 	SquadID     ecs.EntityID
 	FactionID   ecs.EntityID
-	ActionState *combatcore.ActionStateData
+	ActionState *combatstate.ActionStateData
 
 	// Threat evaluation
 	ThreatEval *behavior.CompositeThreatEvaluator
@@ -211,7 +212,7 @@ func NewActionContext(
 	squadID ecs.EntityID,
 	aic *AIController,
 ) ActionContext {
-	factionID := combatcore.GetSquadFaction(squadID, aic.entityManager)
+	factionID := combatstate.GetSquadFaction(squadID, aic.entityManager)
 
 	// Get or create threat evaluator for faction
 	evaluator := aic.getThreatEvaluator(factionID)
@@ -228,7 +229,7 @@ func NewActionContext(
 	}
 
 	// Get current position
-	if pos, err := combatcore.GetSquadMapPosition(squadID, aic.entityManager); err == nil {
+	if pos, err := combatstate.GetSquadMapPosition(squadID, aic.entityManager); err == nil {
 		ctx.CurrentPos = pos
 	}
 

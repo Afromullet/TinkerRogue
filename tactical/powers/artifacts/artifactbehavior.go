@@ -3,7 +3,8 @@ package artifacts
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 	"sort"
@@ -25,12 +26,12 @@ const (
 // BehaviorContext bundles runtime dependencies for behavior hooks.
 type BehaviorContext struct {
 	Manager       *common.EntityManager
-	cache         *combatcore.CombatQueryCache
+	cache         *combatstate.CombatQueryCache
 	ChargeTracker *ArtifactChargeTracker
 }
 
 // NewBehaviorContext creates a BehaviorContext with the given dependencies.
-func NewBehaviorContext(manager *common.EntityManager, cache *combatcore.CombatQueryCache, chargeTracker *ArtifactChargeTracker) *BehaviorContext {
+func NewBehaviorContext(manager *common.EntityManager, cache *combatstate.CombatQueryCache, chargeTracker *ArtifactChargeTracker) *BehaviorContext {
 	return &BehaviorContext{
 		Manager:       manager,
 		cache:         cache,
@@ -39,7 +40,7 @@ func NewBehaviorContext(manager *common.EntityManager, cache *combatcore.CombatQ
 }
 
 // GetActionState returns the ActionStateData for the given squad, or nil if not found.
-func (ctx *BehaviorContext) GetActionState(squadID ecs.EntityID) *combatcore.ActionStateData {
+func (ctx *BehaviorContext) GetActionState(squadID ecs.EntityID) *combatstate.ActionStateData {
 	return ctx.cache.FindActionStateBySquadID(squadID)
 }
 
@@ -67,12 +68,12 @@ func (ctx *BehaviorContext) ResetSquadActions(squadID ecs.EntityID, speed int) {
 
 // GetSquadFaction returns the faction EntityID for the given squad, or 0 if not in combat.
 func (ctx *BehaviorContext) GetSquadFaction(squadID ecs.EntityID) ecs.EntityID {
-	return combatcore.GetSquadFaction(squadID, ctx.Manager)
+	return combatstate.GetSquadFaction(squadID, ctx.Manager)
 }
 
 // GetFactionSquads returns active squad IDs for the given faction.
 func (ctx *BehaviorContext) GetFactionSquads(factionID ecs.EntityID) []ecs.EntityID {
-	return combatcore.GetActiveSquadsForFaction(factionID, ctx.Manager)
+	return combatstate.GetActiveSquadsForFaction(factionID, ctx.Manager)
 }
 
 // GetSquadSpeed returns the movement speed for a squad, falling back to DefaultMovementSpeed.
@@ -106,7 +107,7 @@ type ArtifactBehavior interface {
 	BehaviorKey() string
 	TargetType() BehaviorTargetType
 	OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
-	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult)
+	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
 	OnTurnEnd(ctx *BehaviorContext, round int)
 	IsPlayerActivated() bool
 	Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error
@@ -118,7 +119,7 @@ type BaseBehavior struct{}
 
 func (BaseBehavior) TargetType() BehaviorTargetType                              { return TargetNone }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
-func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *combatcore.CombatResult) {
+func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *combattypes.CombatResult) {
 }
 func (BaseBehavior) OnTurnEnd(*BehaviorContext, int) {}
 func (BaseBehavior) IsPlayerActivated() bool         { return false }

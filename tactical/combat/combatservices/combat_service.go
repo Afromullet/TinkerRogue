@@ -7,6 +7,7 @@ import (
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/powers/perks"
@@ -20,9 +21,9 @@ import (
 type CombatService struct {
 	EntityManager   *common.EntityManager
 	TurnManager     *combatcore.TurnManager
-	FactionManager  *combatcore.CombatFactionManager
+	FactionManager  *combatstate.CombatFactionManager
 	MovementSystem  *combatcore.CombatMovementSystem
-	CombatCache     *combatcore.CombatQueryCache
+	CombatCache     *combatstate.CombatQueryCache
 	CombatActSystem *combatcore.CombatActionSystem
 
 	// Battle recording for export
@@ -49,7 +50,7 @@ type CombatService struct {
 
 // NewCombatService creates a new combat service
 func NewCombatService(manager *common.EntityManager) *CombatService {
-	cache := combatcore.NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	battleRecorder := battlelog.NewBattleRecorder()
 	combatActSystem := combatcore.NewCombatActionSystem(manager, cache)
 	movementSystem := combatcore.NewMovementSystem(manager, common.GlobalPositionSystem, cache)
@@ -61,7 +62,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	cs := &CombatService{
 		EntityManager:   manager,
 		TurnManager:     turnManager,
-		FactionManager:  combatcore.NewCombatFactionManager(manager, cache),
+		FactionManager:  combatstate.NewCombatFactionManager(manager, cache),
 		MovementSystem:  movementSystem,
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
@@ -71,7 +72,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	}
 
 	// Wire system hooks to forward to registered callbacks
-	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		for _, fn := range cs.onAttackComplete {
 			fn(attackerID, defenderID, result)
 		}
@@ -132,7 +133,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 
 	// Apply minor artifact effects to all factions before combat initialization
 	for _, factionID := range factionIDs {
-		factionSquads := combatcore.GetSquadsForFaction(factionID, cs.EntityManager)
+		factionSquads := combatstate.GetSquadsForFaction(factionID, cs.EntityManager)
 		artifacts.ApplyArtifactStatEffects(factionSquads, cs.EntityManager)
 
 		// Initialize perk round state for all squads with perks
@@ -150,7 +151,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 		squadEntity := result.Entity
 		squadID := squadEntity.GetID()
 
-		combatFaction := common.GetComponentType[*combatcore.CombatFactionData](squadEntity, combatstate.FactionMembershipComponent)
+		combatFaction := common.GetComponentType[*combatstate.CombatFactionData](squadEntity, combatstate.FactionMembershipComponent)
 		if combatFaction != nil {
 			continue
 		}
@@ -169,7 +170,7 @@ func (cs *CombatService) assignDeployedSquadsToPlayerFaction(playerFactionID ecs
 
 // GetAliveSquadsInFaction returns all alive squads for a faction
 func (cs *CombatService) GetAliveSquadsInFaction(factionID ecs.EntityID) []ecs.EntityID {
-	return combatcore.GetActiveSquadsForFaction(factionID, cs.EntityManager)
+	return combatstate.GetActiveSquadsForFaction(factionID, cs.EntityManager)
 }
 
 // VictoryCheckResult contains battle outcome information.
@@ -192,10 +193,10 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	aliveByFaction := make(map[ecs.EntityID]int)
 
 	// Get all factions
-	allFactions := combatcore.GetAllFactions(cs.EntityManager)
+	allFactions := combatstate.GetAllFactions(cs.EntityManager)
 	for _, factionID := range allFactions {
 		// Use existing GetActiveSquadsForFaction which filters destroyed squads
-		activeSquads := combatcore.GetActiveSquadsForFaction(factionID, cs.EntityManager)
+		activeSquads := combatstate.GetActiveSquadsForFaction(factionID, cs.EntityManager)
 		aliveByFaction[factionID] = len(activeSquads)
 	}
 
@@ -354,7 +355,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
-		factionData := common.GetComponentType[*combatcore.CombatFactionData](entity, combatstate.FactionMembershipComponent)
+		factionData := common.GetComponentType[*combatstate.CombatFactionData](entity, combatstate.FactionMembershipComponent)
 		if factionData == nil {
 			continue
 		}
@@ -362,7 +363,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 		if factionEntity == nil {
 			continue
 		}
-		faction := common.GetComponentType[*combatcore.FactionData](factionEntity, combatstate.CombatFactionComponent)
+		faction := common.GetComponentType[*combatstate.FactionData](factionEntity, combatstate.CombatFactionComponent)
 		if faction == nil || !faction.IsPlayerControlled {
 			continue
 		}

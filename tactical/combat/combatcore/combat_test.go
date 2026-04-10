@@ -53,8 +53,8 @@ func TestCombatInitialization(t *testing.T) {
 func TestCreateFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Test Faction", true)
 
 	if factionID == 0 {
@@ -67,7 +67,7 @@ func TestCreateFaction(t *testing.T) {
 		t.Fatal("Cannot find created faction")
 	}
 
-	factionData := common.GetComponentType[*FactionData](faction, combatstate.CombatFactionComponent)
+	factionData := common.GetComponentType[*combatstate.FactionData](faction, combatstate.CombatFactionComponent)
 	if factionData.Name != "Test Faction" {
 		t.Errorf("Expected name 'Test Faction', got '%s'", factionData.Name)
 	}
@@ -79,8 +79,8 @@ func TestCreateFaction(t *testing.T) {
 func TestAddSquadToFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 5)
 
@@ -96,7 +96,7 @@ func TestAddSquadToFaction(t *testing.T) {
 		t.Fatal("Squad not found")
 	}
 
-	combatFaction := common.GetComponentType[*CombatFactionData](squad, combatstate.FactionMembershipComponent)
+	combatFaction := common.GetComponentType[*combatstate.CombatFactionData](squad, combatstate.FactionMembershipComponent)
 	if combatFaction == nil {
 		t.Fatal("Squad does not have FactionMembershipComponent")
 	}
@@ -122,8 +122,8 @@ func TestAddSquadToFaction(t *testing.T) {
 func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	faction1 := fm.CreateCombatFaction("Faction 1", true)
 	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
@@ -145,8 +145,8 @@ func TestEndTurn_AdvancesToNextFaction(t *testing.T) {
 func TestEndTurn_WrapsAroundToFirstFaction(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	faction1 := fm.CreateCombatFaction("Faction 1", true)
 	faction2 := fm.CreateCombatFaction("Faction 2", false)
 
@@ -180,7 +180,7 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 	speedData := common.GetComponentType[*squadcore.MovementSpeedData](slowUnit, squadcore.MovementSpeedComponent)
 	speedData.Speed = 2
 
-	cache := NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 	speed := moveSys.GetSquadMovementSpeed(squadID)
 
@@ -192,8 +192,8 @@ func TestGetSquadMovementSpeed_ReturnsSlowestUnit(t *testing.T) {
 func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Test Faction", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 
@@ -213,7 +213,7 @@ func TestMoveSquad_UpdatesPosition(t *testing.T) {
 	}
 
 	// Verify position updated
-	newPos, err := GetSquadMapPosition(squadID, manager)
+	newPos, err := combatstate.GetSquadMapPosition(squadID, manager)
 	if err != nil {
 		t.Fatalf("Failed to get squad position: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 
 	squadID := CreateTestMixedSquad(manager, "Mixed Squad", 3, 2)
 
-	cache := NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	combatSys := NewCombatActionSystem(manager, cache)
 	maxRange := combatSys.getSquadAttackRange(squadID)
 
@@ -244,8 +244,8 @@ func TestGetSquadAttackRange_ReturnsMaxRange(t *testing.T) {
 func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	playerFaction := fm.CreateCombatFaction("Player", true)
 	enemyFaction := fm.CreateCombatFaction("Enemy", false)
 
@@ -274,8 +274,8 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	playerFaction := fm.CreateCombatFaction("Player", true)
 	enemyFaction := fm.CreateCombatFaction("Enemy", false)
 
@@ -330,8 +330,8 @@ func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
 func TestFullCombatLoop_TwoFactions(t *testing.T) {
 	manager := CreateTestCombatManager()
 
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	turnMgr := NewTurnManager(manager, cache)
 	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
 
@@ -391,8 +391,8 @@ func TestFullCombatLoop_TwoFactions(t *testing.T) {
 
 func TestResetSquadActions_ClearsBonusAttackActive(t *testing.T) {
 	manager := CreateTestCombatManager()
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 
@@ -424,8 +424,8 @@ func TestResetSquadActions_ClearsBonusAttackActive(t *testing.T) {
 
 func TestBonusAttackFlag_ConsumesWithoutMarkingActed(t *testing.T) {
 	manager := CreateTestCombatManager()
-	cache := NewCombatQueryCache(manager)
-	fm := NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	factionID := fm.CreateCombatFaction("Player", true)
 	squadID := CreateTestSquad(manager, "Test Squad", 3)
 

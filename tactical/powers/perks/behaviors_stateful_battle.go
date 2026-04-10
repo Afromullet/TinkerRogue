@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -34,7 +34,7 @@ func (b *OpeningSalvoBehavior) PerkID() PerkID { return PerkOpeningSalvo }
 
 // openingSalvoDamageMod gives +35% damage on the squad's first attack of the combat.
 // State: reads/writes OpeningSalvoState via GetBattleState/SetBattleState (per-battle).
-func (b *OpeningSalvoBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *OpeningSalvoBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	if modifiers.IsCounterattack {
 		return
 	}
@@ -129,7 +129,7 @@ func (b *GrudgeBearerBehavior) DefenderPostDamage(ctx *HookContext, damageDealt 
 
 // grudgeBearerDamageMod applies +20% damage per grudge stack (max +40%).
 // State: reads GrudgeBearerState.Stacks via GetBattleState (per-battle).
-func (b *GrudgeBearerBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *GrudgeBearerBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetBattleState[*GrudgeBearerState](ctx.RoundState, PerkGrudgeBearer)
 	if state != nil {
 		stacks := state.Stacks[ctx.DefenderSquadID]

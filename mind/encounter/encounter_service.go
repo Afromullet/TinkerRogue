@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/overworld/core"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -36,7 +36,7 @@ type EncounterService struct {
 
 	// postCombatCallback is called after ExitCombat finishes processing.
 	// Registered/unregistered by external systems (e.g., RaidRunner) to receive combat results.
-	postCombatCallback func(combatcore.CombatExitReason, *combatcore.EncounterOutcome)
+	postCombatCallback func(combattypes.CombatExitReason, *combattypes.EncounterOutcome)
 }
 
 // NewEncounterService creates a new encounter coordinator
@@ -57,7 +57,7 @@ func NewEncounterService(
 // This does NOT handle resolution - CombatService handles that.
 // This just tracks what happened for analytics/debugging.
 func (es *EncounterService) RecordEncounterCompletion(
-	reason combatcore.CombatExitReason,
+	reason combattypes.CombatExitReason,
 	victorFaction ecs.EntityID,
 	victorName string,
 	roundsCompleted int,
@@ -123,7 +123,7 @@ func (es *EncounterService) GetEnemySquadIDs() []ecs.EntityID {
 
 // SetPostCombatCallback sets a callback to receive combat results after ExitCombat completes.
 // Only one callback is supported at a time (last call wins).
-func (es *EncounterService) SetPostCombatCallback(fn func(combatcore.CombatExitReason, *combatcore.EncounterOutcome)) {
+func (es *EncounterService) SetPostCombatCallback(fn func(combattypes.CombatExitReason, *combattypes.EncounterOutcome)) {
 	es.postCombatCallback = fn
 }
 
@@ -136,9 +136,9 @@ func (es *EncounterService) ClearPostCombatCallback() {
 // All paths (victory, defeat, flee) MUST use this method.
 // Handles resolution, history recording, cleanup, and listener notification.
 func (es *EncounterService) ExitCombat(
-	reason combatcore.CombatExitReason,
-	result *combatcore.EncounterOutcome,
-	combatCleaner combatcore.CombatCleaner,
+	reason combattypes.CombatExitReason,
+	result *combattypes.EncounterOutcome,
+	combatCleaner combattypes.CombatCleaner,
 ) {
 	if es.activeEncounter == nil {
 		return
@@ -150,11 +150,11 @@ func (es *EncounterService) ExitCombat(
 
 	// Step 1: Resolve combat outcome based on type + reason
 	switch reason {
-	case combatcore.ExitVictory, combatcore.ExitDefeat:
-		if enc.Type != combatcore.CombatTypeRaid {
+	case combattypes.ExitVictory, combattypes.ExitDefeat:
+		if enc.Type != combattypes.CombatTypeRaid {
 			es.resolveEncounterOutcome(&enc, result.IsPlayerVictory)
 		}
-	case combatcore.ExitFlee:
+	case combattypes.ExitFlee:
 		es.restoreEncounterSprite(enc.EncounterID)
 		_, encounterData := es.getEncounterData(enc.EncounterID)
 		if encounterData != nil && encounterData.ThreatNodeID != 0 {
@@ -164,7 +164,7 @@ func (es *EncounterService) ExitCombat(
 	}
 
 	// Step 2: Mark encounter defeated on victory (non-raid)
-	if result.IsPlayerVictory && enc.Type != combatcore.CombatTypeRaid {
+	if result.IsPlayerVictory && enc.Type != combattypes.CombatTypeRaid {
 		es.markEncounterDefeated(enc.EncounterID)
 	}
 
@@ -181,7 +181,7 @@ func (es *EncounterService) ExitCombat(
 
 	// Step 5: Clean up all combat entities
 	if combatCleaner != nil {
-		if enc.Type == combatcore.CombatTypeGarrisonDefense && result.IsPlayerVictory {
+		if enc.Type == combattypes.CombatTypeGarrisonDefense && result.IsPlayerVictory {
 			es.returnGarrisonSquadsToNode(enc.DefendedNodeID)
 		}
 		combatCleaner.CleanupCombat(enc.EnemySquadIDs)
@@ -202,14 +202,14 @@ func (es *EncounterService) resolveEncounterOutcome(encounter *ActiveEncounter, 
 	}
 
 	switch encounter.Type {
-	case combatcore.CombatTypeGarrisonDefense:
+	case combattypes.CombatTypeGarrisonDefense:
 		resolver := &GarrisonDefenseResolver{
 			PlayerVictory:        isPlayerVictory,
 			DefendedNodeID:       encounter.DefendedNodeID,
 			AttackingFactionType: encounterData.AttackingFactionType,
 		}
 		combatlifecycle.ExecuteResolution(es.manager, resolver)
-	case combatcore.CombatTypeOverworld:
+	case combattypes.CombatTypeOverworld:
 		if encounterData.ThreatNodeID != 0 {
 			resolver := &OverworldCombatResolver{
 				ThreatNodeID:   encounterData.ThreatNodeID,
@@ -256,7 +256,7 @@ func (es *EncounterService) restoreEncounterSprite(encounterID ecs.EntityID) {
 // TransitionToCombat performs the shared combat mode transition.
 // Called by combatlifecycle.ExecuteCombatStart after Prepare() succeeds.
 // Satisfies combat.CombatTransitioner via structural typing.
-func (es *EncounterService) TransitionToCombat(setup *combatcore.CombatSetup) error {
+func (es *EncounterService) TransitionToCombat(setup *combattypes.CombatSetup) error {
 	if es.IsEncounterActive() {
 		return fmt.Errorf("encounter already in progress")
 	}

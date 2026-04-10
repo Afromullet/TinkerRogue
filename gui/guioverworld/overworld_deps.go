@@ -4,7 +4,7 @@ import (
 	"game_main/common"
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/commander"
 )
 
@@ -20,7 +20,7 @@ type OverworldModeDeps struct {
 	ModeManager       *framework.UIModeManager
 	ModeCoordinator   *framework.GameModeCoordinator
 	CommanderMovement *commander.CommanderMovementSystem
-	StartCombat       func(starter combatcore.CombatStarter) error
+	StartCombat       func(starter combattypes.CombatStarter) error
 	LogEvent          func(string) // callback to append to event log
 	RefreshPanels     func()       // callback to trigger panel refresh
 }

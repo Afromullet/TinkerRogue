@@ -2,7 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 	"math"
@@ -30,7 +30,7 @@ type PositionalRiskLayer struct {
 func NewPositionalRiskLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combatcore.CombatQueryCache,
+	cache *combatstate.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
 	combatLayer *CombatThreatLayer,
 ) *PositionalRiskLayer {
@@ -54,7 +54,7 @@ func (prl *PositionalRiskLayer) Compute(currentRound int) {
 	clear(prl.retreatQuality)
 
 	// Get all squads (allies and enemies)
-	alliedSquads := combatcore.GetActiveSquadsForFaction(prl.factionID, prl.manager)
+	alliedSquads := combatstate.GetActiveSquadsForFaction(prl.factionID, prl.manager)
 	enemyFactions := prl.getEnemyFactions()
 
 	// Compute flanking risk based on enemy positions
@@ -78,10 +78,10 @@ func (prl *PositionalRiskLayer) computeFlankingRisk(enemyFactions []ecs.EntityID
 	threatDirections := make(map[coords.LogicalPosition]map[int]bool) // pos -> set of attack angles
 
 	for _, enemyFactionID := range enemyFactions {
-		squadIDs := combatcore.GetActiveSquadsForFaction(enemyFactionID, prl.manager)
+		squadIDs := combatstate.GetActiveSquadsForFaction(enemyFactionID, prl.manager)
 
 		for _, squadID := range squadIDs {
-			enemyPos, err := combatcore.GetSquadMapPosition(squadID, prl.manager)
+			enemyPos, err := combatstate.GetSquadMapPosition(squadID, prl.manager)
 			if err != nil {
 				continue
 			}
@@ -151,7 +151,7 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 	// Get ally positions
 	allyPositions := []coords.LogicalPosition{}
 	for _, squadID := range alliedSquads {
-		pos, err := combatcore.GetSquadMapPosition(squadID, prl.manager)
+		pos, err := combatstate.GetSquadMapPosition(squadID, prl.manager)
 		if err != nil {
 			continue
 		}

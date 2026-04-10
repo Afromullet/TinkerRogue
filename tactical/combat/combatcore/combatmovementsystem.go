@@ -13,14 +13,14 @@ import (
 type CombatMovementSystem struct {
 	manager     *common.EntityManager
 	posSystem   *common.PositionSystem // For O(1) collision detection
-	combatCache *CombatQueryCache
+	combatCache *combatstate.CombatQueryCache
 
 	// Post-move hook (fired after successful squad movement)
 	onMoveComplete func(squadID ecs.EntityID)
 }
 
 // Constructor
-func NewMovementSystem(manager *common.EntityManager, posSystem *common.PositionSystem, cache *CombatQueryCache) *CombatMovementSystem {
+func NewMovementSystem(manager *common.EntityManager, posSystem *common.PositionSystem, cache *combatstate.CombatQueryCache) *CombatMovementSystem {
 	return &CombatMovementSystem{
 		manager:     manager,
 		posSystem:   posSystem,
@@ -61,7 +61,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("squad has no movement remaining")
 	}
 
-	currentPos, err := GetSquadMapPosition(squadID, ms.manager)
+	currentPos, err := combatstate.GetSquadMapPosition(squadID, ms.manager)
 	if err != nil {
 		return fmt.Errorf("cannot get current position: %w", err)
 	}
@@ -74,7 +74,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 		return fmt.Errorf("no action state for squad")
 	}
 
-	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
+	actionState := common.GetComponentType[*combatstate.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 	if actionState.MovementRemaining < movementCost {
 		return fmt.Errorf("insufficient movement: need %d, have %d", movementCost, actionState.MovementRemaining)
 	}
@@ -110,7 +110,7 @@ func (ms *CombatMovementSystem) MoveSquad(squadID ecs.EntityID, targetPos coords
 }
 
 func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []coords.LogicalPosition {
-	currentPos, err := GetSquadMapPosition(squadID, ms.manager)
+	currentPos, err := combatstate.GetSquadMapPosition(squadID, ms.manager)
 	if err != nil {
 		return []coords.LogicalPosition{}
 	}
@@ -121,7 +121,7 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 		return []coords.LogicalPosition{}
 	}
 
-	actionState := common.GetComponentType[*ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
+	actionState := common.GetComponentType[*combatstate.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 	movementRange := actionState.MovementRemaining
 
 	if movementRange <= 0 {

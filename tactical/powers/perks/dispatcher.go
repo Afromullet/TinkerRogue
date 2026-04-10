@@ -2,7 +2,7 @@ package perks
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -12,7 +12,7 @@ import (
 type SquadPerkDispatcher struct{}
 
 func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
+	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
 	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
@@ -24,7 +24,7 @@ func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attacker
 }
 
 func (d *SquadPerkDispatcher) DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) {
+	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
 	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
 	if ctx == nil {
 		return
@@ -77,7 +77,7 @@ func (d *SquadPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.Ent
 }
 
 func (d *SquadPerkDispatcher) CounterMod(defenderSquadID, attackerID ecs.EntityID,
-	modifiers *combatcore.DamageModifiers, manager *common.EntityManager) bool {
+	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) bool {
 	ctx := buildHookContext(defenderSquadID, manager)
 	if ctx == nil {
 		return false
@@ -97,7 +97,7 @@ func (d *SquadPerkDispatcher) CounterMod(defenderSquadID, attackerID ecs.EntityI
 }
 
 func (d *SquadPerkDispatcher) CoverMod(attackerID, defenderID ecs.EntityID,
-	coverBreakdown *combatcore.CoverBreakdown, manager *common.EntityManager) {
+	coverBreakdown *combattypes.CoverBreakdown, manager *common.EntityManager) {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
 	defenderSquadID := getSquadIDForUnit(defenderID, manager)
 	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)

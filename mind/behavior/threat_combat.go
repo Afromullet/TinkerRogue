@@ -2,7 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -31,7 +31,7 @@ type CombatThreatLayer struct {
 func NewCombatThreatLayer(
 	factionID ecs.EntityID,
 	manager *common.EntityManager,
-	cache *combatcore.CombatQueryCache,
+	cache *combatstate.CombatQueryCache,
 	baseThreatMgr *FactionThreatLevelManager,
 ) *CombatThreatLayer {
 	return &CombatThreatLayer{
@@ -51,10 +51,10 @@ func (ctl *CombatThreatLayer) Compute(currentRound int) {
 	enemyFactions := ctl.getEnemyFactions()
 
 	for _, enemyFactionID := range enemyFactions {
-		squadIDs := combatcore.GetActiveSquadsForFaction(enemyFactionID, ctl.manager)
+		squadIDs := combatstate.GetActiveSquadsForFaction(enemyFactionID, ctl.manager)
 
 		for _, squadID := range squadIDs {
-			squadPos, err := combatcore.GetSquadMapPosition(squadID, ctl.manager)
+			squadPos, err := combatstate.GetSquadMapPosition(squadID, ctl.manager)
 			if err != nil {
 				continue
 			}

@@ -7,7 +7,7 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 
 	"github.com/bytearena/ecs"
 )
@@ -44,7 +44,7 @@ func applyPendingToTargets(
 	ctx *BehaviorContext,
 	behaviorKey string,
 	squadIDs []ecs.EntityID,
-	applyFn func(actionState *combatcore.ActionStateData, squadID ecs.EntityID),
+	applyFn func(actionState *combatstate.ActionStateData, squadID ecs.EntityID),
 ) {
 	if ctx.ChargeTracker == nil {
 		return
@@ -88,7 +88,7 @@ func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs
 }
 
 func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combatcore.ActionStateData, sid ecs.EntityID) {
+	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combatstate.ActionStateData, sid ecs.EntityID) {
 		ctx.SetSquadLocked(sid)
 		logArtifactActivation(BehaviorDeadlockShackles, sid, "squad fully locked this turn")
 	})

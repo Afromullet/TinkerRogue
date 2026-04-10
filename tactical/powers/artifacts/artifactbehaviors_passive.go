@@ -9,7 +9,7 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -28,7 +28,7 @@ type EngagementChainsBehavior struct{ BaseBehavior }
 
 func (EngagementChainsBehavior) BehaviorKey() string { return BehaviorEngagementChains }
 
-func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 	if !result.TargetDestroyed || result.AttackerDestroyed {
 		return
 	}

@@ -22,8 +22,8 @@ func counterattackHitPenalty() int {
 // processAttack is the unified attack processing function.
 // defenderSquadID is needed for perk target override hooks (0 if unknown).
 func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
-	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers,
+	targetIDs []ecs.EntityID, result *combattypes.CombatResult,
+	log *combattypes.CombatLog, attackIndex int, modifiers combattypes.DamageModifiers,
 	dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
 	// Determine attacker's squad ID for perk hooks
@@ -134,10 +134,10 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 
 // ProcessAttackOnTargets applies damage to all targets and creates combat events.
 func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
-	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
+	targetIDs []ecs.EntityID, result *combattypes.CombatResult,
+	log *combattypes.CombatLog, attackIndex int, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
-	modifiers := DamageModifiers{
+	modifiers := combattypes.DamageModifiers{
 		HitPenalty:       0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
@@ -147,16 +147,16 @@ func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityI
 
 // ProcessCounterattackOnTargets applies counterattack damage with penalties.
 func ProcessCounterattackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
-	targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, modifiers DamageModifiers, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
+	targetIDs []ecs.EntityID, result *combattypes.CombatResult,
+	log *combattypes.CombatLog, attackIndex int, modifiers combattypes.DamageModifiers, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
 	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, dispatcher, manager)
 }
 
 // ProcessHealOnTargets iterates heal targets, calculates healing, and records events.
 // Returns updated attackIndex.
-func ProcessHealOnTargets(healerID ecs.EntityID, targetIDs []ecs.EntityID, result *CombatResult,
-	log *CombatLog, attackIndex int, manager *common.EntityManager) int {
+func ProcessHealOnTargets(healerID ecs.EntityID, targetIDs []ecs.EntityID, result *combattypes.CombatResult,
+	log *combattypes.CombatLog, attackIndex int, manager *common.EntityManager) int {
 
 	for _, targetID := range targetIDs {
 		attackIndex++

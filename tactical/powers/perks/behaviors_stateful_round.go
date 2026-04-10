@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 
@@ -58,7 +58,7 @@ func (b *RecklessAssaultBehavior) TurnStart(ctx *HookContext) {
 
 // recklessAssaultAttackerMod boosts outgoing damage and sets vulnerability.
 // State: writes RecklessAssaultState via SetPerkState (per-round).
-func (b *RecklessAssaultBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *RecklessAssaultBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	if modifiers.IsCounterattack {
 		return
 	}
@@ -69,7 +69,7 @@ func (b *RecklessAssaultBehavior) AttackerDamageMod(ctx *HookContext, modifiers 
 
 // recklessAssaultDefenderMod increases incoming damage when vulnerable.
 // State: reads RecklessAssaultState via GetPerkState (per-round).
-func (b *RecklessAssaultBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *RecklessAssaultBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetPerkState[*RecklessAssaultState](ctx.RoundState, PerkRecklessAssault)
 	if state != nil && state.Vulnerable {
 		modifiers.DamageMultiplier *= PerkBalance.RecklessAssault.DefenderMult
@@ -85,7 +85,7 @@ func (b *StalwartBehavior) PerkID() PerkID { return PerkStalwart }
 
 // stalwartCounterMod gives full-damage counters if the squad did not move.
 // State: reads PerkRoundState.MovedThisTurn (shared tracking, set by dispatch).
-func (b *StalwartBehavior) CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
+func (b *StalwartBehavior) CounterMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) bool {
 	if !ctx.RoundState.MovedThisTurn {
 		modifiers.DamageMultiplier = 1.0 // Override 0.5 default
 		logPerkActivation(PerkStalwart, ctx.DefenderSquadID, "full-damage counterattack")
@@ -113,7 +113,7 @@ func (b *FortifyBehavior) TurnStart(ctx *HookContext) {
 
 // fortifyCoverMod adds cover based on consecutive stationary turns.
 // State: reads PerkRoundState.TurnsStationary (shared tracking).
-func (b *FortifyBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
+func (b *FortifyBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combattypes.CoverBreakdown) {
 	if ctx.RoundState.TurnsStationary > 0 {
 		bonus := float64(ctx.RoundState.TurnsStationary) * PerkBalance.Fortify.PerTurnCoverBonus
 		coverBreakdown.TotalReduction += bonus
@@ -145,7 +145,7 @@ func (b *CounterpunchBehavior) TurnStart(ctx *HookContext) {
 
 // counterpunchDamageMod applies +40% damage when armed.
 // State: reads/writes CounterpunchState via GetPerkState (per-round).
-func (b *CounterpunchBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *CounterpunchBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetPerkState[*CounterpunchState](ctx.RoundState, PerkCounterpunch)
 	if state != nil && state.Ready {
 		modifiers.DamageMultiplier *= PerkBalance.Counterpunch.DamageMult
@@ -171,7 +171,7 @@ func (b *DeadshotsPatienceBehavior) TurnStart(ctx *HookContext) {
 
 // deadshotDamageMod applies +50% damage and +20 accuracy for ranged/magic attacks when armed.
 // State: reads/writes DeadshotState via GetPerkState (per-round).
-func (b *DeadshotsPatienceBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *DeadshotsPatienceBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetPerkState[*DeadshotState](ctx.RoundState, PerkDeadshotsPatience)
 	if state == nil || !state.Ready {
 		return
@@ -198,7 +198,7 @@ func (b *AdaptiveArmorBehavior) PerkID() PerkID { return PerkAdaptiveArmor }
 
 // adaptiveArmorDamageMod reduces damage from repeated attackers.
 // State: reads/writes AdaptiveArmorState via GetPerkState/SetPerkState (per-round).
-func (b *AdaptiveArmorBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *AdaptiveArmorBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetOrInitPerkState(ctx.RoundState, PerkAdaptiveArmor, func() *AdaptiveArmorState {
 		return &AdaptiveArmorState{AttackedBy: make(map[ecs.EntityID]int)}
 	})
@@ -233,7 +233,7 @@ func (b *BloodlustBehavior) AttackerPostDamage(ctx *HookContext, damageDealt int
 
 // bloodlustDamageMod applies bonus damage based on kills this round.
 // State: reads BloodlustState via GetPerkState (per-round).
-func (b *BloodlustBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *BloodlustBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	state := GetPerkState[*BloodlustState](ctx.RoundState, PerkBloodlust)
 	if state != nil && state.KillsThisRound > 0 {
 		bonus := 1.0 + float64(state.KillsThisRound)*PerkBalance.Bloodlust.PerKillBonus

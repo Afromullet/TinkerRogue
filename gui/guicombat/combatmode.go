@@ -12,7 +12,7 @@ import (
 	"game_main/gui/widgets"
 	"game_main/setup/config"
 	"game_main/tactical/combat/battlelog"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/powers/spells"
 
@@ -58,7 +58,7 @@ type CombatMode struct {
 	actionMap *framework.ActionMap
 
 	// Encounter callbacks (stored until deps are created in Initialize)
-	encounterCallbacks combatcore.EncounterCallbacks
+	encounterCallbacks combattypes.EncounterCallbacks
 
 	// Factory for creating a fully-wired CombatService (with AI injected)
 	serviceFactory func(*common.EntityManager) *combatservices.CombatService
@@ -68,7 +68,7 @@ type CombatMode struct {
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combatcore.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combattypes.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
 		encounterCallbacks: encounterCallbacks,
 		serviceFactory:     serviceFactory,
@@ -366,7 +366,7 @@ func (cm *CombatMode) initializeUpdateComponents() {
 // registerCombatCallbacks registers cache invalidation callbacks on the combat service.
 // Must be called on each combat start because CleanupCombat clears all callbacks.
 func (cm *CombatMode) registerCombatCallbacks() {
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
 		if result.AttackerDestroyed {
@@ -442,17 +442,17 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 		}
 
 		// Determine exit reason
-		reason := combatcore.ExitDefeat
+		reason := combattypes.ExitDefeat
 		if cm.turnFlow.IsFleeRequested() {
-			reason = combatcore.ExitFlee
+			reason = combattypes.ExitFlee
 		} else if victor.IsPlayerVictory {
-			reason = combatcore.ExitVictory
+			reason = combattypes.ExitVictory
 		}
 
 		// Single call handles: overworld resolution, history recording, entity cleanup
 		if cm.deps.Encounter != nil {
 			cm.deps.Encounter.ExitCombat(reason,
-				&combatcore.EncounterOutcome{
+				&combattypes.EncounterOutcome{
 					IsPlayerVictory:  victor.IsPlayerVictory,
 					VictorFaction:    victor.VictorFaction,
 					VictorName:       victor.VictorName,

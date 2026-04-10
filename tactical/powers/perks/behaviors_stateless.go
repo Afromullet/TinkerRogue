@@ -12,7 +12,8 @@ import (
 	"math"
 
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
@@ -42,7 +43,7 @@ type BraceForImpactBehavior struct{ BasePerkBehavior }
 
 func (b *BraceForImpactBehavior) PerkID() PerkID { return PerkBraceForImpact }
 
-func (b *BraceForImpactBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combatcore.CoverBreakdown) {
+func (b *BraceForImpactBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combattypes.CoverBreakdown) {
 	coverBreakdown.TotalReduction += PerkBalance.BraceForImpact.CoverBonus
 	if coverBreakdown.TotalReduction > 1.0 {
 		coverBreakdown.TotalReduction = 1.0
@@ -58,7 +59,7 @@ type ExecutionersInstinctBehavior struct{ BasePerkBehavior }
 
 func (b *ExecutionersInstinctBehavior) PerkID() PerkID { return PerkExecutionersInstinct }
 
-func (b *ExecutionersInstinctBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *ExecutionersInstinctBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.DefenderSquadID, ctx.Manager)
 	for _, unitID := range unitIDs {
 		attr := common.GetComponentTypeByID[*common.Attributes](ctx.Manager, unitID, common.AttributeComponent)
@@ -82,7 +83,7 @@ type ShieldwallDisciplineBehavior struct{ BasePerkBehavior }
 
 func (b *ShieldwallDisciplineBehavior) PerkID() PerkID { return PerkShieldwallDiscipline }
 
-func (b *ShieldwallDisciplineBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *ShieldwallDisciplineBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	tankCount := 0
 	unitIDs := squadcore.GetUnitIDsInSquad(ctx.DefenderSquadID, ctx.Manager)
 	for _, unitID := range unitIDs {
@@ -121,18 +122,18 @@ type IsolatedPredatorBehavior struct{ BasePerkBehavior }
 
 func (b *IsolatedPredatorBehavior) PerkID() PerkID { return PerkIsolatedPredator }
 
-func (b *IsolatedPredatorBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *IsolatedPredatorBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](
 		ctx.Manager, ctx.AttackerSquadID, common.PositionComponent,
 	)
 	if squadPos == nil {
 		return
 	}
-	attackerFaction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
+	attackerFaction := combatstate.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
 	if attackerFaction == 0 {
 		return
 	}
-	friendlySquads := combatcore.GetActiveSquadsForFaction(attackerFaction, ctx.Manager)
+	friendlySquads := combatstate.GetActiveSquadsForFaction(attackerFaction, ctx.Manager)
 	for _, friendlyID := range friendlySquads {
 		if friendlyID == ctx.AttackerSquadID {
 			continue
@@ -159,7 +160,7 @@ type VigilanceBehavior struct{ BasePerkBehavior }
 
 func (b *VigilanceBehavior) PerkID() PerkID { return PerkVigilance }
 
-func (b *VigilanceBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *VigilanceBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	modifiers.SkipCrit = true
 	logPerkActivation(PerkVigilance, ctx.DefenderSquadID, "critical hit negated")
 }
@@ -214,12 +215,12 @@ type LastLineBehavior struct{ BasePerkBehavior }
 
 func (b *LastLineBehavior) PerkID() PerkID { return PerkLastLine }
 
-func (b *LastLineBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
-	faction := combatcore.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
+func (b *LastLineBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
+	faction := combatstate.GetSquadFaction(ctx.AttackerSquadID, ctx.Manager)
 	if faction == 0 {
 		return
 	}
-	aliveSquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
+	aliveSquads := combatstate.GetActiveSquadsForFaction(faction, ctx.Manager)
 	if len(aliveSquads) == 1 && aliveSquads[0] == ctx.AttackerSquadID {
 		modifiers.DamageMultiplier *= PerkBalance.LastLine.DamageMult
 		modifiers.HitPenalty -= PerkBalance.LastLine.HitBonus
@@ -262,7 +263,7 @@ func (b *CleaveBehavior) TargetOverride(ctx *HookContext, defaultTargets []ecs.E
 	return defaultTargets
 }
 
-func (b *CleaveBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) {
+func (b *CleaveBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
 	targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](
 		ctx.Manager, ctx.AttackerID, squadcore.TargetRowComponent,
 	)
@@ -279,7 +280,7 @@ type RiposteBehavior struct{ BasePerkBehavior }
 
 func (b *RiposteBehavior) PerkID() PerkID { return PerkRiposte }
 
-func (b *RiposteBehavior) CounterMod(ctx *HookContext, modifiers *combatcore.DamageModifiers) bool {
+func (b *RiposteBehavior) CounterMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) bool {
 	modifiers.HitPenalty = 0
 	logPerkActivation(PerkRiposte, ctx.DefenderSquadID, "counter hit penalty removed")
 	return false
@@ -303,11 +304,11 @@ func (b *GuardianProtocolBehavior) DamageRedirect(ctx *HookContext) (int, ecs.En
 	if defenderPos == nil {
 		return damageAmount, 0, 0
 	}
-	faction := combatcore.GetSquadFaction(defenderSquadID, ctx.Manager)
+	faction := combatstate.GetSquadFaction(defenderSquadID, ctx.Manager)
 	if faction == 0 {
 		return damageAmount, 0, 0
 	}
-	friendlySquads := combatcore.GetActiveSquadsForFaction(faction, ctx.Manager)
+	friendlySquads := combatstate.GetActiveSquadsForFaction(faction, ctx.Manager)
 	for _, friendlyID := range friendlySquads {
 		if friendlyID == defenderSquadID {
 			continue

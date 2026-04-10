@@ -3,6 +3,7 @@ package combatcore
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 
@@ -93,7 +94,7 @@ func evaluateTrigger(slot *squadcore.AbilitySlot, squadID ecs.EntityID, ecsmanag
 }
 
 func countEnemySquads(squadID ecs.EntityID, ecsmanager *common.EntityManager) int {
-	myFaction := GetSquadFaction(squadID, ecsmanager)
+	myFaction := combatstate.GetSquadFaction(squadID, ecsmanager)
 	if myFaction == 0 {
 		return 0
 	}
@@ -101,7 +102,7 @@ func countEnemySquads(squadID ecs.EntityID, ecsmanager *common.EntityManager) in
 	count := 0
 	for _, result := range ecsmanager.World.Query(squadcore.SquadTag) {
 		otherID := result.Entity.GetID()
-		otherFaction := GetSquadFaction(otherID, ecsmanager)
+		otherFaction := combatstate.GetSquadFaction(otherID, ecsmanager)
 		if otherFaction != 0 && otherFaction != myFaction {
 			count++
 		}

@@ -3,7 +3,8 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"
 
@@ -20,7 +21,7 @@ import (
 //	OnAttackComplete: artifacts.OnAttackComplete → perks state tracking
 //	OnTurnEnd:       artifacts charge refresh + OnTurnEnd → perks round reset
 //	OnMoveComplete:  perks movement tracking (no artifact hook)
-func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache *combatcore.CombatQueryCache) {
+func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache *combatstate.CombatQueryCache) {
 
 	// ==========================================
 	// Phase 1: Artifact behavior dispatch
@@ -41,7 +42,7 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 	// Squad-scoped: only run behaviors equipped on the attacker.
 	// If a future behavior needs to trigger on defender's artifacts,
 	// add a second loop over GetEquippedBehaviors(defenderID, manager).
-	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		cs.artifactDispatcher.DispatchOnAttackComplete(attackerID, defenderID, result)
 	})
 
@@ -77,7 +78,7 @@ func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache 
 
 	// Register perk combat tracking via attack complete hook.
 	// Fires AFTER artifact OnAttackComplete hooks above.
-	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+	cs.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		perkDispatcher.DispatchAttackTracking(attackerID, defenderID, manager)
 	})
 

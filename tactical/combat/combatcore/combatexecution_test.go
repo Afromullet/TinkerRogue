@@ -2,7 +2,9 @@ package combatcore
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatmath"
+	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	testfx "game_main/testing"
@@ -17,43 +19,43 @@ import (
 // ========================================
 
 // executeTestAttack replicates what ExecuteSquadAttack did using the extracted pipeline functions.
-func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *CombatResult {
-	result := &CombatResult{
+func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *combattypes.CombatResult {
+	result := &combattypes.CombatResult{
 		DamageByUnit:  make(map[ecs.EntityID]int),
 		HealingByUnit: make(map[ecs.EntityID]int),
 		UnitsKilled:   []ecs.EntityID{},
 	}
 
-	combatLog := InitializeCombatLog(attackerSquadID, defenderSquadID, manager)
+	combatLog := battlelog.InitializeCombatLog(attackerSquadID, defenderSquadID, manager)
 	if combatLog.SquadDistance < 0 {
 		result.CombatLog = combatLog
 		return result
 	}
 
-	combatLog.AttackingUnits = SnapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, manager)
-	combatLog.DefendingUnits = SnapshotAllUnits(defenderSquadID, manager)
+	combatLog.AttackingUnits = battlelog.SnapshotAttackingUnits(attackerSquadID, combatLog.SquadDistance, manager)
+	combatLog.DefendingUnits = battlelog.SnapshotAllUnits(defenderSquadID, manager)
 
 	attackIndex := 0
 	attackerUnitIDs := squadcore.GetUnitIDsInSquad(attackerSquadID, manager)
 
 	for _, attackerID := range attackerUnitIDs {
-		if !CanUnitAttack(attackerID, combatLog.SquadDistance, manager) {
+		if !combatmath.CanUnitAttack(attackerID, combatLog.SquadDistance, manager) {
 			continue
 		}
 
-		targetIDs := SelectTargetUnits(attackerID, defenderSquadID, manager)
+		targetIDs := combatmath.SelectTargetUnits(attackerID, defenderSquadID, manager)
 		attackIndex = ProcessAttackOnTargets(attackerID, defenderSquadID, targetIDs, result, combatLog, attackIndex, nil, manager)
 	}
 
-	ApplyRecordedDamage(result, manager)
-	FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, manager)
+	combatmath.ApplyRecordedDamage(result, manager)
+	battlelog.FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, manager)
 	result.CombatLog = combatLog
 	return result
 }
 
 // calculateTestDamage replaces calculateUnitDamageByID with zero modifiers.
-func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) (int, *AttackEvent) {
-	modifiers := DamageModifiers{
+func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) (int, *combattypes.AttackEvent) {
+	modifiers := combattypes.DamageModifiers{
 		HitPenalty:       0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
@@ -492,7 +494,7 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 
 	// Verify magic damage formula was used
 
-	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+	if event.HitResult.Type != combattypes.HitTypeMiss && event.HitResult.Type != combattypes.HitTypeDodge {
 		expectedBaseDamage := attackerAttr.GetMagicDamage() // Should be 45
 		if event.BaseDamage != expectedBaseDamage {
 			t.Errorf("Expected base damage %d (Magic*3), got %d", expectedBaseDamage, event.BaseDamage)
@@ -520,7 +522,7 @@ func TestCalculateUnitDamageByID_PhysicalAttackersUnchanged(t *testing.T) {
 	damage, event := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify physical damage formula is still used
-	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+	if event.HitResult.Type != combattypes.HitTypeMiss && event.HitResult.Type != combattypes.HitTypeDodge {
 		expectedBaseDamage := attackerAttr.GetPhysicalDamage()
 		if event.BaseDamage != expectedBaseDamage {
 			t.Errorf("Physical attacker should use physical damage formula. Expected base %d, got %d",
@@ -565,7 +567,7 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 	_, event := calculateTestDamage(attacker.GetID(), defender.GetID(), manager)
 
 	// Verify magic defense was used (not physical resistance)
-	if event.HitResult.Type != HitTypeMiss && event.HitResult.Type != HitTypeDodge {
+	if event.HitResult.Type != combattypes.HitTypeMiss && event.HitResult.Type != combattypes.HitTypeDodge {
 		expectedMagicDefense := defenderAttr.GetMagicDefense() // Should be 12 (14/2 + 5)
 		if event.ResistanceAmount != expectedMagicDefense {
 			t.Errorf("Expected magic defense %d, got resistance %d", expectedMagicDefense, event.ResistanceAmount)
@@ -756,7 +758,7 @@ func TestMeleeRowTargeting_FrontRow(t *testing.T) {
 	defender3 := createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify all 3 front row units are targeted
 	if len(targets) != 3 {
@@ -795,7 +797,7 @@ func TestMeleeRowTargeting_PierceToRow1(t *testing.T) {
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify units in row 1 are targeted
 	if len(targets) != 2 {
@@ -843,7 +845,7 @@ func TestMeleeRowTargeting_PierceWhenFrontRowDead(t *testing.T) {
 	aliveUnit2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify pierce-through works: dead units in row 0 are ignored, row 1 units targeted
 	if len(targets) != 2 {
@@ -884,7 +886,7 @@ func TestMeleeRowTargeting_PierceToRow2(t *testing.T) {
 	defender2 := createTestUnit(manager, defenderSquadID, 2, 2, 50, 10, 0)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify units in row 2 are targeted
 	if len(targets) != 2 {
@@ -922,7 +924,7 @@ func TestMeleeColumnTargeting_DirectFront(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 0, 2, 50, 10, 0)              // Column 2 - NOT targeted
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify only 1 target in the same column
 	if len(targets) != 1 {
@@ -953,7 +955,7 @@ func TestMeleeColumnTargeting_PierceForward(t *testing.T) {
 	defender3 := createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0) // Same column, row 2 - ALSO TARGETED (piercing attack)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify 2 targets (all units in the column - piercing attack)
 	if len(targets) != 2 {
@@ -988,7 +990,7 @@ func TestMeleeColumnTargeting_ColumnWrapping(t *testing.T) {
 	defender2 := createTestUnit(manager, defenderSquadID, 1, 2, 50, 10, 0) // Column 2 - TARGETED (next after col 1)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify wrapping: attackerCol=1 -> try col 1 (empty), col 2 (found!), col 0 (not reached)
 	if len(targets) != 1 {
@@ -1017,7 +1019,7 @@ func TestMeleeColumnTargeting_WrapToColumn0(t *testing.T) {
 	defender1 := createTestUnit(manager, defenderSquadID, 1, 0, 50, 10, 0) // Column 0 - TARGETED (after wrapping)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify wrapping: attackerCol=2 -> try col 2 (empty), col 0 (found!), col 1 (not reached)
 	if len(targets) != 1 {
@@ -1050,7 +1052,7 @@ func TestRangedTargeting_SameRow(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 2, 0, 50, 10, 0)              // Row 2 - NOT targeted
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify all 3 targets in row 1
 	if len(targets) != 3 {
@@ -1107,7 +1109,7 @@ func TestRangedTargeting_FallbackLowestArmor(t *testing.T) {
 	defender3.AddComponent(common.AttributeComponent, &attr3)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify only 1 target (lowest armor)
 	if len(targets) != 1 {
@@ -1156,7 +1158,7 @@ func TestRangedTargeting_FallbackTiebreaker(t *testing.T) {
 	defender3.AddComponent(common.AttributeComponent, &attr3)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify defender2 wins (furthest row + leftmost column)
 	if len(targets) != 1 {
@@ -1189,7 +1191,7 @@ func TestMagicTargeting_ExactCells(t *testing.T) {
 	defender5 := createTestUnit(manager, defenderSquadID, 2, 1, 50, 10, 0) // Col 1 - TARGETED
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify only units in specified cells are targeted
 	if len(targets) != 3 {
@@ -1227,7 +1229,7 @@ func TestMagicTargeting_NoPierce(t *testing.T) {
 	createTestUnit(manager, defenderSquadID, 1, 1, 50, 10, 0) // Row 1 - NOT targeted (no pierce)
 
 	// Get targets
-	targets := SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
+	targets := combatmath.SelectTargetUnits(attacker.GetID(), defenderSquadID, manager)
 
 	// Verify no targets (magic doesn't pierce)
 	if len(targets) != 0 {

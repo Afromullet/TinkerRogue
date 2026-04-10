@@ -2,7 +2,8 @@ package artifacts
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combattypes"
 
 	"github.com/bytearena/ecs"
 )
@@ -11,12 +12,12 @@ import (
 // Created per-battle with a reference to the charge tracker.
 type ArtifactDispatcher struct {
 	manager       *common.EntityManager
-	cache         *combatcore.CombatQueryCache
+	cache         *combatstate.CombatQueryCache
 	chargeTracker *ArtifactChargeTracker
 }
 
 // NewArtifactDispatcher creates a dispatcher for the current battle.
-func NewArtifactDispatcher(manager *common.EntityManager, cache *combatcore.CombatQueryCache) *ArtifactDispatcher {
+func NewArtifactDispatcher(manager *common.EntityManager, cache *combatstate.CombatQueryCache) *ArtifactDispatcher {
 	return &ArtifactDispatcher{manager: manager, cache: cache}
 }
 
@@ -38,7 +39,7 @@ func (d *ArtifactDispatcher) DispatchPostReset(factionID ecs.EntityID, squadIDs 
 }
 
 // DispatchOnAttackComplete fires OnAttackComplete for behaviors equipped on the attacker.
-func (d *ArtifactDispatcher) DispatchOnAttackComplete(attackerID, defenderID ecs.EntityID, result *combatcore.CombatResult) {
+func (d *ArtifactDispatcher) DispatchOnAttackComplete(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 	ctx := d.makeBehaviorContext()
 	for _, b := range GetEquippedBehaviors(attackerID, d.manager) {
 		b.OnAttackComplete(ctx, attackerID, defenderID, result)

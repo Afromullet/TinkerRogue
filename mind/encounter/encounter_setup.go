@@ -7,7 +7,7 @@ import (
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/overworld/garrison"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
@@ -135,7 +135,7 @@ func ensurePlayerSquadsDeployed(rosterOwnerID ecs.EntityID, manager *common.Enti
 // assignPlayerSquadsToFaction adds all deployed player squads to the player faction
 // Assumes squads are already deployed (handled by ensurePlayerSquadsDeployed)
 func assignPlayerSquadsToFaction(
-	fm *combatcore.CombatFactionManager,
+	fm *combatstate.CombatFactionManager,
 	rosterOwnerID ecs.EntityID,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,

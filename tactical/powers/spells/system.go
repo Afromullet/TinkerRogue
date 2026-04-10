@@ -3,7 +3,7 @@ package spells
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
@@ -69,7 +69,7 @@ func ExecuteSpellCast(
 	result := &SpellCastResult{}
 
 	// Verify combat is active
-	if !combatcore.IsCombatActive(manager) {
+	if !combatstate.IsCombatActive(manager) {
 		result.ErrorReason = "no active combat"
 		return result
 	}
@@ -160,7 +160,7 @@ func applyDamageSpell(
 		// Check if squad was destroyed
 		if squadcore.IsSquadDestroyed(squadID, manager) {
 			result.SquadsDestroyed = append(result.SquadsDestroyed, squadID)
-			if err := combatcore.RemoveSquadFromMap(squadID, manager); err != nil {
+			if err := combatstate.RemoveSquadFromMap(squadID, manager); err != nil {
 				fmt.Printf("Warning: failed to remove destroyed squad %d from map: %v\n", squadID, err)
 			}
 		}

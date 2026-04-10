@@ -3,7 +3,7 @@ package behavior
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
@@ -31,9 +31,9 @@ func createTestCombatManager() *common.EntityManager {
 func TestCombatThreatLayer_Compute(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combatcore.NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 
 	// Create two factions
 	faction1 := fm.CreateCombatFaction("Player", true)
@@ -73,9 +73,9 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combatcore.NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 
 	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
@@ -140,9 +140,9 @@ func TestCompositeThreatEvaluator_RoleWeights(t *testing.T) {
 func TestGetOptimalPositionForRole(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
-	cache := combatcore.NewCombatQueryCache(manager)
+	cache := combatstate.NewCombatQueryCache(manager)
 	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 
 	faction1 := fm.CreateCombatFaction("Player", true)
 	baseThreatMgr.AddFaction(faction1)
@@ -167,8 +167,8 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 // TestThreatLayerBase_Caching tests cache invalidation logic
 func TestThreatLayerBase_Caching(t *testing.T) {
 	manager := createTestCombatManager()
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 	faction1 := fm.CreateCombatFaction("Player", true)
 
 	base := NewThreatLayerBase(faction1, manager, cache)
@@ -215,8 +215,8 @@ func TestGetSquadPrimaryRole(t *testing.T) {
 // TestThreatLayerBase_GetEnemyFactions tests enemy faction detection
 func TestThreatLayerBase_GetEnemyFactions(t *testing.T) {
 	manager := createTestCombatManager()
-	cache := combatcore.NewCombatQueryCache(manager)
-	fm := combatcore.NewCombatFactionManager(manager, cache)
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
 
 	// Create multiple factions
 	faction1 := fm.CreateCombatFaction("Player", true)
