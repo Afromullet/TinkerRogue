@@ -1,8 +1,9 @@
-package worldmap
+package worldgen
 
 import (
 	"game_main/common"
 	"game_main/world/coords"
+	"game_main/world/worldmapcore"
 	"math"
 	"time"
 
@@ -80,10 +81,10 @@ func (g *CavernGenerator) Description() string {
 	return "Organic cave layouts with irregular chambers and winding tunnels for tactical combat"
 }
 
-func (g *CavernGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
-	result := GenerationResult{
+func (g *CavernGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+	result := worldmapcore.GenerationResult{
 		Tiles:          CreateEmptyTiles(width, height, images),
-		Rooms:          make([]Rect, 0),
+		Rooms:          make([]worldmapcore.Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
 
@@ -142,11 +143,11 @@ func (g *CavernGenerator) Generate(width, height int, images TileImageSet) Gener
 	factionStarts := g.placeFactionStarts(terrainMap, width, height)
 
 	// Step 13: Convert to tiles
-	ConvertTerrainMapToTiles(&result, terrainMap, width, height, images, BiomeMountain)
+	ConvertTerrainMapToTiles(&result, terrainMap, width, height, images, worldmapcore.BiomeMountain)
 
 	// Record chambers as rooms for compatibility
 	for _, ch := range chambers {
-		result.Rooms = append(result.Rooms, NewRect(
+		result.Rooms = append(result.Rooms, worldmapcore.NewRect(
 			ch.cx-ch.radius, ch.cy-ch.radius,
 			ch.radius*2, ch.radius*2,
 		))
@@ -154,9 +155,9 @@ func (g *CavernGenerator) Generate(width, height int, images TileImageSet) Gener
 
 	// Record faction start positions
 	for i, pos := range factionStarts {
-		result.FactionStartPositions = append(result.FactionStartPositions, FactionStartPosition{
+		result.FactionStartPositions = append(result.FactionStartPositions, worldmapcore.FactionStartPosition{
 			Position: pos,
-			Biome:    BiomeMountain,
+			Biome:    worldmapcore.BiomeMountain,
 			Sector:   i,
 		})
 	}
@@ -705,7 +706,6 @@ func (g *CavernGenerator) placeFactionStarts(terrainMap []bool, width, height in
 
 	return starts
 }
-
 
 // Register on package initialization
 func init() {

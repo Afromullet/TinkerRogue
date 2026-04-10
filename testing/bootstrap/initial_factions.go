@@ -5,13 +5,13 @@ import (
 	"game_main/overworld/core"
 	"game_main/overworld/faction"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 	"log"
 )
 
 // InitializeOverworldFactions creates starting NPC factions on the overworld.
 // Uses generator-provided positions when available, falls back to hardcoded positions.
-func InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
+func InitializeOverworldFactions(em *common.EntityManager, pd *common.PlayerData, gm *worldmapcore.GameMap) {
 	factionTypes := []core.FactionType{
 		core.FactionNecromancers,
 		core.FactionBandits,

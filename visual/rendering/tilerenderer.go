@@ -3,14 +3,14 @@ package rendering
 import (
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // TileRenderer handles rendering of map tiles with batching for performance
 type TileRenderer struct {
-	tiles   []*worldmap.Tile
+	tiles   []*worldmapcore.Tile
 	batches map[*ebiten.Image]*QuadBatch // Batches tiles by image for efficient rendering
 
 	// Cache state to avoid rebuilding batches every frame
@@ -21,7 +21,7 @@ type TileRenderer struct {
 }
 
 // NewTileRenderer creates a renderer for the given tileset
-func NewTileRenderer(tiles []*worldmap.Tile) *TileRenderer {
+func NewTileRenderer(tiles []*worldmapcore.Tile) *TileRenderer {
 	return &TileRenderer{
 		tiles:   tiles,
 		batches: make(map[*ebiten.Image]*QuadBatch, TileBatchDefaultNumImages), // Pre-allocate for ~20 unique images
@@ -147,7 +147,7 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 }
 
 // calculateViewportPosition computes screen position for viewport-centered rendering
-func (r *TileRenderer) calculateViewportPosition(tile *worldmap.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
+func (r *TileRenderer) calculateViewportPosition(tile *worldmapcore.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
 	// Convert pixel position to logical position
 	tileLogicalPos := coords.LogicalPosition{
 		X: tile.PixelX / graphics.ScreenInfo.TileSize,

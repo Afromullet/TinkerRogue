@@ -9,7 +9,7 @@ import (
 	"game_main/tactical/commander"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -20,13 +20,13 @@ import (
 type OverworldRenderer struct {
 	manager  *common.EntityManager
 	state    *framework.OverworldState
-	gameMap  *worldmap.GameMap
+	gameMap  *worldmapcore.GameMap
 	tileSize int
 	context  *framework.UIContext // For accessing PlayerData
 }
 
 // NewOverworldRenderer creates a new overworld renderer
-func NewOverworldRenderer(manager *common.EntityManager, state *framework.OverworldState, gameMap *worldmap.GameMap, tileSize int, context *framework.UIContext) *OverworldRenderer {
+func NewOverworldRenderer(manager *common.EntityManager, state *framework.OverworldState, gameMap *worldmapcore.GameMap, tileSize int, context *framework.UIContext) *OverworldRenderer {
 	return &OverworldRenderer{
 		manager:  manager,
 		state:    state,

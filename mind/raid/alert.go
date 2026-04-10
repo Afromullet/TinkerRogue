@@ -3,7 +3,7 @@ package raid
 import (
 	"game_main/common"
 	"game_main/tactical/squads/squadcore"
-	"game_main/world/worldmap/garrison"
+	"game_main/world/garrisongen"
 
 	"github.com/bytearena/ecs"
 )
@@ -30,7 +30,7 @@ func ActivateReserves(manager *common.EntityManager, floorNumber int) {
 	rooms := GetAllRoomsForFloor(manager, floorNumber)
 	var eligibleRooms []*RoomData
 	for _, room := range rooms {
-		if room.IsAccessible && !room.IsCleared && room.RoomType != garrison.GarrisonRoomRestRoom && room.RoomType != garrison.GarrisonRoomStairs {
+		if room.IsAccessible && !room.IsCleared && room.RoomType != garrisongen.GarrisonRoomRestRoom && room.RoomType != garrisongen.GarrisonRoomStairs {
 			eligibleRooms = append(eligibleRooms, room)
 		}
 	}

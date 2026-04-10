@@ -10,7 +10,7 @@ import (
 	"game_main/tactical/squads/roster"
 	_ "game_main/tactical/squads/squadcommands" // Blank import to trigger init() for command queue components
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"log"
 
@@ -20,7 +20,7 @@ import (
 
 // InitializePlayerData creates and configures the player entity with all necessary components.
 // It sets up the player's position, attributes, inventory, equipment, and adds them to the ECS world.
-func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerData, gm *worldmap.GameMap) {
+func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerData, gm *worldmapcore.GameMap) {
 
 	// PlayerComponent already registered in componentinit.go - no need to recreate
 

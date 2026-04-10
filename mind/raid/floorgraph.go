@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/world/worldmap/garrison"
+	"game_main/world/garrisongen"
 )
 
 // buildFloorGraph creates RoomData entities from a DAG. Called by generateFloor
 // to create room entities before garrison squads are assigned.
-func buildFloorGraph(manager *common.EntityManager, dag *garrison.FloorDAG, floorNumber int) {
+func buildFloorGraph(manager *common.EntityManager, dag *garrisongen.FloorDAG, floorNumber int) {
 	for _, node := range dag.Nodes {
 		isEntry := node.ID == dag.EntryNodeID
 
@@ -93,7 +93,7 @@ func updateRoomAccessibility(manager *common.EntityManager, nodeID, floorNumber 
 func IsFloorComplete(manager *common.EntityManager, floorNumber int) bool {
 	rooms := GetAllRoomsForFloor(manager, floorNumber)
 	for _, room := range rooms {
-		if room.RoomType == garrison.GarrisonRoomStairs && room.IsCleared {
+		if room.RoomType == garrisongen.GarrisonRoomStairs && room.IsCleared {
 			return true
 		}
 	}

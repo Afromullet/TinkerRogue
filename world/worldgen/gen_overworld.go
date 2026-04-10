@@ -1,8 +1,9 @@
-package worldmap
+package worldgen
 
 import (
 	"game_main/common"
 	"game_main/world/coords"
+	"game_main/world/worldmapcore"
 	"math"
 	"time"
 
@@ -86,14 +87,14 @@ func (g *StrategicOverworldGenerator) Description() string {
 	return "Strategic world map with multi-octave terrain, typed POIs, and faction starting positions"
 }
 
-func (g *StrategicOverworldGenerator) Generate(width, height int, images TileImageSet) GenerationResult {
-	result := GenerationResult{
+func (g *StrategicOverworldGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+	result := worldmapcore.GenerationResult{
 		Tiles:                 CreateEmptyTiles(width, height, images),
-		Rooms:                 make([]Rect, 0),
+		Rooms:                 make([]worldmapcore.Rect, 0),
 		ValidPositions:        make([]coords.LogicalPosition, 0),
-		POIs:                  make([]POIData, 0),
-		FactionStartPositions: make([]FactionStartPosition, 0),
-		BiomeMap:              make([]Biome, width*height),
+		POIs:                  make([]worldmapcore.POIData, 0),
+		FactionStartPositions: make([]worldmapcore.FactionStartPosition, 0),
+		BiomeMap:              make([]worldmapcore.Biome, width*height),
 	}
 
 	seed := g.config.Seed
@@ -191,7 +192,7 @@ func (g *StrategicOverworldGenerator) applyContinentShaping(elevationMap [][]flo
 }
 
 // classifyBiomes converts elevation/moisture maps to biome-classified tiles
-func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images TileImageSet) {
+func (g *StrategicOverworldGenerator) classifyBiomes(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			elevation := elevationMap[y][x]
@@ -212,13 +213,13 @@ func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, w
 			wallImages, floorImages := GetBiomeImages(images, biome)
 
 			switch biome {
-			case BiomeSwamp, BiomeMountain:
-				tile.TileType = WALL
+			case worldmapcore.BiomeSwamp, worldmapcore.BiomeMountain:
+				tile.TileType = worldmapcore.WALL
 				tile.Blocked = true
 				tile.Image = SelectRandomImage(wallImages)
 
-			case BiomeDesert, BiomeForest, BiomeGrassland:
-				tile.TileType = FLOOR
+			case worldmapcore.BiomeDesert, worldmapcore.BiomeForest, worldmapcore.BiomeGrassland:
+				tile.TileType = worldmapcore.FLOOR
 				tile.Blocked = false
 				tile.Image = SelectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
@@ -228,34 +229,34 @@ func (g *StrategicOverworldGenerator) classifyBiomes(result *GenerationResult, w
 }
 
 // determineBiome classifies terrain based on elevation and moisture
-func (g *StrategicOverworldGenerator) determineBiome(elevation, moisture float64) Biome {
+func (g *StrategicOverworldGenerator) determineBiome(elevation, moisture float64) worldmapcore.Biome {
 	if elevation < g.config.WaterThresh {
-		return BiomeSwamp
+		return worldmapcore.BiomeSwamp
 	}
 	if elevation > g.config.MountainThresh {
-		return BiomeMountain
+		return worldmapcore.BiomeMountain
 	}
 
 	// Low-elevation high-moisture = swamp
 	if moisture > g.config.SwampMoisture && elevation < 0.40 {
-		return BiomeSwamp
+		return worldmapcore.BiomeSwamp
 	}
 
 	// High-ish elevation, dry = desert
 	if elevation > 0.60 && moisture < 0.35 {
-		return BiomeDesert
+		return worldmapcore.BiomeDesert
 	}
 
 	// Wet = forest
 	if moisture > g.config.ForestMoisture {
-		return BiomeForest
+		return worldmapcore.BiomeForest
 	}
 
-	return BiomeGrassland
+	return worldmapcore.BiomeGrassland
 }
 
 // buildTerrainMap creates a boolean walkability map from current tile state
-func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, width, height int) []bool {
+func (g *StrategicOverworldGenerator) buildTerrainMap(result *worldmapcore.GenerationResult, width, height int) []bool {
 	terrainMap := make([]bool, width*height)
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -269,7 +270,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *GenerationResult, 
 }
 
 // applyConnectivityFixes updates tiles that were carved by connectivity to be walkable
-func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap [][]float64, images TileImageSet) {
+func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *worldmapcore.GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			idx := PositionToIndex(x, y)
@@ -286,12 +287,12 @@ func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationR
 				logicalPos := coords.LogicalPosition{X: x, Y: y}
 
 				// Carved corridors become grassland
-				tile.Biome = BiomeGrassland
-				result.BiomeMap[idx] = BiomeGrassland
-				tile.TileType = FLOOR
+				tile.Biome = worldmapcore.BiomeGrassland
+				result.BiomeMap[idx] = worldmapcore.BiomeGrassland
+				tile.TileType = worldmapcore.FLOOR
 				tile.Blocked = false
 
-				_, floorImages := GetBiomeImages(images, BiomeGrassland)
+				_, floorImages := GetBiomeImages(images, worldmapcore.BiomeGrassland)
 				tile.Image = SelectRandomImage(floorImages)
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			}
@@ -300,7 +301,7 @@ func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *GenerationR
 }
 
 // placeFactionStartPositions divides the map into sectors and finds optimal starting positions
-func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *GenerationResult, width, height int, elevationMap [][]float64) {
+func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *worldmapcore.GenerationResult, width, height int, elevationMap [][]float64) {
 	// Build terrain map for openness scoring
 	terrainMap := g.buildTerrainMap(result, width, height)
 
@@ -344,7 +345,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 
 				// Only consider grassland or forest
 				biome := result.BiomeMap[idx]
-				if biome != BiomeGrassland && biome != BiomeForest {
+				if biome != worldmapcore.BiomeGrassland && biome != worldmapcore.BiomeForest {
 					continue
 				}
 
@@ -358,7 +359,7 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 		}
 
 		if bestScore > 0 {
-			result.FactionStartPositions = append(result.FactionStartPositions, FactionStartPosition{
+			result.FactionStartPositions = append(result.FactionStartPositions, worldmapcore.FactionStartPosition{
 				Position: bestPos,
 				Biome:    result.BiomeMap[PositionToIndex(bestPos.X, bestPos.Y)],
 				Sector:   i,
@@ -368,20 +369,20 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *Generat
 }
 
 // placeTypedPOIs places terrain-aware POIs in order: towns, temples, watchtowers, guild halls
-func (g *StrategicOverworldGenerator) placeTypedPOIs(result *GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images TileImageSet) {
+func (g *StrategicOverworldGenerator) placeTypedPOIs(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
 	// Track placed POI positions for distance checks
 	placedPositions := make([]coords.LogicalPosition, 0)
 
 	// Towns first (guild halls depend on them)
-	placedTowns := g.placePOIType(result, width, height, elevationMap, moistureMap, POITown, g.config.TownCount, g.config.POIMinDistance, placedPositions, images)
+	placedTowns := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POITown, g.config.TownCount, g.config.POIMinDistance, placedPositions, images)
 	placedPositions = append(placedPositions, placedTowns...)
 
 	// Temples
-	placedTemples := g.placePOIType(result, width, height, elevationMap, moistureMap, POITemple, g.config.TempleCount, 15, placedPositions, images)
+	placedTemples := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POITemple, g.config.TempleCount, 15, placedPositions, images)
 	placedPositions = append(placedPositions, placedTemples...)
 
 	// Watchtowers
-	placedWatchtowers := g.placePOIType(result, width, height, elevationMap, moistureMap, POIWatchtower, g.config.WatchtowerCount, 10, placedPositions, images)
+	placedWatchtowers := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POIWatchtower, g.config.WatchtowerCount, 10, placedPositions, images)
 	placedPositions = append(placedPositions, placedWatchtowers...)
 
 	// Guild halls (must be near towns)
@@ -389,7 +390,7 @@ func (g *StrategicOverworldGenerator) placeTypedPOIs(result *GenerationResult, w
 }
 
 // placePOIType places POIs of a specific type using terrain-aware rules
-func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, width, height int, elevationMap, moistureMap [][]float64, nodeID string, count, minDist int, existingPOIs []coords.LogicalPosition, images TileImageSet) []coords.LogicalPosition {
+func (g *StrategicOverworldGenerator) placePOIType(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, nodeID string, count, minDist int, existingPOIs []coords.LogicalPosition, images worldmapcore.TileImageSet) []coords.LogicalPosition {
 	placed := make([]coords.LogicalPosition, 0)
 	maxAttempts := count * 50
 
@@ -421,7 +422,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 		}
 
 		// Place the POI
-		result.POIs = append(result.POIs, POIData{
+		result.POIs = append(result.POIs, worldmapcore.POIData{
 			Position: pos,
 			NodeID:   nodeID,
 			Biome:    biome,
@@ -434,7 +435,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 		}
 
 		// Add as a 1x1 Rect for backward compat with StartingPosition()/PlaceStairs()
-		result.Rooms = append(result.Rooms, NewRect(pos.X, pos.Y, 1, 1))
+		result.Rooms = append(result.Rooms, worldmapcore.NewRect(pos.X, pos.Y, 1, 1))
 		placed = append(placed, pos)
 	}
 
@@ -442,7 +443,7 @@ func (g *StrategicOverworldGenerator) placePOIType(result *GenerationResult, wid
 }
 
 // placeGuildHalls places guild halls near existing towns
-func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, width, height int, elevationMap [][]float64, townPositions, existingPOIs []coords.LogicalPosition, images TileImageSet) {
+func (g *StrategicOverworldGenerator) placeGuildHalls(result *worldmapcore.GenerationResult, width, height int, elevationMap [][]float64, townPositions, existingPOIs []coords.LogicalPosition, images worldmapcore.TileImageSet) {
 	if len(townPositions) == 0 {
 		return
 	}
@@ -481,42 +482,42 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *GenerationResult, 
 			continue
 		}
 
-		result.POIs = append(result.POIs, POIData{
+		result.POIs = append(result.POIs, worldmapcore.POIData{
 			Position: pos,
-			NodeID:   POIGuildHall,
+			NodeID:   worldmapcore.POIGuildHall,
 			Biome:    result.BiomeMap[idx],
 		})
 
 		// Set POI-specific tile image so the renderer draws it
-		if poiImg, ok := images.POIImages[POIGuildHall]; ok {
-			result.Tiles[idx].POIType = POIGuildHall
+		if poiImg, ok := images.POIImages[worldmapcore.POIGuildHall]; ok {
+			result.Tiles[idx].POIType = worldmapcore.POIGuildHall
 			result.Tiles[idx].Image = poiImg
 		}
 
-		result.Rooms = append(result.Rooms, NewRect(pos.X, pos.Y, 1, 1))
+		result.Rooms = append(result.Rooms, worldmapcore.NewRect(pos.X, pos.Y, 1, 1))
 		existingPOIs = append(existingPOIs, pos)
 		placed++
 	}
 }
 
 // isValidPOITerrain checks terrain-specific placement rules per POI type
-func (g *StrategicOverworldGenerator) isValidPOITerrain(nodeID string, biome Biome, elevation, moisture float64) bool {
+func (g *StrategicOverworldGenerator) isValidPOITerrain(nodeID string, biome worldmapcore.Biome, elevation, moisture float64) bool {
 	switch nodeID {
-	case POITown:
+	case worldmapcore.POITown:
 		// Towns: grassland or forest edge
-		return biome == BiomeGrassland || biome == BiomeForest
+		return biome == worldmapcore.BiomeGrassland || biome == worldmapcore.BiomeForest
 
-	case POITemple:
+	case worldmapcore.POITemple:
 		// Temples: elevated terrain or desert, prefer isolated
-		return (elevation > 0.55 && biome != BiomeSwamp && biome != BiomeMountain) || biome == BiomeDesert
+		return (elevation > 0.55 && biome != worldmapcore.BiomeSwamp && biome != worldmapcore.BiomeMountain) || biome == worldmapcore.BiomeDesert
 
-	case POIWatchtower:
+	case worldmapcore.POIWatchtower:
 		// Watchtowers: elevated walkable terrain near mountain borders
-		return elevation > 0.50 && biome != BiomeSwamp && biome != BiomeMountain
+		return elevation > 0.50 && biome != worldmapcore.BiomeSwamp && biome != worldmapcore.BiomeMountain
 
 	default:
 		// Guild halls and others: any walkable
-		return biome != BiomeSwamp && biome != BiomeMountain
+		return biome != worldmapcore.BiomeSwamp && biome != worldmapcore.BiomeMountain
 	}
 }
 

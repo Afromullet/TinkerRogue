@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui"
@@ -47,7 +47,7 @@ type UIMode interface {
 type UIContext struct {
 	ECSManager       *common.EntityManager
 	PlayerData       *common.PlayerData
-	GameMap          *worldmap.GameMap
+	GameMap          *worldmapcore.GameMap
 	ScreenWidth      int
 	ScreenHeight     int
 	TileSize         int

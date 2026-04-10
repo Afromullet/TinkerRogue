@@ -5,17 +5,17 @@ import (
 	"game_main/gui/framework"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 )
 
 type CameraController struct {
 	ecsManager *common.EntityManager
 	playerData *common.PlayerData
-	gameMap    *worldmap.GameMap
+	gameMap    *worldmapcore.GameMap
 }
 
 func NewCameraController(ecsManager *common.EntityManager, playerData *common.PlayerData,
-	gameMap *worldmap.GameMap, coordinator *framework.GameModeCoordinator) *CameraController {
+	gameMap *worldmapcore.GameMap, coordinator *framework.GameModeCoordinator) *CameraController {
 	return &CameraController{
 		ecsManager: ecsManager,
 		playerData: playerData,

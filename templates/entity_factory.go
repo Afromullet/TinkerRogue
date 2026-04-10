@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/world/coords"
 
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 	"log"
 	"path/filepath"
 
@@ -32,7 +32,7 @@ type EntityConfig struct {
 	Position  *coords.LogicalPosition
 
 	// Optional creature-specific fields
-	GameMap *worldmap.GameMap // Only used for creatures to block map tiles
+	GameMap *worldmapcore.GameMap // Only used for creatures to block map tiles
 }
 
 // CreateEntityFromTemplate creates a creature entity from a JSONMonster template.

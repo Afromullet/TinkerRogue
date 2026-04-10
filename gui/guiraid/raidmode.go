@@ -7,7 +7,7 @@ import (
 	"game_main/mind/raid"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
-	"game_main/world/worldmap/garrison"
+	"game_main/world/garrisongen"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -270,7 +270,7 @@ func (rm *RaidMode) OnRoomSelected(nodeID int) {
 
 	// Non-combat rooms are handled directly by the runner
 	switch room.RoomType {
-	case garrison.GarrisonRoomRestRoom, garrison.GarrisonRoomStairs:
+	case garrisongen.GarrisonRoomRestRoom, garrisongen.GarrisonRoomStairs:
 		if err := rm.raidRunner.SelectRoom(nodeID); err != nil {
 			rm.SetStatus(fmt.Sprintf("Error: %v", err))
 			return

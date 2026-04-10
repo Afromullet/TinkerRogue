@@ -1,16 +1,17 @@
-package garrison
+package garrisongen
 
 import (
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldgen"
+	"game_main/world/worldmapcore"
 )
 
 // GarrisonRoomMeta holds metadata for a single placed garrison room.
 type GarrisonRoomMeta struct {
 	RoomIndex      int
 	RoomType       string
-	Rect           worldmap.Rect
+	Rect           worldmapcore.Rect
 	PlayerSpawns   []coords.LogicalPosition
 	DefenderSpawns []coords.LogicalPosition
 	OnCriticalPath bool
@@ -43,7 +44,7 @@ func SetGarrisonSpawnCounts(counts map[string][4]int) {
 }
 
 // buildGarrisonFloorData constructs floor metadata from the DAG and placed rooms.
-func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]worldmap.Rect, floorNumber int, result *worldmap.GenerationResult, width int) *GarrisonFloorData {
+func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]worldmapcore.Rect, floorNumber int, result *worldmapcore.GenerationResult, width int) *GarrisonFloorData {
 	data := &GarrisonFloorData{
 		Rooms:           make([]GarrisonRoomMeta, 0, len(dag.Nodes)),
 		EntryRoomIndex:  dag.EntryNodeID,
@@ -72,7 +73,7 @@ func buildGarrisonFloorData(dag *FloorDAG, placedRooms map[int]worldmap.Rect, fl
 }
 
 // computePlayerSpawns finds spawn points in the entry zone of the room using zone-based search.
-func computePlayerSpawns(room worldmap.Rect, node *FloorNode, dag *FloorDAG, placedRooms map[int]worldmap.Rect, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
+func computePlayerSpawns(room worldmapcore.Rect, node *FloorNode, dag *FloorDAG, placedRooms map[int]worldmapcore.Rect, result *worldmapcore.GenerationResult, width int) []coords.LogicalPosition {
 	counts := garrisonSpawnCounts[node.RoomType]
 	targetCount := common.GetRandomBetween(int(counts[0]), int(counts[1]))
 
@@ -102,7 +103,7 @@ func computePlayerSpawns(room worldmap.Rect, node *FloorNode, dag *FloorDAG, pla
 }
 
 // computeDefenderSpawns finds spawn points in the defender zone based on room type.
-func computeDefenderSpawns(room worldmap.Rect, node *FloorNode, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
+func computeDefenderSpawns(room worldmapcore.Rect, node *FloorNode, result *worldmapcore.GenerationResult, width int) []coords.LogicalPosition {
 	counts := garrisonSpawnCounts[node.RoomType]
 	targetCount := common.GetRandomBetween(int(counts[2]), int(counts[3]))
 	if targetCount == 0 {
@@ -149,7 +150,7 @@ func computeDefenderSpawns(room worldmap.Rect, node *FloorNode, result *worldmap
 
 // findSpawnsInZone searches a rectangular zone for valid spawn positions.
 // Returns up to targetCount positions, each at least minSpacing tiles apart.
-func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *worldmap.GenerationResult, width int) []coords.LogicalPosition {
+func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *worldmapcore.GenerationResult, width int) []coords.LogicalPosition {
 	spawns := make([]coords.LogicalPosition, 0, targetCount)
 
 	// Collect all valid candidate positions in the zone
@@ -180,7 +181,7 @@ func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *world
 			break
 		}
 
-		if !worldmap.IsTooCloseToAny(cand.X, cand.Y, placedCoords, minSpacing) {
+		if !worldgen.IsTooCloseToAny(cand.X, cand.Y, placedCoords, minSpacing) {
 			spawns = append(spawns, cand)
 			placedCoords = append(placedCoords, [2]int{cand.X, cand.Y})
 		}
@@ -190,13 +191,13 @@ func findSpawnsInZone(x1, y1, x2, y2, targetCount, minSpacing int, result *world
 }
 
 // isSpawnValid checks that a position is walkable and has a 3x3 clear area.
-func isSpawnValid(pos coords.LogicalPosition, result *worldmap.GenerationResult, width int) bool {
+func isSpawnValid(pos coords.LogicalPosition, result *worldmapcore.GenerationResult, width int) bool {
 	numTiles := len(result.Tiles)
 	for dx := -1; dx <= 1; dx++ {
 		for dy := -1; dy <= 1; dy++ {
 			nx := pos.X + dx
 			ny := pos.Y + dy
-			idx := worldmap.PositionToIndex(nx, ny)
+			idx := worldgen.PositionToIndex(nx, ny)
 			if idx < 0 || idx >= numTiles {
 				return false
 			}

@@ -1,4 +1,4 @@
-package worldmap
+package worldmapcore
 
 import (
 	"game_main/common"

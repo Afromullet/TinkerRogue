@@ -2,7 +2,7 @@ package testing
 
 import (
 	"game_main/visual/graphics"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 )
 
 var TestSquare = graphics.NewSquare(0, 0, graphics.MediumShape)
@@ -17,6 +17,6 @@ var TestIceEffect = graphics.NewIceEffect(0, 0, 2)
 var TestElectricEffect = graphics.NewElectricityEffect(0, 0, 2)
 var TestStickyEffect = graphics.NewStickyGroundEffect(0, 0, 2)
 
-func CreateTestItems(manager *worldmap.GameMap) {
+func CreateTestItems(manager *worldmapcore.GameMap) {
 	// No throwable items to create - squad system handles combat
 }

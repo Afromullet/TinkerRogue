@@ -1,4 +1,4 @@
-package garrison
+package garrisongen
 
 import "game_main/common"
 

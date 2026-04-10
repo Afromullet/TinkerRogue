@@ -7,7 +7,7 @@ import (
 	"game_main/setup/savesystem"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 )
 
 func init() {
@@ -19,10 +19,10 @@ func init() {
 // using LoadTileImages() on load.
 type MapChunk struct {
 	// GameMap is set externally before Save/Load (since GameMap lives on Game, not ECS).
-	GameMap *worldmap.GameMap
+	GameMap *worldmapcore.GameMap
 }
 
-func (c *MapChunk) ChunkID() string  { return "map" }
+func (c *MapChunk) ChunkID() string   { return "map" }
 func (c *MapChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
@@ -139,7 +139,7 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 	}
 
 	// Load tile images for reconstruction
-	images := worldmap.LoadTileImages()
+	images := worldmapcore.LoadTileImages()
 
 	width := chunkData.Width
 	height := chunkData.Height
@@ -148,18 +148,18 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 	numTiles := width * height
 
 	// Allocate tiles contiguously
-	tileValues := make([]worldmap.Tile, numTiles)
-	gm.Tiles = make([]*worldmap.Tile, numTiles)
+	tileValues := make([]worldmapcore.Tile, numTiles)
+	gm.Tiles = make([]*worldmapcore.Tile, numTiles)
 
 	// Initialize all tiles as default walls
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			idx := coords.CoordManager.LogicalToIndex(logicalPos)
-			tileValues[idx] = worldmap.NewTile(
+			tileValues[idx] = worldmapcore.NewTile(
 				x*graphics.ScreenInfo.TileSize,
 				y*graphics.ScreenInfo.TileSize,
-				logicalPos, true, nil, worldmap.WALL, false,
+				logicalPos, true, nil, worldmapcore.WALL, false,
 			)
 			gm.Tiles[idx] = &tileValues[idx]
 		}
@@ -174,20 +174,20 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 		}
 
 		tile := gm.Tiles[idx]
-		tile.TileType = worldmap.TileType(st.TileType)
+		tile.TileType = worldmapcore.TileType(st.TileType)
 		tile.Blocked = st.Blocked
-		tile.Biome = worldmap.Biome(st.Biome)
+		tile.Biome = worldmapcore.Biome(st.Biome)
 		tile.POIType = st.POIType
 		tile.IsRevealed = st.IsRevealed
 
 		// Reconstruct image from type + biome (rendering logic lives in worldmap package)
-		tile.Image = worldmap.SelectTileImage(images, tile.TileType, tile.Biome, tile.POIType)
+		tile.Image = worldmapcore.SelectTileImage(images, tile.TileType, tile.Biome, tile.POIType)
 	}
 
 	// Restore rooms
-	gm.Rooms = make([]worldmap.Rect, len(chunkData.Rooms))
+	gm.Rooms = make([]worldmapcore.Rect, len(chunkData.Rooms))
 	for i, sr := range chunkData.Rooms {
-		gm.Rooms[i] = worldmap.Rect{X1: sr.X1, X2: sr.X2, Y1: sr.Y1, Y2: sr.Y2}
+		gm.Rooms[i] = worldmapcore.Rect{X1: sr.X1, X2: sr.X2, Y1: sr.Y1, Y2: sr.Y2}
 	}
 
 	// Restore valid positions
@@ -199,12 +199,12 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 	gm.NumTiles = numTiles
 
 	// Restore POIs
-	gm.POIs = make([]worldmap.POIData, len(chunkData.POIs))
+	gm.POIs = make([]worldmapcore.POIData, len(chunkData.POIs))
 	for i, sp := range chunkData.POIs {
-		gm.POIs[i] = worldmap.POIData{
+		gm.POIs[i] = worldmapcore.POIData{
 			Position: coords.LogicalPosition{X: sp.X, Y: sp.Y},
 			NodeID:   sp.NodeID,
-			Biome:    worldmap.Biome(sp.Biome),
+			Biome:    worldmapcore.Biome(sp.Biome),
 		}
 	}
 

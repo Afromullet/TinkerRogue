@@ -1,9 +1,10 @@
-package garrison
+package garrisongen
 
 import (
 	"game_main/common"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldgen"
+	"game_main/world/worldmapcore"
 )
 
 // GarrisonFloorConfig holds parameters for garrison floor generation.
@@ -31,16 +32,16 @@ func NewGarrisonRaidGenerator(config GarrisonFloorConfig) *GarrisonRaidGenerator
 }
 
 func (g *GarrisonRaidGenerator) Name() string        { return "garrison_raid" }
-func (g *GarrisonRaidGenerator) Description() string  { return "DAG-based garrison raid floors" }
+func (g *GarrisonRaidGenerator) Description() string { return "DAG-based garrison raid floors" }
 
-func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.TileImageSet) worldmap.GenerationResult {
+func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
 	if g.config.Seed != 0 {
 		common.SetRNGSeed(uint64(g.config.Seed), uint64(g.config.Seed))
 	}
 
-	result := worldmap.GenerationResult{
-		Tiles:          worldmap.CreateEmptyTiles(width, height, images),
-		Rooms:          make([]worldmap.Rect, 0),
+	result := worldmapcore.GenerationResult{
+		Tiles:          worldgen.CreateEmptyTiles(width, height, images),
+		Rooms:          make([]worldmapcore.Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
 
@@ -66,7 +67,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 		maxDepth = 1
 	}
 
-	placedRooms := make(map[int]worldmap.Rect)
+	placedRooms := make(map[int]worldmapcore.Rect)
 	roomPadding := 2
 
 	for _, node := range sorted {
@@ -109,7 +110,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 		}
 
 		placed := false
-		var bestRect worldmap.Rect
+		var bestRect worldmapcore.Rect
 
 		// Attempt placement with increasing Y jitter
 		for attempt := 0; attempt < 60; attempt++ {
@@ -120,7 +121,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 			x = max(1, min(x, width-roomW-1))
 			y = max(1, min(y, height-roomH-1))
 
-			candidate := worldmap.NewRect(x, y, roomW, roomH)
+			candidate := worldmapcore.NewRect(x, y, roomW, roomH)
 			if !garrisonOverlapsAny(candidate, placedRooms, roomPadding) {
 				bestRect = candidate
 				placed = true
@@ -136,7 +137,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 				for attempt := 0; attempt < 60; attempt++ {
 					x := common.GetRandomBetween(2, width-shrunkW-2)
 					y := common.GetRandomBetween(2, height-shrunkH-2)
-					candidate := worldmap.NewRect(x, y, shrunkW, shrunkH)
+					candidate := worldmapcore.NewRect(x, y, shrunkW, shrunkH)
 					if !garrisonOverlapsAny(candidate, placedRooms, roomPadding) {
 						bestRect = candidate
 						placed = true
@@ -153,7 +154,7 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 			for attempt := 0; attempt < 100; attempt++ {
 				x := common.GetRandomBetween(2, max(3, width-minW-2))
 				y := common.GetRandomBetween(2, max(3, height-minH-2))
-				candidate := worldmap.NewRect(x, y, minW, minH)
+				candidate := worldmapcore.NewRect(x, y, minW, minH)
 				if !garrisonOverlapsAny(candidate, placedRooms, 1) {
 					bestRect = candidate
 					placed = true
@@ -166,11 +167,11 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 		if !placed {
 			x := common.GetRandomBetween(2, max(3, width-6-2))
 			y := common.GetRandomBetween(2, max(3, height-6-2))
-			bestRect = worldmap.NewRect(x, y, 6, 6)
+			bestRect = worldmapcore.NewRect(x, y, 6, 6)
 		}
 
 		placedRooms[node.ID] = bestRect
-		worldmap.CarveRoom(&result, bestRect, width, images)
+		worldgen.CarveRoom(&result, bestRect, width, images)
 		result.Rooms = append(result.Rooms, bestRect)
 	}
 
@@ -208,14 +209,14 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmap.Tile
 			terrainMap[i] = true
 		}
 	}
-	worldmap.EnsureTerrainConnectivity(terrainMap, width, height)
+	worldgen.EnsureTerrainConnectivity(terrainMap, width, height)
 	for i := 0; i < len(terrainMap); i++ {
 		if terrainMap[i] && result.Tiles[i].Blocked {
 			x := i % width
 			y := i / width
 			result.Tiles[i].Blocked = false
-			result.Tiles[i].TileType = worldmap.FLOOR
-			result.Tiles[i].Image = worldmap.SelectRandomImage(images.FloorImages)
+			result.Tiles[i].TileType = worldmapcore.FLOOR
+			result.Tiles[i].Image = worldgen.SelectRandomImage(images.FloorImages)
 			result.ValidPositions = append(result.ValidPositions, coords.LogicalPosition{X: x, Y: y})
 		}
 	}
@@ -248,7 +249,7 @@ func garrisonCorridorWidth(fromType, toType string) int {
 }
 
 // garrisonEdgePoint finds the connection point on srcRoom's edge closest to dstRoom.
-func garrisonEdgePoint(srcRoom, dstRoom worldmap.Rect) (int, int) {
+func garrisonEdgePoint(srcRoom, dstRoom worldmapcore.Rect) (int, int) {
 	srcCX, srcCY := srcRoom.Center()
 	dstCX, dstCY := dstRoom.Center()
 
@@ -285,27 +286,27 @@ func garrisonEdgePoint(srcRoom, dstRoom worldmap.Rect) (int, int) {
 }
 
 // carveLShapeCorridor carves an L-shaped corridor with variable width.
-func carveLShapeCorridor(result *worldmap.GenerationResult, fromX, fromY, toX, toY, corridorWidth, mapWidth, mapHeight int, images worldmap.TileImageSet) {
+func carveLShapeCorridor(result *worldmapcore.GenerationResult, fromX, fromY, toX, toY, corridorWidth, mapWidth, mapHeight int, images worldmapcore.TileImageSet) {
 	halfW := corridorWidth / 2
 
 	// Horizontal segment at fromY
 	for offset := -halfW; offset <= halfW; offset++ {
 		y := fromY + offset
 		if y >= 0 && y < mapHeight {
-			worldmap.CarveHorizontalTunnel(result, fromX, toX, y, mapWidth, images)
+			worldgen.CarveHorizontalTunnel(result, fromX, toX, y, mapWidth, images)
 		}
 	}
 	// Vertical segment at toX
 	for offset := -halfW; offset <= halfW; offset++ {
 		x := toX + offset
 		if x >= 0 && x < mapWidth {
-			worldmap.CarveVerticalTunnel(result, fromY, toY, x, mapWidth, images)
+			worldgen.CarveVerticalTunnel(result, fromY, toY, x, mapWidth, images)
 		}
 	}
 }
 
 // carveZShapeCorridor carves a Z-shaped (dogleg) corridor that breaks line of sight.
-func carveZShapeCorridor(result *worldmap.GenerationResult, fromX, fromY, toX, toY, corridorWidth, mapWidth, mapHeight int, images worldmap.TileImageSet) {
+func carveZShapeCorridor(result *worldmapcore.GenerationResult, fromX, fromY, toX, toY, corridorWidth, mapWidth, mapHeight int, images worldmapcore.TileImageSet) {
 	halfW := corridorWidth / 2
 
 	// Midpoint for the jog
@@ -315,21 +316,21 @@ func carveZShapeCorridor(result *worldmap.GenerationResult, fromX, fromY, toX, t
 	for offset := -halfW; offset <= halfW; offset++ {
 		y := fromY + offset
 		if y >= 0 && y < mapHeight {
-			worldmap.CarveHorizontalTunnel(result, fromX, midX, y, mapWidth, images)
+			worldgen.CarveHorizontalTunnel(result, fromX, midX, y, mapWidth, images)
 		}
 	}
 	// Vertical jog: fromY to toY at midX
 	for offset := -halfW; offset <= halfW; offset++ {
 		x := midX + offset
 		if x >= 0 && x < mapWidth {
-			worldmap.CarveVerticalTunnel(result, fromY, toY, x, mapWidth, images)
+			worldgen.CarveVerticalTunnel(result, fromY, toY, x, mapWidth, images)
 		}
 	}
 	// Second horizontal segment: midX to toX at toY
 	for offset := -halfW; offset <= halfW; offset++ {
 		y := toY + offset
 		if y >= 0 && y < mapHeight {
-			worldmap.CarveHorizontalTunnel(result, midX, toX, y, mapWidth, images)
+			worldgen.CarveHorizontalTunnel(result, midX, toX, y, mapWidth, images)
 		}
 	}
 
@@ -339,22 +340,22 @@ func carveZShapeCorridor(result *worldmap.GenerationResult, fromX, fromY, toX, t
 			// At first corner (midX, fromY)
 			cx, cy := midX+dx, fromY+dy
 			if cx >= 0 && cx < mapWidth && cy >= 0 && cy < mapHeight {
-				idx := worldmap.PositionToIndex(cx, cy)
+				idx := worldgen.PositionToIndex(cx, cy)
 				if idx >= 0 && idx < len(result.Tiles) && result.Tiles[idx].Blocked {
 					result.Tiles[idx].Blocked = false
-					result.Tiles[idx].TileType = worldmap.FLOOR
-					result.Tiles[idx].Image = worldmap.SelectRandomImage(images.FloorImages)
+					result.Tiles[idx].TileType = worldmapcore.FLOOR
+					result.Tiles[idx].Image = worldgen.SelectRandomImage(images.FloorImages)
 					result.ValidPositions = append(result.ValidPositions, coords.LogicalPosition{X: cx, Y: cy})
 				}
 			}
 			// At second corner (midX, toY)
 			cx2, cy2 := midX+dx, toY+dy
 			if cx2 >= 0 && cx2 < mapWidth && cy2 >= 0 && cy2 < mapHeight {
-				idx := worldmap.PositionToIndex(cx2, cy2)
+				idx := worldgen.PositionToIndex(cx2, cy2)
 				if idx >= 0 && idx < len(result.Tiles) && result.Tiles[idx].Blocked {
 					result.Tiles[idx].Blocked = false
-					result.Tiles[idx].TileType = worldmap.FLOOR
-					result.Tiles[idx].Image = worldmap.SelectRandomImage(images.FloorImages)
+					result.Tiles[idx].TileType = worldmapcore.FLOOR
+					result.Tiles[idx].Image = worldgen.SelectRandomImage(images.FloorImages)
 					result.ValidPositions = append(result.ValidPositions, coords.LogicalPosition{X: cx2, Y: cy2})
 				}
 			}
@@ -364,7 +365,7 @@ func carveZShapeCorridor(result *worldmap.GenerationResult, fromX, fromY, toX, t
 
 // placeDoorway creates a 1-tile-wide doorway where a corridor meets a room by
 // placing wall tiles on either side of the connection point at the room boundary.
-func placeDoorway(result *worldmap.GenerationResult, room worldmap.Rect, connX, connY, mapWidth, mapHeight int, images worldmap.TileImageSet) {
+func placeDoorway(result *worldmapcore.GenerationResult, room worldmapcore.Rect, connX, connY, mapWidth, mapHeight int, images worldmapcore.TileImageSet) {
 	// Determine which edge the connection is on
 	onLeft := connX == room.X1
 	onRight := connX == room.X2
@@ -380,7 +381,7 @@ func placeDoorway(result *worldmap.GenerationResult, room worldmap.Rect, connX, 
 			wy := connY + dy
 			if wy > room.Y1 && wy < room.Y2 && wy >= 0 && wy < mapHeight {
 				// Only wall-ify if it's currently a floor tile in the corridor area
-				idx := worldmap.PositionToIndex(connX, wy)
+				idx := worldgen.PositionToIndex(connX, wy)
 				if idx >= 0 && idx < len(result.Tiles) && !result.Tiles[idx].Blocked {
 					setTileWall(result, connX, wy, mapWidth, images)
 				}
@@ -394,7 +395,7 @@ func placeDoorway(result *worldmap.GenerationResult, room worldmap.Rect, connX, 
 			}
 			wx := connX + dx
 			if wx > room.X1 && wx < room.X2 && wx >= 0 && wx < mapWidth {
-				idx := worldmap.PositionToIndex(wx, connY)
+				idx := worldgen.PositionToIndex(wx, connY)
 				if idx >= 0 && idx < len(result.Tiles) && !result.Tiles[idx].Blocked {
 					setTileWall(result, wx, connY, mapWidth, images)
 				}
@@ -405,7 +406,7 @@ func placeDoorway(result *worldmap.GenerationResult, room worldmap.Rect, connX, 
 
 // garrisonOverlapsAny checks if candidate rect overlaps any placed room
 // including padding for corridor space.
-func garrisonOverlapsAny(candidate worldmap.Rect, placed map[int]worldmap.Rect, padding int) bool {
+func garrisonOverlapsAny(candidate worldmapcore.Rect, placed map[int]worldmapcore.Rect, padding int) bool {
 	for _, r := range placed {
 		if !(candidate.X2+padding < r.X1 || r.X2+padding < candidate.X1 ||
 			candidate.Y2+padding < r.Y1 || r.Y2+padding < candidate.Y1) {
@@ -416,5 +417,5 @@ func garrisonOverlapsAny(candidate worldmap.Rect, placed map[int]worldmap.Rect, 
 }
 
 func init() {
-	worldmap.RegisterGenerator(&GarrisonRaidGenerator{config: DefaultGarrisonConfig()})
+	worldgen.RegisterGenerator(&GarrisonRaidGenerator{config: DefaultGarrisonConfig()})
 }

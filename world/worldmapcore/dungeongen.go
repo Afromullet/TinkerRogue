@@ -1,7 +1,7 @@
 // Package worldmap handles game world generation, map management, and spatial operations.
 // It provides dungeon generation algorithms, room management, tile systems,
 // and map-based entity placement and retrieval.
-package worldmap
+package worldmapcore
 
 import (
 	"errors"
@@ -54,20 +54,12 @@ type GameMap struct {
 	TileColorsDirty       bool
 }
 
-// NewGameMap creates a new game map using the specified generator algorithm
-func NewGameMap(generatorName string) GameMap {
+// NewGameMap creates a new game map using the provided generator.
+// Callers resolve the generator via worldgen.GetGenerator before passing it in.
+func NewGameMap(gen MapGenerator) GameMap {
 	images := LoadTileImages()
 
 	dungeonMap := GameMap{}
-
-	// Check for config override first, then fall back to registry
-	var gen MapGenerator
-	if ConfigOverride != nil {
-		gen = ConfigOverride(generatorName)
-	}
-	if gen == nil {
-		gen = GetGeneratorOrDefault(generatorName)
-	}
 
 	// Generate the map
 	result := gen.Generate(
@@ -87,12 +79,6 @@ func NewGameMap(generatorName string) GameMap {
 	dungeonMap.PlaceStairs(images)
 
 	return dungeonMap
-}
-
-// NewGameMapDefault creates a game map with the default generator
-// Provides backward compatibility for existing code
-func NewGameMapDefault() GameMap {
-	return NewGameMap("rooms_corridors")
 }
 
 func (gameMap *GameMap) Tile(pos *coords.LogicalPosition) *Tile {
@@ -254,4 +240,3 @@ func (gameMap GameMap) IsOpaque(x, y int) bool {
 	}
 	return gameMap.Tiles[idx].TileType == WALL
 }
-

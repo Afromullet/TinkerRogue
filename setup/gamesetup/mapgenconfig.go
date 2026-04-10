@@ -2,8 +2,9 @@ package gamesetup
 
 import (
 	"game_main/templates"
-	"game_main/world/worldmap"
-	"game_main/world/worldmap/garrison"
+	"game_main/world/garrisongen"
+	"game_main/world/worldgen"
+	"game_main/world/worldmapcore"
 )
 
 // InitMapGenConfigOverride registers a ConfigOverride hook that creates
@@ -15,7 +16,7 @@ func InitMapGenConfigOverride() {
 		return // No JSON config loaded, use code defaults
 	}
 
-	worldmap.ConfigOverride = func(name string) worldmap.MapGenerator {
+	worldgen.ConfigOverride = func(name string) worldmapcore.MapGenerator {
 		switch name {
 		case "rooms_corridors":
 			return buildRoomsCorridorsGenerator(cfg)
@@ -34,26 +35,26 @@ func InitMapGenConfigOverride() {
 	applyGarrisonTableOverrides(cfg)
 }
 
-func buildRoomsCorridorsGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {
+func buildRoomsCorridorsGenerator(cfg *templates.JSONMapGenConfig) worldmapcore.MapGenerator {
 	jrc := cfg.Generators.RoomsCorridors
 	if jrc == nil {
 		return nil
 	}
 
-	config := worldmap.DefaultRoomsCorridorsConfig()
+	config := worldgen.DefaultRoomsCorridorsConfig()
 	config.MinRoomSize = jrc.MinRoomSize
 	config.MaxRoomSize = jrc.MaxRoomSize
 	config.MaxRooms = jrc.MaxRooms
-	return worldmap.NewRoomsAndCorridorsGenerator(config)
+	return worldgen.NewRoomsAndCorridorsGenerator(config)
 }
 
-func buildCavernGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {
+func buildCavernGenerator(cfg *templates.JSONMapGenConfig) worldmapcore.MapGenerator {
 	jc := cfg.Generators.Cavern
 	if jc == nil {
 		return nil
 	}
 
-	config := worldmap.CavernConfig{
+	config := worldgen.CavernConfig{
 		FillDensity:       jc.FillDensity,
 		NumChambers:       jc.NumChambers,
 		MinChamberRadius:  jc.MinChamberRadius,
@@ -70,16 +71,16 @@ func buildCavernGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator
 		TargetWalkableMin: jc.TargetWalkableMin,
 		TargetWalkableMax: jc.TargetWalkableMax,
 	}
-	return worldmap.NewCavernGenerator(config)
+	return worldgen.NewCavernGenerator(config)
 }
 
-func buildOverworldGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {
+func buildOverworldGenerator(cfg *templates.JSONMapGenConfig) worldmapcore.MapGenerator {
 	jow := cfg.Generators.Overworld
 	if jow == nil {
 		return nil
 	}
 
-	config := worldmap.StrategicOverworldConfig{
+	config := worldgen.StrategicOverworldConfig{
 		ElevationOctaves:  jow.ElevationOctaves,
 		ElevationScale:    jow.ElevationScale,
 		MoistureOctaves:   jow.MoistureOctaves,
@@ -94,14 +95,14 @@ func buildOverworldGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenera
 		TempleCount:       jow.TempleCount,
 		GuildHallCount:    jow.GuildHallCount,
 		WatchtowerCount:   jow.WatchtowerCount,
-		POIMinDistance:     jow.POIMinDistance,
+		POIMinDistance:    jow.POIMinDistance,
 		FactionCount:      jow.FactionCount,
 		FactionMinSpacing: jow.FactionMinSpacing,
 	}
-	return worldmap.NewStrategicOverworldGenerator(config)
+	return worldgen.NewStrategicOverworldGenerator(config)
 }
 
-func buildGarrisonRaidGenerator(cfg *templates.JSONMapGenConfig) worldmap.MapGenerator {
+func buildGarrisonRaidGenerator(cfg *templates.JSONMapGenConfig) worldmapcore.MapGenerator {
 	// Garrison raid uses code defaults for FloorNumber/Seed (runtime values).
 	// The data tables (room sizes, floor scaling, spawn counts) are set via
 	// applyGarrisonTableOverrides, not per-instance config.
@@ -123,14 +124,14 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 		for key, rs := range jgr.RoomSizes {
 			sizes[key] = [4]int{rs.MinW, rs.MaxW, rs.MinH, rs.MaxH}
 		}
-		garrison.SetGarrisonRoomSizes(sizes)
+		garrisongen.SetGarrisonRoomSizes(sizes)
 	}
 
 	// Override floor scaling
 	if len(jgr.FloorScaling) > 0 {
-		scaling := make(map[int]garrison.FloorScalingEntry, len(jgr.FloorScaling))
+		scaling := make(map[int]garrisongen.FloorScalingEntry, len(jgr.FloorScaling))
 		for _, fs := range jgr.FloorScaling {
-			scaling[fs.Floor] = garrison.FloorScalingEntry{
+			scaling[fs.Floor] = garrisongen.FloorScalingEntry{
 				MinCriticalPath: fs.MinCritPath,
 				MaxCriticalPath: fs.MaxCritPath,
 				MinTotalRooms:   fs.MinTotal,
@@ -138,7 +139,7 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 				AllowedTypes:    fs.AllowedTypes,
 			}
 		}
-		garrison.SetGarrisonFloorScaling(scaling)
+		garrisongen.SetGarrisonFloorScaling(scaling)
 	}
 
 	// Override spawn counts
@@ -147,6 +148,6 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 		for key, sc := range jgr.SpawnCounts {
 			counts[key] = [4]int{sc.MinPlayer, sc.MaxPlayer, sc.MinDefender, sc.MaxDefender}
 		}
-		garrison.SetGarrisonSpawnCounts(counts)
+		garrisongen.SetGarrisonSpawnCounts(counts)
 	}
 }

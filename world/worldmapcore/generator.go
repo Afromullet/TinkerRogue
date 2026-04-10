@@ -1,4 +1,4 @@
-package worldmap
+package worldmapcore
 
 import (
 	"game_main/world/coords"
@@ -39,45 +39,4 @@ type MapGenerator interface {
 
 	// Description returns a human-readable description
 	Description() string
-}
-
-// RoomsCorridorsConfig holds parameters for the rooms-and-corridors generator
-type RoomsCorridorsConfig struct {
-	MinRoomSize int
-	MaxRoomSize int
-	MaxRooms    int
-	Seed        int64 // 0 = use time-based seed
-}
-
-// DefaultRoomsCorridorsConfig returns sensible defaults for rooms-and-corridors generation
-func DefaultRoomsCorridorsConfig() RoomsCorridorsConfig {
-	return RoomsCorridorsConfig{
-		MinRoomSize: 6,
-		MaxRoomSize: 10,
-		MaxRooms:    30,
-		Seed:        0,
-	}
-}
-
-// ConfigOverride is an optional hook that returns a configured MapGenerator
-// for the given name. If set and returns non-nil, the returned generator
-// replaces the default-registered one for that generation call.
-// Set by game_main after loading JSON config.
-var ConfigOverride func(name string) MapGenerator
-
-// Generator registry for algorithm selection
-var generators = make(map[string]MapGenerator)
-
-// RegisterGenerator adds a new algorithm to the registry
-func RegisterGenerator(gen MapGenerator) {
-	generators[gen.Name()] = gen
-}
-
-// GetGeneratorOrDefault retrieves algorithm by name, falls back to default
-func GetGeneratorOrDefault(name string) MapGenerator {
-	gen := generators[name]
-	if gen == nil {
-		gen = generators["rooms_corridors"] // Default fallback
-	}
-	return gen
 }

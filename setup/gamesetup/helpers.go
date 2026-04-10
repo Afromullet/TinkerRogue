@@ -7,16 +7,16 @@ import (
 	"runtime"
 
 	"game_main/common"
-	"game_main/setup/config"
 	"game_main/overworld/core"
+	"game_main/setup/config"
 	"game_main/templates"
 	"game_main/testing"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 )
 
 // InitWalkableGridFromMap initializes the walkable grid and marks valid positions.
 // Used by overworld, roguelike, and save-load initialization paths.
-func InitWalkableGridFromMap(gm *worldmap.GameMap) {
+func InitWalkableGridFromMap(gm *worldmapcore.GameMap) {
 	core.InitWalkableGrid(templates.GameConfig.Display.MapWidth, templates.GameConfig.Display.MapHeight)
 	for _, pos := range gm.ValidPositions {
 		core.SetTileWalkable(pos, true)
@@ -25,7 +25,7 @@ func InitWalkableGridFromMap(gm *worldmap.GameMap) {
 
 // SetupTestData creates test items and content for debugging.
 // Only called when DEBUG_MODE is enabled.
-func SetupTestData(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
+func SetupTestData(em *common.EntityManager, gm *worldmapcore.GameMap, pd *common.PlayerData) {
 	testing.CreateTestItems(gm)
 }
 

@@ -2,11 +2,11 @@ package guicombat
 
 import (
 	"game_main/common"
-	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combatservices"
+	"game_main/tactical/combat/combatstate"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -93,7 +93,7 @@ var LayerModeMetadata = map[LayerMode]LayerModeInfo{
 type ThreatVisualizer struct {
 	// Dependencies
 	manager        *common.EntityManager
-	gameMap        *worldmap.GameMap
+	gameMap        *worldmapcore.GameMap
 	threatProvider combatservices.ThreatProvider
 
 	// Per-faction threat evaluators (for layer mode)
@@ -114,7 +114,7 @@ type ThreatVisualizer struct {
 // NewThreatVisualizer creates a unified threat visualizer
 func NewThreatVisualizer(
 	manager *common.EntityManager,
-	gameMap *worldmap.GameMap,
+	gameMap *worldmapcore.GameMap,
 	threatProvider combatservices.ThreatProvider,
 ) *ThreatVisualizer {
 	return &ThreatVisualizer{

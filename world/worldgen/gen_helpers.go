@@ -1,9 +1,10 @@
-package worldmap
+package worldgen
 
 import (
 	"game_main/common"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
+	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -26,7 +27,7 @@ func SelectRandomImage(images []*ebiten.Image) *ebiten.Image {
 }
 
 // GetBiomeImages returns wall and floor images for a biome, falling back to defaults
-func GetBiomeImages(images TileImageSet, biome Biome) (wallImages, floorImages []*ebiten.Image) {
+func GetBiomeImages(images worldmapcore.TileImageSet, biome worldmapcore.Biome) (wallImages, floorImages []*ebiten.Image) {
 	wallImages = images.WallImages
 	floorImages = images.FloorImages
 
@@ -46,14 +47,14 @@ func GetBiomeImages(images TileImageSet, biome Biome) (wallImages, floorImages [
 // CreateEmptyTiles initializes all tiles as walls
 // Optimized to reduce allocations: allocates one contiguous slice of Tile values
 // and reuses pointers to those values, avoiding per-tile heap allocations
-func CreateEmptyTiles(width, height int, images TileImageSet) []*Tile {
+func CreateEmptyTiles(width, height int, images worldmapcore.TileImageSet) []*worldmapcore.Tile {
 	numTiles := width * height
 
 	// Allocate all tiles in one contiguous slice (single allocation instead of thousands)
-	tileValues := make([]Tile, numTiles)
+	tileValues := make([]worldmapcore.Tile, numTiles)
 
 	// Create pointer slice that points into the contiguous allocation
-	tiles := make([]*Tile, numTiles)
+	tiles := make([]*worldmapcore.Tile, numTiles)
 
 	for x := 0; x < width; x++ {
 		for y := 0; y < height; y++ {
@@ -62,10 +63,10 @@ func CreateEmptyTiles(width, height int, images TileImageSet) []*Tile {
 			wallImg := SelectRandomImage(images.WallImages)
 
 			// Initialize tile directly in the contiguous slice
-			tileValues[index] = NewTile(
+			tileValues[index] = worldmapcore.NewTile(
 				x*graphics.ScreenInfo.TileSize,
 				y*graphics.ScreenInfo.TileSize,
-				logicalPos, true, wallImg, WALL, false,
+				logicalPos, true, wallImg, worldmapcore.WALL, false,
 			)
 
 			// Store pointer to the tile in the contiguous slice
@@ -81,14 +82,14 @@ func CreateEmptyTiles(width, height int, images TileImageSet) []*Tile {
 // ========================================
 
 // CarveRoom converts wall tiles to floor tiles within room bounds
-func CarveRoom(result *GenerationResult, room Rect, width int, images TileImageSet) {
+func CarveRoom(result *worldmapcore.GenerationResult, room worldmapcore.Rect, width int, images worldmapcore.TileImageSet) {
 	for y := room.Y1 + 1; y < room.Y2; y++ {
 		for x := room.X1 + 1; x < room.X2; x++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			index := PositionToIndex(x, y)
 
 			result.Tiles[index].Blocked = false
-			result.Tiles[index].TileType = FLOOR
+			result.Tiles[index].TileType = worldmapcore.FLOOR
 			result.Tiles[index].Image = SelectRandomImage(images.FloorImages)
 
 			// Add to valid positions
@@ -98,7 +99,7 @@ func CarveRoom(result *GenerationResult, room Rect, width int, images TileImageS
 }
 
 // CarveTunnel creates a corridor along a horizontal or vertical line
-func CarveTunnel(result *GenerationResult, start, end, fixed, width int, isHorizontal bool, images TileImageSet) {
+func CarveTunnel(result *worldmapcore.GenerationResult, start, end, fixed, width int, isHorizontal bool, images worldmapcore.TileImageSet) {
 	for i := min(start, end); i <= max(start, end); i++ {
 		var logicalPos coords.LogicalPosition
 		var index int
@@ -113,7 +114,7 @@ func CarveTunnel(result *GenerationResult, start, end, fixed, width int, isHoriz
 
 		if index >= 0 && index < len(result.Tiles) {
 			result.Tiles[index].Blocked = false
-			result.Tiles[index].TileType = FLOOR
+			result.Tiles[index].TileType = worldmapcore.FLOOR
 			result.Tiles[index].Image = SelectRandomImage(images.FloorImages)
 			result.ValidPositions = append(result.ValidPositions, logicalPos)
 		}
@@ -121,12 +122,12 @@ func CarveTunnel(result *GenerationResult, start, end, fixed, width int, isHoriz
 }
 
 // CarveHorizontalTunnel creates horizontal corridor
-func CarveHorizontalTunnel(result *GenerationResult, x1, x2, y, width int, images TileImageSet) {
+func CarveHorizontalTunnel(result *worldmapcore.GenerationResult, x1, x2, y, width int, images worldmapcore.TileImageSet) {
 	CarveTunnel(result, x1, x2, y, width, true, images)
 }
 
 // CarveVerticalTunnel creates vertical corridor
-func CarveVerticalTunnel(result *GenerationResult, y1, y2, x, width int, images TileImageSet) {
+func CarveVerticalTunnel(result *worldmapcore.GenerationResult, y1, y2, x, width int, images worldmapcore.TileImageSet) {
 	CarveTunnel(result, y1, y2, x, width, false, images)
 }
 
@@ -258,10 +259,10 @@ func EnsureTerrainConnectivity(terrainMap []bool, width, height int) {
 
 // ConvertTerrainMapToTiles converts a boolean terrain map to actual Tile objects.
 // terrainMap true = walkable floor, false = wall. Assigns biome images and populates ValidPositions.
-func ConvertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width, height int, images TileImageSet, biome Biome) {
+func ConvertTerrainMapToTiles(result *worldmapcore.GenerationResult, terrainMap []bool, width, height int, images worldmapcore.TileImageSet, biome worldmapcore.Biome) {
 	wallImages, floorImages := GetBiomeImages(images, biome)
 
-	result.BiomeMap = make([]Biome, width*height)
+	result.BiomeMap = make([]worldmapcore.Biome, width*height)
 
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
@@ -274,13 +275,13 @@ func ConvertTerrainMapToTiles(result *GenerationResult, terrainMap []bool, width
 
 			if terrainMap[idx] {
 				floorImage := SelectRandomImage(floorImages)
-				tile := NewTile(pixelX, pixelY, logicalPos, false, floorImage, FLOOR, false)
+				tile := worldmapcore.NewTile(pixelX, pixelY, logicalPos, false, floorImage, worldmapcore.FLOOR, false)
 				tile.Biome = biome
 				result.Tiles[idx] = &tile
 				result.ValidPositions = append(result.ValidPositions, logicalPos)
 			} else {
 				wallImage := SelectRandomImage(wallImages)
-				tile := NewTile(pixelX, pixelY, logicalPos, true, wallImage, WALL, false)
+				tile := worldmapcore.NewTile(pixelX, pixelY, logicalPos, true, wallImage, worldmapcore.WALL, false)
 				tile.Biome = biome
 				result.Tiles[idx] = &tile
 			}

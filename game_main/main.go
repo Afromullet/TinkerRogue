@@ -10,23 +10,23 @@ package main
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/setup/config"
-	"game_main/setup/gamesetup"
 	"game_main/gui/framework"
 	"game_main/gui/guistartmenu"
 	"game_main/input"
 	"game_main/overworld/core"
+	"game_main/setup/config"
+	"game_main/setup/gamesetup"
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 	"log"
 	"math"
 
 	_ "image/png" // Required for PNG image loading
 
-	_ "game_main/setup/savesystem/chunks"      // Blank import to register SaveChunks via init()
-	_ "game_main/world/worldmap/garrison"      // Register garrison generator via init()
+	_ "game_main/setup/savesystem/chunks" // Blank import to register SaveChunks via init()
+	_ "game_main/world/worldgen"          // Register worldgen generators via init()
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -37,7 +37,7 @@ type Game struct {
 	em                  common.EntityManager
 	gameModeCoordinator *framework.GameModeCoordinator // Coordinates Overworld and Tactical UI contexts
 	playerData          common.PlayerData
-	gameMap             worldmap.GameMap
+	gameMap             worldmapcore.GameMap
 	cameraController    *input.CameraController
 	renderingCache      *rendering.RenderingCache // Cached view for rendering hot path (3-5x faster)
 	startMenu           *guistartmenu.StartMenu

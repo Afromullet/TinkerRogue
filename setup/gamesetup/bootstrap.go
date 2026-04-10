@@ -9,8 +9,8 @@ import (
 	"game_main/overworld/node"
 	"game_main/overworld/tick"
 	"game_main/setup/config"
-	"game_main/tactical/commander"
 	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/commander"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"
 	"game_main/tactical/squads/unitdefs"
@@ -18,7 +18,8 @@ import (
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldgen"
+	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
@@ -61,13 +62,13 @@ func (gb *GameBootstrap) InitializeCoreECS(em *common.EntityManager) {
 
 // CreateWorld generates the game map.
 // Phase 3: Depends on InitializeCoreECS for coordinate system.
-func (gb *GameBootstrap) CreateWorld(gm *worldmap.GameMap, mapType string) {
-	*gm = worldmap.NewGameMap(mapType)
+func (gb *GameBootstrap) CreateWorld(gm *worldmapcore.GameMap, mapType string) {
+	*gm = worldmapcore.NewGameMap(worldgen.GetGenerator(mapType))
 }
 
 // CreatePlayer initializes the player entity, creates the initial commander, and adds creatures to position system.
 // Phase 4: Depends on CreateWorld for starting position.
-func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
+func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmapcore.GameMap) {
 	InitializePlayerData(em, pd, gm)
 
 	// Initialize unit templates before creating initial squads
@@ -115,7 +116,7 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 
 // SetupDebugContent creates test items and spawns debug content.
 // Debug Phase: Only runs when DEBUG_MODE is enabled.
-func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldmap.GameMap, pd *common.PlayerData) {
+func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldmapcore.GameMap, pd *common.PlayerData) {
 	if config.DEBUG_MODE {
 		SetupTestData(em, gm, pd)
 		rosterData := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
@@ -131,7 +132,7 @@ func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldma
 // InitializeGameplay sets up squad system and exploration squads.
 // Phase 5: Depends on CreatePlayer for faction positioning.
 // Overworld factions spawn threats dynamically during gameplay.
-func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData, gm *worldmap.GameMap) {
+func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common.PlayerData, gm *worldmapcore.GameMap) {
 
 	// Initialize overworld tick state
 	tick.CreateTickStateEntity(em)
@@ -161,7 +162,7 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 
 // ConvertPOIsToNodes converts POIs from world generation into neutral overworld nodes.
 // This allows POIs to participate in the influence system (mildly suppress nearby threats).
-func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldmap.GameMap) {
+func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldmapcore.GameMap) {
 	currentTick := core.GetCurrentTick(em)
 	for _, poi := range gm.POIs {
 		nodeID, err := node.CreateNode(em, node.CreateNodeParams{

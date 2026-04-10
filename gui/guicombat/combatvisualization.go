@@ -6,7 +6,7 @@ import (
 	"game_main/tactical/combat/combatservices"
 	"game_main/visual/rendering"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -27,7 +27,7 @@ type CombatVisualizationManager struct {
 
 	// References needed for late initialization
 	ecsManager    *common.EntityManager
-	gameMap       *worldmap.GameMap
+	gameMap       *worldmapcore.GameMap
 	queries       *framework.GUIQueries
 	combatService *combatservices.CombatService
 }
@@ -37,11 +37,11 @@ type CombatVisualizationManager struct {
 func NewCombatVisualizationManager(
 	ctx *framework.UIContext,
 	queries *framework.GUIQueries,
-	gameMap *worldmap.GameMap,
+	gameMap *worldmapcore.GameMap,
 	combatService *combatservices.CombatService,
 ) *CombatVisualizationManager {
 	cvm := &CombatVisualizationManager{
-		movementRenderer: rendering.NewMovementTileRenderer(),
+		movementRenderer:  rendering.NewMovementTileRenderer(),
 		highlightRenderer: rendering.NewSquadHighlightRenderer(queries),
 		healthBarRenderer: rendering.NewHealthBarRenderer(queries),
 		ecsManager:        ctx.ECSManager,

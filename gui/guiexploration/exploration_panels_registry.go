@@ -9,7 +9,8 @@ import (
 	"game_main/gui/specs"
 	"game_main/overworld/core"
 	"game_main/templates"
-	"game_main/world/worldmap"
+	"game_main/world/worldgen"
+	"game_main/world/worldmapcore"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -46,7 +47,7 @@ func createExplorationSubMenu(em *ExplorationMode, name string, buttons []builde
 // regenerateMap generates a new map using the named generator and repositions the player.
 func regenerateMap(em *ExplorationMode, generatorName string) {
 	// 1. Generate new map (replaces tile slice, rooms, valid positions, etc.)
-	newMap := worldmap.NewGameMap(generatorName)
+	newMap := worldmapcore.NewGameMap(worldgen.GetGenerator(generatorName))
 	*em.Context.GameMap = newMap
 
 	// 2. Rebuild walkable grid

@@ -7,7 +7,7 @@ import (
 	"game_main/common"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -30,7 +30,7 @@ type viewportParams struct {
 // processRenderablesCore collects visible sprites into batches.
 // When vp is nil, renders all entities at pixel positions with no scaling.
 // When vp is non-nil, filters to viewport bounds and applies coordinate transform + scaling.
-func processRenderablesCore(cache *RenderingCache, gameMap worldmap.GameMap, screen *ebiten.Image, vp *viewportParams) {
+func processRenderablesCore(cache *RenderingCache, gameMap worldmapcore.GameMap, screen *ebiten.Image, vp *viewportParams) {
 	cache.ClearSpriteBatches()
 
 	for _, result := range cache.RenderablesView.Get() {
@@ -82,12 +82,12 @@ func processRenderablesCore(cache *RenderingCache, gameMap worldmap.GameMap, scr
 }
 
 // ProcessRenderables draws all visible renderable entities (full map, no viewport).
-func ProcessRenderables(gameMap worldmap.GameMap, screen *ebiten.Image, cache *RenderingCache) {
+func ProcessRenderables(gameMap worldmapcore.GameMap, screen *ebiten.Image, cache *RenderingCache) {
 	processRenderablesCore(cache, gameMap, screen, nil)
 }
 
 // ProcessRenderablesInSquare renders entities in a square region around playerPos.
-func ProcessRenderablesInSquare(gameMap worldmap.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, cache *RenderingCache) {
+func ProcessRenderablesInSquare(gameMap worldmapcore.GameMap, screen *ebiten.Image, playerPos *coords.LogicalPosition, squareSize int, cache *RenderingCache) {
 	sq := coords.NewDrawableSection(playerPos.X, playerPos.Y, squareSize)
 	processRenderablesCore(cache, gameMap, screen, &viewportParams{
 		centerPos: playerPos,

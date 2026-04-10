@@ -13,14 +13,14 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
-	"game_main/world/worldmap"
+	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // ConfigureMapChunk sets the GameMap pointer on the MapChunk so it can
 // read/write map data during save/load.
-func ConfigureMapChunk(gm *worldmap.GameMap) {
+func ConfigureMapChunk(gm *worldmapcore.GameMap) {
 	if chunk := savesystem.GetChunk("map"); chunk != nil {
 		if mc, ok := chunk.(*chunks.MapChunk); ok {
 			mc.GameMap = gm

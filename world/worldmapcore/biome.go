@@ -1,4 +1,4 @@
-package worldmap
+package worldmapcore
 
 type Biome int
 

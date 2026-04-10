@@ -7,7 +7,7 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/world/coords"
-	"game_main/world/worldmap/garrison"
+	"game_main/world/garrisongen"
 
 	"github.com/bytearena/ecs"
 )
@@ -41,7 +41,7 @@ func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID
 // generateFloor builds one garrison floor: DAG, rooms, alert, and garrison squads.
 func generateFloor(manager *common.EntityManager, floorNumber int) {
 	// Build abstract DAG from worldmap package
-	dag := garrison.BuildGarrisonDAG(floorNumber)
+	dag := garrisongen.BuildGarrisonDAG(floorNumber)
 
 	// Create alert data entity for this floor
 	alertEntity := manager.World.NewEntity()
