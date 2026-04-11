@@ -354,27 +354,27 @@ func (tv *ThreatVisualizer) getLayerValueAt(pos coords.LogicalPosition) float64 
 		return 0.0
 	}
 
+	snapshot := eval.EvaluateAt(pos)
+
 	// Max values for normalization (melee/ranged/support use raw power values)
 	const maxThreatValue = 200.0
 
 	switch tv.layerMode {
 	case LayerMelee:
-		raw := eval.GetMeleeThreatAt(pos)
-		return min(raw/maxThreatValue, 1.0)
+		return min(snapshot.MeleeThreat/maxThreatValue, 1.0)
 	case LayerRanged:
-		raw := eval.GetRangedPressureAt(pos)
-		return min(raw/maxThreatValue, 1.0)
+		return min(snapshot.RangedPressure/maxThreatValue, 1.0)
 	case LayerSupport:
 		// Support value is already in 0-1 range from heal priority
-		return eval.GetSupportValueAt(pos)
+		return snapshot.SupportValue
 	case LayerPositionalFlanking:
-		return eval.GetFlankingRiskAt(pos)
+		return snapshot.FlankingRisk
 	case LayerPositionalIsolation:
-		return eval.GetIsolationRiskAt(pos)
+		return snapshot.IsolationRisk
 	case LayerPositionalEngagement:
-		return eval.GetEngagementPressureAt(pos)
+		return snapshot.EngagementPressure
 	case LayerPositionalRetreat:
-		return eval.GetRetreatQuality(pos)
+		return snapshot.RetreatQuality
 	default:
 		return 0.0
 	}

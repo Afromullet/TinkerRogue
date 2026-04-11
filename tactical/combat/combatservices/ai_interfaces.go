@@ -30,17 +30,23 @@ type ThreatProvider interface {
 	GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool)
 }
 
+// ThreatSnapshot holds all threat layer values at a single map position.
+// Returned by ThreatLayerEvaluator.EvaluateAt so callers get all values in one call.
+type ThreatSnapshot struct {
+	MeleeThreat        float64
+	RangedPressure     float64
+	SupportValue       float64
+	FlankingRisk       float64
+	IsolationRisk      float64
+	EngagementPressure float64
+	RetreatQuality     float64
+}
+
 // ThreatLayerEvaluator evaluates composite threat layers at map positions.
 // Implemented by behavior.CompositeThreatEvaluator; defined here so tactical/gui
 // layers can query threat layers without importing mind/behavior.
 type ThreatLayerEvaluator interface {
 	Update(currentRound int)
 	MarkDirty()
-	GetMeleeThreatAt(pos coords.LogicalPosition) float64
-	GetRangedPressureAt(pos coords.LogicalPosition) float64
-	GetSupportValueAt(pos coords.LogicalPosition) float64
-	GetFlankingRiskAt(pos coords.LogicalPosition) float64
-	GetIsolationRiskAt(pos coords.LogicalPosition) float64
-	GetEngagementPressureAt(pos coords.LogicalPosition) float64
-	GetRetreatQuality(pos coords.LogicalPosition) float64
+	EvaluateAt(pos coords.LogicalPosition) ThreatSnapshot
 }

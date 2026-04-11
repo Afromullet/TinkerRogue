@@ -2,6 +2,7 @@ package behavior
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
@@ -143,33 +144,16 @@ func (cte *CompositeThreatEvaluator) GetPositionalLayer() *PositionalRiskLayer {
 	return cte.positionalRisk
 }
 
-// Flat convenience methods for per-position layer queries.
-// These delegate to sub-layers and satisfy the LayerDataProvider interface in gui/guicombat.
-
-func (cte *CompositeThreatEvaluator) GetMeleeThreatAt(pos coords.LogicalPosition) float64 {
-	return cte.combatThreat.GetMeleeThreatAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetRangedPressureAt(pos coords.LogicalPosition) float64 {
-	return cte.combatThreat.GetRangedPressureAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetSupportValueAt(pos coords.LogicalPosition) float64 {
-	return cte.supportValue.GetSupportValueAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetFlankingRiskAt(pos coords.LogicalPosition) float64 {
-	return cte.positionalRisk.GetFlankingRiskAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetIsolationRiskAt(pos coords.LogicalPosition) float64 {
-	return cte.positionalRisk.GetIsolationRiskAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetEngagementPressureAt(pos coords.LogicalPosition) float64 {
-	return cte.positionalRisk.GetEngagementPressureAt(pos)
-}
-
-func (cte *CompositeThreatEvaluator) GetRetreatQuality(pos coords.LogicalPosition) float64 {
-	return cte.positionalRisk.GetRetreatQuality(pos)
+// EvaluateAt returns all threat layer values at a position in a single call.
+// Satisfies the ThreatLayerEvaluator interface.
+func (cte *CompositeThreatEvaluator) EvaluateAt(pos coords.LogicalPosition) combatservices.ThreatSnapshot {
+	return combatservices.ThreatSnapshot{
+		MeleeThreat:        cte.combatThreat.GetMeleeThreatAt(pos),
+		RangedPressure:     cte.combatThreat.GetRangedPressureAt(pos),
+		SupportValue:       cte.supportValue.GetSupportValueAt(pos),
+		FlankingRisk:       cte.positionalRisk.GetFlankingRiskAt(pos),
+		IsolationRisk:      cte.positionalRisk.GetIsolationRiskAt(pos),
+		EngagementPressure: cte.positionalRisk.GetEngagementPressureAt(pos),
+		RetreatQuality:     cte.positionalRisk.GetRetreatQuality(pos),
+	}
 }
