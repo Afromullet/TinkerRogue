@@ -218,6 +218,53 @@ func RemoveSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) err
 }
 
 // ========================================
+// ZONE OF CONTROL QUERIES
+// ========================================
+
+// IsInZoneOfControl returns true if the squad has any adjacent (Chebyshev distance 1)
+// non-destroyed enemy squad. This is a spatial query computed on demand.
+func IsInZoneOfControl(squadID ecs.EntityID, manager *common.EntityManager) bool {
+	squadPos, err := GetSquadMapPosition(squadID, manager)
+	if err != nil {
+		return false
+	}
+	squadFaction := GetSquadFaction(squadID, manager)
+	if squadFaction == 0 {
+		return false
+	}
+
+	nearbyEntities := common.GlobalPositionSystem.GetEntitiesInRadius(squadPos, 1)
+	for _, entityID := range nearbyEntities {
+		if entityID == squadID {
+			continue
+		}
+		if !IsSquad(entityID, manager) {
+			continue
+		}
+		if squadcore.IsSquadDestroyed(entityID, manager) {
+			continue
+		}
+		entityFaction := GetSquadFaction(entityID, manager)
+		if entityFaction != 0 && entityFaction != squadFaction {
+			return true
+		}
+	}
+	return false
+}
+
+// GetEffectiveMovementRange returns the effective movement range for a squad,
+// accounting for Zone of Control. If the squad is adjacent to an enemy, movement is capped to 1.
+func GetEffectiveMovementRange(squadID ecs.EntityID, movementRemaining int, manager *common.EntityManager) int {
+	if movementRemaining <= 1 {
+		return movementRemaining
+	}
+	if IsInZoneOfControl(squadID, manager) {
+		return 1
+	}
+	return movementRemaining
+}
+
+// ========================================
 // UTILITY HELPERS
 // ========================================
 

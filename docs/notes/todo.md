@@ -12,13 +12,10 @@
 
 - DOCUMENTATION.md
 
-# Perk System Cleanup
+# Character Progression
 
+- Need an unlock system for perks and spells
 
-
-
-
-- Need a perk unlock system. Should be designed side by side with spell unlock system
 
 # Future AI cleanup
 
@@ -26,7 +23,7 @@
 
 # Spells
 
-- Leader can select from 1 of n spells on level up. Also can select from perks. Either or choice
+
 - Consider a different mana regeneration system. Currently, mana is regenerated after combat. Maybe regenerate it turn by turn, or regenerate it from attacking
 
 # Bug Fixes

@@ -124,6 +124,9 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 	actionState := common.GetComponentType[*combatstate.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
 	movementRange := actionState.MovementRemaining
 
+	// Zone of Control: cap movement to 1 if adjacent to an enemy squad
+	movementRange = combatstate.GetEffectiveMovementRange(squadID, movementRange, ms.manager)
+
 	if movementRange <= 0 {
 		return []coords.LogicalPosition{}
 	}

@@ -458,3 +458,186 @@ func TestBonusAttackFlag_ConsumesWithoutMarkingActed(t *testing.T) {
 		t.Error("HasActed should be true after normal markSquadAsActed")
 	}
 }
+
+// ========================================
+// ZONE OF CONTROL TESTS
+// ========================================
+
+// setupZoCTest creates two opposing factions with one squad each at the given positions.
+// Returns manager, cache, faction manager, faction IDs, squad IDs.
+func setupZoCTest(t *testing.T, pos1, pos2 coords.LogicalPosition) (
+	*common.EntityManager,
+	*combatstate.CombatQueryCache,
+	ecs.EntityID, ecs.EntityID,
+	ecs.EntityID, ecs.EntityID,
+) {
+	t.Helper()
+	manager := CreateTestCombatManager()
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
+
+	playerFaction := fm.CreateCombatFaction("Player", true)
+	enemyFaction := fm.CreateCombatFaction("Enemy", false)
+
+	playerSquad := CreateTestSquad(manager, "Player Squad", 3)
+	enemySquad := CreateTestSquad(manager, "Enemy Squad", 3)
+
+	fm.AddSquadToFaction(playerFaction, playerSquad, pos1)
+	fm.AddSquadToFaction(enemyFaction, enemySquad, pos2)
+
+	turnMgr := NewTurnManager(manager, cache)
+	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
+
+	return manager, cache, playerFaction, enemyFaction, playerSquad, enemySquad
+}
+
+func TestIsInZoneOfControl_AdjacentEnemy(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 5, Y: 5}
+	pos2 := coords.LogicalPosition{X: 6, Y: 5} // Distance 1
+	manager, _, _, _, playerSquad, enemySquad := setupZoCTest(t, pos1, pos2)
+
+	if !combatstate.IsInZoneOfControl(playerSquad, manager) {
+		t.Error("Player squad should be in ZoC (adjacent enemy)")
+	}
+	if !combatstate.IsInZoneOfControl(enemySquad, manager) {
+		t.Error("Enemy squad should be in ZoC (adjacent player)")
+	}
+}
+
+func TestIsInZoneOfControl_NoAdjacentEnemy(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 5, Y: 5}
+	pos2 := coords.LogicalPosition{X: 8, Y: 5} // Distance 3
+	manager, _, _, _, playerSquad, enemySquad := setupZoCTest(t, pos1, pos2)
+
+	if combatstate.IsInZoneOfControl(playerSquad, manager) {
+		t.Error("Player squad should NOT be in ZoC (enemy at distance 3)")
+	}
+	if combatstate.IsInZoneOfControl(enemySquad, manager) {
+		t.Error("Enemy squad should NOT be in ZoC (player at distance 3)")
+	}
+}
+
+func TestIsInZoneOfControl_DiagonalEnemy(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 5, Y: 5}
+	pos2 := coords.LogicalPosition{X: 6, Y: 6} // Diagonal, Chebyshev distance 1
+	manager, _, _, _, playerSquad, enemySquad := setupZoCTest(t, pos1, pos2)
+
+	if !combatstate.IsInZoneOfControl(playerSquad, manager) {
+		t.Error("Player squad should be in ZoC (diagonal enemy at Chebyshev distance 1)")
+	}
+	if !combatstate.IsInZoneOfControl(enemySquad, manager) {
+		t.Error("Enemy squad should be in ZoC (diagonal player at Chebyshev distance 1)")
+	}
+}
+
+func TestIsInZoneOfControl_FriendlyAdjacent(t *testing.T) {
+	manager := CreateTestCombatManager()
+	cache := combatstate.NewCombatQueryCache(manager)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
+
+	playerFaction := fm.CreateCombatFaction("Player", true)
+	squad1 := CreateTestSquad(manager, "Squad 1", 3)
+	squad2 := CreateTestSquad(manager, "Squad 2", 3)
+
+	fm.AddSquadToFaction(playerFaction, squad1, coords.LogicalPosition{X: 5, Y: 5})
+	fm.AddSquadToFaction(playerFaction, squad2, coords.LogicalPosition{X: 6, Y: 5})
+
+	turnMgr := NewTurnManager(manager, cache)
+	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction})
+
+	if combatstate.IsInZoneOfControl(squad1, manager) {
+		t.Error("Squad should NOT be in ZoC from friendly adjacent squad")
+	}
+}
+
+func TestIsInZoneOfControl_DestroyedSquadIgnored(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 5, Y: 5}
+	pos2 := coords.LogicalPosition{X: 6, Y: 5}
+	manager, _, _, _, playerSquad, enemySquad := setupZoCTest(t, pos1, pos2)
+
+	// Destroy the enemy squad by killing all units
+	unitIDs := squadcore.GetUnitIDsInSquad(enemySquad, manager)
+	for _, unitID := range unitIDs {
+		unit := manager.FindEntityByID(unitID)
+		if unit == nil {
+			continue
+		}
+		attr := common.GetComponentType[*common.Attributes](unit, common.AttributeComponent)
+		if attr != nil {
+			attr.CurrentHealth = 0
+		}
+	}
+
+	if combatstate.IsInZoneOfControl(playerSquad, manager) {
+		t.Error("Player squad should NOT be in ZoC from destroyed enemy squad")
+	}
+}
+
+func TestGetValidMovementTiles_InZoC(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 10, Y: 10}
+	pos2 := coords.LogicalPosition{X: 11, Y: 10} // Adjacent enemy
+	manager, cache, _, _, playerSquad, _ := setupZoCTest(t, pos1, pos2)
+
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
+	tiles := moveSys.GetValidMovementTiles(playerSquad)
+
+	// All returned tiles should be within Chebyshev distance 1 of the squad position
+	for _, tile := range tiles {
+		distance := pos1.ChebyshevDistance(&tile)
+		if distance > 1 {
+			t.Errorf("Tile (%d,%d) is at distance %d, but ZoC should cap movement to 1",
+				tile.X, tile.Y, distance)
+		}
+	}
+
+	// Should have at least some valid tiles (not zero)
+	if len(tiles) == 0 {
+		t.Error("Expected at least some valid movement tiles even in ZoC")
+	}
+}
+
+func TestGetValidMovementTiles_NotInZoC(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 10, Y: 10}
+	pos2 := coords.LogicalPosition{X: 20, Y: 20} // Far away enemy
+	manager, cache, _, _, playerSquad, _ := setupZoCTest(t, pos1, pos2)
+
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
+	tiles := moveSys.GetValidMovementTiles(playerSquad)
+
+	// Should have tiles beyond distance 1 (squad speed is 5)
+	hasDistantTile := false
+	for _, tile := range tiles {
+		distance := pos1.ChebyshevDistance(&tile)
+		if distance > 1 {
+			hasDistantTile = true
+			break
+		}
+	}
+
+	if !hasDistantTile {
+		t.Error("Expected tiles beyond distance 1 when not in ZoC (squad has speed 5)")
+	}
+}
+
+func TestZoC_MutualEffect(t *testing.T) {
+	pos1 := coords.LogicalPosition{X: 10, Y: 10}
+	pos2 := coords.LogicalPosition{X: 11, Y: 10}
+	manager, cache, _, _, playerSquad, enemySquad := setupZoCTest(t, pos1, pos2)
+
+	moveSys := NewMovementSystem(manager, common.GlobalPositionSystem, cache)
+
+	playerTiles := moveSys.GetValidMovementTiles(playerSquad)
+	enemyTiles := moveSys.GetValidMovementTiles(enemySquad)
+
+	// Both should be capped to distance 1
+	for _, tile := range playerTiles {
+		if pos1.ChebyshevDistance(&tile) > 1 {
+			t.Error("Player movement should be capped to 1 in mutual ZoC")
+		}
+	}
+	for _, tile := range enemyTiles {
+		if pos2.ChebyshevDistance(&tile) > 1 {
+			t.Error("Enemy movement should be capped to 1 in mutual ZoC")
+		}
+	}
+}

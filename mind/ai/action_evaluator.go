@@ -156,25 +156,26 @@ func (ae *ActionEvaluator) evaluateMovement() []ScoredAction {
 	return actions
 }
 
-// getValidMovementTiles returns all tiles the squad can actually move to
-// Uses ActionContext.MovementSystem to validate tiles (occupied, blocked, etc)
+// getValidMovementTiles returns all tiles the squad can actually move to.
+// Uses remaining movement (not base speed) and respects Zone of Control.
 func (ae *ActionEvaluator) getValidMovementTiles() []coords.LogicalPosition {
 	var tiles []coords.LogicalPosition
 
-	moveSpeed := squadcore.GetSquadMovementSpeed(ae.ctx.SquadID, ae.ctx.Manager)
+	// Use remaining movement, not base speed (fixes bug where AI ignored partial movement/artifacts)
+	moveRange := ae.ctx.ActionState.MovementRemaining
 
-	for dx := -moveSpeed; dx <= moveSpeed; dx++ {
-		for dy := -moveSpeed; dy <= moveSpeed; dy++ {
+	// Zone of Control: cap movement to 1 if adjacent to an enemy squad
+	moveRange = combatstate.GetEffectiveMovementRange(ae.ctx.SquadID, moveRange, ae.ctx.Manager)
+
+	for dx := -moveRange; dx <= moveRange; dx++ {
+		for dy := -moveRange; dy <= moveRange; dy++ {
 			pos := coords.LogicalPosition{
 				X: ae.ctx.CurrentPos.X + dx,
 				Y: ae.ctx.CurrentPos.Y + dy,
 			}
 
 			distance := ae.ctx.CurrentPos.ChebyshevDistance(&pos)
-			if distance > 0 && distance <= moveSpeed {
-				// CRITICAL: Validate tile is actually movable (not occupied/blocked)
-				// Without this check, AI generates invalid movement actions that fail,
-				// causing it to break out of action loop and stop moving
+			if distance > 0 && distance <= moveRange {
 				if ae.ctx.MovementSystem.CanMoveTo(ae.ctx.SquadID, pos) {
 					tiles = append(tiles, pos)
 				}
@@ -204,7 +205,39 @@ func (ae *ActionEvaluator) scoreMovementPosition(pos coords.LogicalPosition) flo
 	approachBonus := ae.scoreApproachEnemy(pos)
 	score += approachBonus
 
+	// Zone of Control awareness: penalize positions that would restrict movement next turn
+	score += ae.scoreZoCRisk(pos)
+
 	return score
+}
+
+// scoreZoCRisk penalizes positions adjacent to enemies (being in ZoC next turn means
+// only 1 tile of movement). Tanks accept ZoC, DPS avoid moderately, Support avoids strongly.
+func (ae *ActionEvaluator) scoreZoCRisk(pos coords.LogicalPosition) float64 {
+	nearbyEntities := common.GlobalPositionSystem.GetEntitiesInRadius(pos, 1)
+	for _, entityID := range nearbyEntities {
+		if entityID == ae.ctx.SquadID {
+			continue
+		}
+		if !combatstate.IsSquad(entityID, ae.ctx.Manager) {
+			continue
+		}
+		entityFaction := combatstate.GetSquadFaction(entityID, ae.ctx.Manager)
+		if entityFaction != 0 && entityFaction != ae.ctx.FactionID {
+			// Adjacent enemy found at this candidate position
+			switch ae.ctx.SquadRole {
+			case unitdefs.RoleTank:
+				return 0.0
+			case unitdefs.RoleDPS:
+				return -5.0
+			case unitdefs.RoleSupport:
+				return -15.0
+			default:
+				return -3.0
+			}
+		}
+	}
+	return 0.0
 }
 
 // scoreApproachEnemy rewards moving closer to enemies for offensive roles
