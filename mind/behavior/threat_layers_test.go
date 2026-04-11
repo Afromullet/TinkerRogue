@@ -23,7 +23,6 @@ func createTestCombatManager() *common.EntityManager {
 	if err := squadcore.InitializeSquadData(manager); err != nil {
 		panic(fmt.Sprintf("Failed to initialize squad data: %v", err))
 	}
-	common.InitializeSubsystems(manager)
 	return manager
 }
 
