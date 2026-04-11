@@ -17,7 +17,7 @@ type SpellCastingHandler struct {
 	deps *SpellCastingDeps
 
 	// AoE targeting state
-	activeShape graphics.TileBasedShape
+	activeShape *graphics.BaseShape
 	prevIndices []int // for clearing highlights
 }
 
@@ -223,19 +223,15 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 
 // RotateShapeLeft rotates the AoE shape counterclockwise.
 func (h *SpellCastingHandler) RotateShapeLeft() {
-	if baseShape, ok := h.activeShape.(*graphics.BaseShape); ok {
-		if baseShape.Direction != nil {
-			*baseShape.Direction = graphics.RotateLeft(*baseShape.Direction)
-		}
+	if h.activeShape != nil && h.activeShape.Direction != nil {
+		*h.activeShape.Direction = graphics.RotateLeft(*h.activeShape.Direction)
 	}
 }
 
 // RotateShapeRight rotates the AoE shape clockwise.
 func (h *SpellCastingHandler) RotateShapeRight() {
-	if baseShape, ok := h.activeShape.(*graphics.BaseShape); ok {
-		if baseShape.Direction != nil {
-			*baseShape.Direction = graphics.RotateRight(*baseShape.Direction)
-		}
+	if h.activeShape != nil && h.activeShape.Direction != nil {
+		*h.activeShape.Direction = graphics.RotateRight(*h.activeShape.Direction)
 	}
 }
 
@@ -248,8 +244,8 @@ func (h *SpellCastingHandler) ClearOverlay() {
 	h.prevIndices = nil
 }
 
-// createAoEShape creates a TileBasedShape from the spell's shape definition.
-func createAoEShape(spell *templates.SpellDefinition) graphics.TileBasedShape {
+// createAoEShape creates a BaseShape from the spell's shape definition.
+func createAoEShape(spell *templates.SpellDefinition) *graphics.BaseShape {
 	if spell.Shape == nil {
 		return graphics.CreateShapeFromConfig(nil)
 	}

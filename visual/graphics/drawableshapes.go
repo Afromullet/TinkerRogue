@@ -79,9 +79,9 @@ type ShapeConfig struct {
 	Radius int
 }
 
-// CreateShapeFromConfig creates a TileBasedShape from a ShapeConfig.
+// CreateShapeFromConfig creates a BaseShape from a ShapeConfig.
 // Returns a default 1x1 square if config is nil.
-func CreateShapeFromConfig(cfg *ShapeConfig) TileBasedShape {
+func CreateShapeFromConfig(cfg *ShapeConfig) *BaseShape {
 	if cfg == nil {
 		return NewSquare(0, 0, SmallShape)
 	}
@@ -141,17 +141,8 @@ type BaseShape struct {
 	SizeCategory ShapeSize
 }
 
-// TileBasedShape interface - maintains compatibility with existing code
-type TileBasedShape interface {
-	GetIndices() []int
-	UpdatePosition(pixelX, pixelY int)
-	StartPositionPixels() (int, int)
-	GetDirection() ShapeDirection
-	CanRotate() bool
-}
-
 // ============================================================================
-// INTERFACE IMPLEMENTATION
+// SHAPE METHODS
 // ============================================================================
 
 func (s *BaseShape) GetIndices() []int {

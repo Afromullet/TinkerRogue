@@ -12,11 +12,11 @@ var VXHandler VisualEffectHandler
 // Applies the Visual Effect to the positions at the indices
 // The same effect is drawn at all positions, which means when one is completed, all are completed
 type VisualEffectArea struct {
-	shape      graphics.TileBasedShape
+	shape      *graphics.BaseShape
 	visEffects []VisualEffect
 }
 
-func NewVisualEffectArea(centerX, centerY int, shape graphics.TileBasedShape, vx VisualEffect) VisualEffectArea {
+func NewVisualEffectArea(centerX, centerY int, shape *graphics.BaseShape, vx VisualEffect) VisualEffectArea {
 	indices := shape.GetIndices()
 	visEffects := make([]VisualEffect, 0)
 
