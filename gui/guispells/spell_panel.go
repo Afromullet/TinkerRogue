@@ -113,11 +113,15 @@ func (sp *SpellPanelController) Refresh() {
 // Show validates preconditions, refreshes data, and shows the panel.
 func (sp *SpellPanelController) Show() {
 	if !sp.deps.Handler.CanSelectedSquadCast() {
+		if reason := sp.deps.Handler.CastBlockReason(); reason != "" {
+			fmt.Printf("[Spells] Cannot cast: %s\n", reason)
+		}
 		return
 	}
 
 	allSpells := sp.deps.Handler.GetAllSpells()
 	if len(allSpells) == 0 {
+		fmt.Println("[Spells] Cannot cast: no spells available")
 		return
 	}
 

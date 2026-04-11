@@ -101,13 +101,20 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 	// Initialize action map for semantic keybindings
 	cm.actionMap = framework.DefaultCombatBindings()
 
-	// Initialize sub-menu controller before building panels (panels register with it)
-	cm.subMenus = framework.NewSubMenuController()
+	// Initialize sub-menu controller before building panels (panels register with it).
+	// Pass RootContainer so hidden panels are fully removed from the widget tree,
+	// preventing their ScrollContainers from blocking input on overlapping panels.
+	cm.subMenus = framework.NewSubMenuController(cm.RootContainer)
 
 	// Build panels using registry
 	if err := cm.buildPanelsFromRegistry(); err != nil {
 		return err
 	}
+
+	// Remove initially-hidden sub-menu panels from widget tree.
+	// BuildPanels adds all panels to RootContainer; CloseAll removes the
+	// sub-menu panels so they don't block input until explicitly shown.
+	cm.subMenus.CloseAll()
 
 	// Build action button clusters (needs callbacks, so done separately)
 	cm.RootContainer.AddChild(cm.buildContextActions())

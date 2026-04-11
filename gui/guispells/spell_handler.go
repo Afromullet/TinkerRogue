@@ -131,6 +131,24 @@ func (h *SpellCastingHandler) CanSelectedSquadCast() bool {
 	return true
 }
 
+// CastBlockReason returns a human-readable reason why the selected squad cannot cast,
+// or an empty string if casting is allowed.
+func (h *SpellCastingHandler) CastBlockReason() string {
+	squadID := h.deps.BattleState.SelectedSquadID
+	if squadID == 0 {
+		return "No squad selected"
+	}
+	book := spells.GetSpellBook(squadID, h.deps.ECSManager)
+	if book == nil || len(book.SpellIDs) == 0 {
+		return "Squad has no spells"
+	}
+	actionState := h.deps.Queries.CombatCache.FindActionStateBySquadID(squadID)
+	if actionState != nil && actionState.HasActed {
+		return "Squad has already acted this turn"
+	}
+	return ""
+}
+
 // --- Targeting ---
 
 // HandleSingleTargetClick processes a click during single-target spell casting.
