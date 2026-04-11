@@ -1,4 +1,4 @@
-package graphics
+package vfx
 
 import (
 	"time"

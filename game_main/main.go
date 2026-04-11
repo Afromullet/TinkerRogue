@@ -19,6 +19,7 @@ import (
 	"game_main/visual/graphics"
 	"game_main/visual/maprender"
 	"game_main/visual/rendering"
+	"game_main/visual/vfx"
 	"game_main/world/coords"
 	"game_main/world/worldmapcore"
 	"log"
@@ -103,7 +104,7 @@ func (g *Game) Update() error {
 		return err
 	}
 
-	graphics.VXHandler.UpdateVisualEffects()
+	vfx.VXHandler.UpdateVisualEffects()
 
 	HandleInput(g)
 
@@ -135,7 +136,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
 		}
 
-		graphics.VXHandler.DrawVisualEffects(screen)
+		vfx.VXHandler.DrawVisualEffects(screen)
 	}
 
 	// Phase 2: EbitenUI rendering (modal UI via coordinator)

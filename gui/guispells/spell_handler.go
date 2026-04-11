@@ -5,6 +5,7 @@ import (
 	"game_main/tactical/powers/spells"
 	"game_main/templates"
 	"game_main/visual/graphics"
+	"game_main/visual/vfx"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -324,9 +325,9 @@ func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.Entit
 		pixelY := targetPos.Y * graphics.ScreenInfo.TileSize
 		shape := createAoEShape(spell)
 		shape.UpdatePosition(pixelX, pixelY)
-		vx := graphics.CreateVisualEffectByType(spell.VXType, 0, 0, spell.VXDuration)
-		area := graphics.NewVisualEffectArea(playerPos.X, playerPos.Y, shape, vx)
-		graphics.AddVXArea(area)
+		vx := vfx.CreateVisualEffectByType(spell.VXType, 0, 0, spell.VXDuration)
+		area := vfx.NewVisualEffectArea(playerPos.X, playerPos.Y, shape, vx)
+		vfx.AddVXArea(area)
 		return
 	}
 
@@ -339,7 +340,7 @@ func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.Entit
 
 		pos := *squadInfo.Position
 		sx, sy := coords.CoordManager.LogicalToScreen(pos, playerPos)
-		vx := graphics.CreateVisualEffectByType(spell.VXType, int(sx), int(sy), spell.VXDuration)
-		graphics.AddVX(vx)
+		vx := vfx.CreateVisualEffectByType(spell.VXType, int(sx), int(sy), spell.VXDuration)
+		vfx.AddVX(vx)
 	}
 }

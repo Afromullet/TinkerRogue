@@ -1,7 +1,8 @@
-package graphics
+package vfx
 
 import (
 	"game_main/common"
+	"game_main/visual/graphics"
 	"image/color"
 	"math"
 	"time"
@@ -20,7 +21,7 @@ func (r *ImageRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state Ani
 	}
 
 	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+	opts.GeoM.Scale(state.Scale*float64(graphics.ScreenInfo.ScaleFactor), state.Scale*float64(graphics.ScreenInfo.ScaleFactor))
 	opts.GeoM.Translate(effect.startX+state.OffsetX, effect.startY+state.OffsetY)
 
 	// Apply brightness if set
@@ -51,7 +52,7 @@ func (r *ProjectileRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, stat
 	angle := math.Atan2(r.endY-effect.startY, r.endX-effect.startX)
 
 	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(float64(ScreenInfo.ScaleFactor), float64(ScreenInfo.ScaleFactor))
+	opts.GeoM.Scale(float64(graphics.ScreenInfo.ScaleFactor), float64(graphics.ScreenInfo.ScaleFactor))
 	opts.GeoM.Translate(-float64(effect.img.Bounds().Dx())/2, -float64(effect.img.Bounds().Dy())/2) // Center the image
 	opts.GeoM.Rotate(angle)
 	opts.GeoM.Translate(effect.startX+state.OffsetX, effect.startY+state.OffsetY)
@@ -73,7 +74,7 @@ func (r *CloudRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, state Ani
 
 	// Draw the main cloud image
 	opts := &ebiten.DrawImageOptions{}
-	opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+	opts.GeoM.Scale(state.Scale*float64(graphics.ScreenInfo.ScaleFactor), state.Scale*float64(graphics.ScreenInfo.ScaleFactor))
 
 	// Adjust position to keep the center of the cloud in place
 	adjustedX := effect.startX - (imgWidth * (state.Scale - 1) / 2)
@@ -233,7 +234,7 @@ func (r *ProceduralRenderer) Draw(screen *ebiten.Image, effect *BaseEffect, stat
 		opts := &ebiten.DrawImageOptions{}
 		opts.GeoM.Translate(-radius, -radius) // Center the circle
 		opts.GeoM.Translate(x, y)
-		opts.GeoM.Scale(state.Scale*float64(ScreenInfo.ScaleFactor), state.Scale*float64(ScreenInfo.ScaleFactor))
+		opts.GeoM.Scale(state.Scale*float64(graphics.ScreenInfo.ScaleFactor), state.Scale*float64(graphics.ScreenInfo.ScaleFactor))
 		opts.ColorM.Scale(1, 1, 1, state.Opacity)
 
 		screen.DrawImage(circleImage, opts)

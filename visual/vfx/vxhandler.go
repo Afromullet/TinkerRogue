@@ -1,6 +1,7 @@
-package graphics
+package vfx
 
 import (
+	"game_main/visual/graphics"
 	"game_main/world/coords"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -11,11 +12,11 @@ var VXHandler VisualEffectHandler
 // Applies the Visual Effect to the positions at the indices
 // The same effect is drawn at all positions, which means when one is completed, all are completed
 type VisualEffectArea struct {
-	shape      TileBasedShape
+	shape      graphics.TileBasedShape
 	visEffects []VisualEffect
 }
 
-func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEffect) VisualEffectArea {
+func NewVisualEffectArea(centerX, centerY int, shape graphics.TileBasedShape, vx VisualEffect) VisualEffectArea {
 	indices := shape.GetIndices()
 	visEffects := make([]VisualEffect, 0)
 
