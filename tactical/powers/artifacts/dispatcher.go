@@ -30,11 +30,35 @@ func (d *ArtifactDispatcher) makeBehaviorContext() *BehaviorContext {
 	return NewBehaviorContext(d.manager, d.cache, d.chargeTracker)
 }
 
-// DispatchPostReset fires OnPostReset for all registered behaviors (broadcast).
+// DispatchPostReset fires OnPostReset for equipped behaviors and behaviors with pending effects.
+// Only calls behaviors that are relevant: either equipped on a squad in this faction,
+// or have pending effects queued from a previous activation (e.g., Deadlock Shackles).
 func (d *ArtifactDispatcher) DispatchPostReset(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
 	ctx := d.makeBehaviorContext()
-	for _, b := range AllBehaviors() {
-		b.OnPostReset(ctx, factionID, squadIDs)
+	fired := make(map[string]bool)
+
+	// Fire behaviors equipped on squads in this faction
+	for _, squadID := range squadIDs {
+		for _, b := range GetEquippedBehaviors(squadID, d.manager) {
+			key := b.BehaviorKey()
+			if !fired[key] {
+				fired[key] = true
+				b.OnPostReset(ctx, factionID, squadIDs)
+			}
+		}
+	}
+
+	// Fire behaviors with pending effects (these target enemy squads, not the equipping squad)
+	if d.chargeTracker != nil {
+		for _, key := range d.chargeTracker.PendingBehaviorKeys() {
+			if !fired[key] {
+				b := GetBehavior(key)
+				if b != nil {
+					fired[key] = true
+					b.OnPostReset(ctx, factionID, squadIDs)
+				}
+			}
+		}
 	}
 }
 
@@ -46,7 +70,7 @@ func (d *ArtifactDispatcher) DispatchOnAttackComplete(attackerID, defenderID ecs
 	}
 }
 
-// DispatchOnTurnEnd fires OnTurnEnd for all behaviors and refreshes round charges.
+// DispatchOnTurnEnd fires OnTurnEnd for equipped behaviors and refreshes round charges.
 func (d *ArtifactDispatcher) DispatchOnTurnEnd(round int) {
 	if d.chargeTracker != nil {
 		d.chargeTracker.RefreshRoundCharges()

@@ -41,11 +41,15 @@ type CombatService struct {
 	chargeTracker      *artifacts.ArtifactChargeTracker
 	artifactDispatcher *artifacts.ArtifactDispatcher
 
-	// Post-action callbacks (registered by GUI layer)
-	onAttackComplete []OnAttackCompleteFunc
-	onMoveComplete   []OnMoveCompleteFunc
-	onTurnEnd        []OnTurnEndFunc
-	postResetHooks   []PostResetHookFunc
+	// Power system dispatchers (artifacts + perks)
+	perkDispatcher *perks.SquadPerkDispatcher
+	manager        *common.EntityManager // kept for Fire* methods
+
+	// Optional GUI callbacks for UI updates (cache invalidation, visualization refresh).
+	// Set by CombatMode via Set* methods. Called after power dispatch in Fire* methods.
+	onAttackCompleteGUI func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
+	onMoveCompleteGUI   func(squadID ecs.EntityID)
+	onTurnEndGUI        func(round int)
 }
 
 // NewCombatService creates a new combat service
@@ -60,47 +64,93 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	combatActSystem.SetBattleRecorder(battleRecorder)
 
 	cs := &CombatService{
-		EntityManager:   manager,
-		TurnManager:     turnManager,
-		FactionManager:  combatstate.NewCombatFactionManager(manager, cache),
-		MovementSystem:  movementSystem,
-		CombatCache:     cache,
-		CombatActSystem: combatActSystem,
-		BattleRecorder:  battleRecorder,
+		EntityManager:      manager,
+		TurnManager:        turnManager,
+		FactionManager:     combatstate.NewCombatFactionManager(manager, cache),
+		MovementSystem:     movementSystem,
+		CombatCache:        cache,
+		CombatActSystem:    combatActSystem,
+		BattleRecorder:     battleRecorder,
 		layerEvaluators:    make(map[ecs.EntityID]ThreatLayerEvaluator),
 		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache),
+		manager:            manager,
 	}
 
-	// Wire system hooks to forward to registered callbacks
-	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
-		for _, fn := range cs.onAttackComplete {
-			fn(attackerID, defenderID, result)
-		}
-	})
-
-	movementSystem.SetOnMoveComplete(func(squadID ecs.EntityID) {
-		for _, fn := range cs.onMoveComplete {
-			fn(squadID)
-		}
-	})
-
-	turnManager.SetOnTurnEnd(func(round int) {
-		for _, fn := range cs.onTurnEnd {
-			fn(round)
-		}
-	})
-
-	// Wire post-reset hook to forward to registered callbacks
-	turnManager.SetPostResetHook(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-		for _, fn := range cs.postResetHooks {
-			fn(factionID, squadIDs)
-		}
-	})
-
-	// Register artifact behavior and perk hook dispatch
+	// Set up loggers and perk dispatcher
 	setupPowerDispatch(cs, manager, cache)
 
+	// Wire subsystem hooks directly to Fire* methods (no callback lists).
+	// Execution order within each Fire* method:
+	//   1. Artifact behaviors (e.g., Deadlock Shackles locks before perks run)
+	//   2. Perk hooks (e.g., TurnStart tracking)
+	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+		cs.FireAttackComplete(attackerID, defenderID, result)
+	})
+	movementSystem.SetOnMoveComplete(cs.FireMoveComplete)
+	turnManager.SetOnTurnEnd(cs.FireTurnEnd)
+	turnManager.SetPostResetHook(cs.FirePostReset)
+
 	return cs
+}
+
+// ========================================
+// Power System Dispatch (Artifacts → Perks)
+// ========================================
+
+// SetOnAttackCompleteGUI sets the GUI callback for attack-complete events.
+func (cs *CombatService) SetOnAttackCompleteGUI(fn func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)) {
+	cs.onAttackCompleteGUI = fn
+}
+
+// SetOnMoveCompleteGUI sets the GUI callback for move-complete events.
+func (cs *CombatService) SetOnMoveCompleteGUI(fn func(squadID ecs.EntityID)) {
+	cs.onMoveCompleteGUI = fn
+}
+
+// SetOnTurnEndGUI sets the GUI callback for turn-end events.
+func (cs *CombatService) SetOnTurnEndGUI(fn func(round int)) {
+	cs.onTurnEndGUI = fn
+}
+
+// FirePostReset dispatches post-reset hooks: artifacts first, then perks.
+// Called when a faction's squad actions are reset at turn start.
+func (cs *CombatService) FirePostReset(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
+	cs.artifactDispatcher.DispatchPostReset(factionID, squadIDs)
+	if cs.perkDispatcher != nil {
+		cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.manager)
+	}
+}
+
+// FireAttackComplete dispatches attack-complete hooks: artifacts first, then perks, then GUI.
+func (cs *CombatService) FireAttackComplete(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+	cs.artifactDispatcher.DispatchOnAttackComplete(attackerID, defenderID, result)
+	if cs.perkDispatcher != nil {
+		cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.manager)
+	}
+	if cs.onAttackCompleteGUI != nil {
+		cs.onAttackCompleteGUI(attackerID, defenderID, result)
+	}
+}
+
+// FireTurnEnd dispatches turn-end hooks: artifacts (with charge refresh) first, then perks, then GUI.
+func (cs *CombatService) FireTurnEnd(round int) {
+	cs.artifactDispatcher.DispatchOnTurnEnd(round)
+	if cs.perkDispatcher != nil {
+		cs.perkDispatcher.DispatchRoundEnd(cs.manager)
+	}
+	if cs.onTurnEndGUI != nil {
+		cs.onTurnEndGUI(round)
+	}
+}
+
+// FireMoveComplete dispatches move-complete hooks: perks only, then GUI.
+func (cs *CombatService) FireMoveComplete(squadID ecs.EntityID) {
+	if cs.perkDispatcher != nil {
+		cs.perkDispatcher.DispatchMoveTracking(squadID, cs.manager)
+	}
+	if cs.onMoveCompleteGUI != nil {
+		cs.onMoveCompleteGUI(squadID)
+	}
 }
 
 // GetChargeTracker returns the artifact charge tracker for the current battle.
@@ -301,9 +351,6 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // Enemy squads must be provided by the encounter service for cleanup
 func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	fmt.Println("=== Combat Cleanup Starting ===")
-
-	// Clear registered callbacks (they reference GUI state that's being torn down)
-	cs.ClearCallbacks()
 
 	// Remove all active effects from player units before leaving combat
 	cs.cleanupEffects()

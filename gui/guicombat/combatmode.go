@@ -370,10 +370,9 @@ func (cm *CombatMode) initializeUpdateComponents() {
 	)
 }
 
-// registerCombatCallbacks registers cache invalidation callbacks on the combat service.
-// Must be called on each combat start because CleanupCombat clears all callbacks.
+// registerCombatCallbacks sets GUI callbacks on the combat service for cache invalidation.
 func (cm *CombatMode) registerCombatCallbacks() {
-	cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+	cm.combatService.SetOnAttackCompleteGUI(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
 		if result.AttackerDestroyed {
@@ -384,11 +383,11 @@ func (cm *CombatMode) registerCombatCallbacks() {
 		}
 	})
 
-	cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+	cm.combatService.SetOnMoveCompleteGUI(func(squadID ecs.EntityID) {
 		cm.Queries.MarkSquadDirty(squadID)
 	})
 
-	cm.combatService.RegisterOnTurnEnd(func(round int) {
+	cm.combatService.SetOnTurnEndGUI(func(round int) {
 		cm.Queries.MarkAllSquadsDirty()
 		cm.visualization.UpdateThreatManagers()
 		cm.visualization.UpdateThreatEvaluator(round)

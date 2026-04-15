@@ -80,6 +80,19 @@ func (ct *ArtifactChargeTracker) HasPendingEffects() bool {
 	return len(ct.pendingEffects) > 0
 }
 
+// PendingBehaviorKeys returns the unique behavior keys that have pending effects.
+func (ct *ArtifactChargeTracker) PendingBehaviorKeys() []string {
+	seen := make(map[string]bool)
+	var keys []string
+	for _, pe := range ct.pendingEffects {
+		if !seen[pe.Behavior] {
+			seen[pe.Behavior] = true
+			keys = append(keys, pe.Behavior)
+		}
+	}
+	return keys
+}
+
 // PendingEffectCount returns the number of pending effects queued.
 func (ct *ArtifactChargeTracker) PendingEffectCount() int {
 	return len(ct.pendingEffects)
