@@ -2,6 +2,7 @@ package perks
 
 import (
 	"game_main/common"
+	"game_main/tactical/powers/powercore"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -50,23 +51,24 @@ func GetRoundState(squadID ecs.EntityID, manager *common.EntityManager) *PerkRou
 }
 
 // buildHookContext constructs a HookContext with the round state for the specified owner squad.
-// Returns nil if the owner squad has no PerkRoundState.
-func buildHookContext(ownerSquadID ecs.EntityID, manager *common.EntityManager) *HookContext {
+// Returns nil if the owner squad has no PerkRoundState. The logger is threaded
+// through the embedded PowerContext so perk activations can log via ctx.LogPerk.
+func buildHookContext(ownerSquadID ecs.EntityID, manager *common.EntityManager, logger powercore.PowerLogger) *HookContext {
 	roundState := GetRoundState(ownerSquadID, manager)
 	if roundState == nil {
 		return nil
 	}
 	return &HookContext{
-		RoundState: roundState,
-		Manager:    manager,
+		PowerContext: powercore.PowerContext{Manager: manager, Logger: logger},
+		RoundState:   roundState,
 	}
 }
 
 // buildCombatContext constructs a HookContext with attacker/defender fields populated.
 // ownerSquadID determines whose perks will be iterated.
 func buildCombatContext(ownerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	manager *common.EntityManager) *HookContext {
-	ctx := buildHookContext(ownerSquadID, manager)
+	manager *common.EntityManager, logger powercore.PowerLogger) *HookContext {
+	ctx := buildHookContext(ownerSquadID, manager, logger)
 	if ctx == nil {
 		return nil
 	}

@@ -5,6 +5,7 @@ import (
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
+	"game_main/tactical/powers/powercore"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 	testfx "game_main/testing"
@@ -420,7 +421,7 @@ func TestActivateTwinStrike(t *testing.T) {
 	actionState.HasActed = true
 
 	charges := NewArtifactChargeTracker()
-	ctx := NewBehaviorContext(manager, cache, charges)
+	ctx := NewBehaviorContext(powercore.NewPowerContext(manager, cache, 0, nil), charges)
 
 	err := ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err != nil {
@@ -458,7 +459,7 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 
 	// Squad has NOT attacked yet — twin_strike should fail
 	charges := NewArtifactChargeTracker()
-	ctx := NewBehaviorContext(manager, cache, charges)
+	ctx := NewBehaviorContext(powercore.NewPowerContext(manager, cache, 0, nil), charges)
 
 	err := ActivateArtifact(BehaviorTwinStrike, squadID, ctx)
 	if err == nil {
@@ -471,7 +472,7 @@ func TestActivateTwinStrike_NotYetAttacked(t *testing.T) {
 
 func TestActivateSaboteursHourglass(t *testing.T) {
 	charges := NewArtifactChargeTracker()
-	ctx := NewBehaviorContext(nil, nil, charges)
+	ctx := NewBehaviorContext(powercore.NewPowerContext(nil, nil, 0, nil), charges)
 
 	err := ActivateArtifact(BehaviorSaboteurWsHourglass, 0, ctx)
 	if err != nil {
@@ -510,7 +511,7 @@ func setupCombatContext(manager *common.EntityManager, squadName string, unitCou
 	squadID = createTestSquadWithUnits(manager, squadName, unitCount)
 	fm.AddSquadToFaction(factionID, squadID, pos)
 	charges = NewArtifactChargeTracker()
-	ctx = NewBehaviorContext(manager, cache, charges)
+	ctx = NewBehaviorContext(powercore.NewPowerContext(manager, cache, 0, nil), charges)
 	return
 }
 
@@ -534,7 +535,7 @@ func TestDeadlockShackles_SkipsActivation(t *testing.T) {
 	turnMgr.InitializeCombat([]ecs.EntityID{playerFaction, enemyFaction})
 
 	charges := NewArtifactChargeTracker()
-	ctx := NewBehaviorContext(manager, cache, charges)
+	ctx := NewBehaviorContext(powercore.NewPowerContext(manager, cache, 0, nil), charges)
 
 	// Activate Deadlock Shackles targeting enemy squad
 	err := ActivateArtifact(BehaviorDeadlockShackles, enemySquad, ctx)
@@ -602,7 +603,7 @@ func TestChainOfCommand_PassFullAction(t *testing.T) {
 	targetState.MovementRemaining = 0
 
 	charges := NewArtifactChargeTracker()
-	ctx := NewBehaviorContext(manager, cache, charges)
+	ctx := NewBehaviorContext(powercore.NewPowerContext(manager, cache, 0, nil), charges)
 
 	err := ActivateArtifact(BehaviorChainOfCommand, targetSquad, ctx)
 	if err != nil {

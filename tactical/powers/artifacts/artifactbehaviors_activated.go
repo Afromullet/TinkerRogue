@@ -83,14 +83,14 @@ func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs
 	if err := activateWithPending(ctx, BehaviorDeadlockShackles, ChargeOncePerBattle, targetSquadID); err != nil {
 		return err
 	}
-	logArtifactActivation(BehaviorDeadlockShackles, targetSquadID, "activated")
+	ctx.Log(BehaviorDeadlockShackles, targetSquadID, "activated")
 	return nil
 }
 
 func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
 	applyPendingToTargets(ctx, BehaviorDeadlockShackles, squadIDs, func(_ *combatstate.ActionStateData, sid ecs.EntityID) {
 		ctx.SetSquadLocked(sid)
-		logArtifactActivation(BehaviorDeadlockShackles, sid, "squad fully locked this turn")
+		ctx.Log(BehaviorDeadlockShackles, sid, "squad fully locked this turn")
 	})
 }
 
@@ -152,7 +152,7 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 	ctx.ResetSquadActions(targetSquadID, squadSpeed)
 
 	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
-	logArtifactActivation(BehaviorChainOfCommand, sourceSquadID, fmt.Sprintf("passes full action to squad %d", targetSquadID))
+	ctx.Log(BehaviorChainOfCommand, sourceSquadID, fmt.Sprintf("passes full action to squad %d", targetSquadID))
 	return nil
 }
 
@@ -181,6 +181,6 @@ func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entity
 	actionState.HasMoved = false
 	actionState.MovementRemaining = squadSpeed
 	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
-	logArtifactActivation(BehaviorEchoDrums, targetSquadID, fmt.Sprintf("gets bonus movement phase (speed %d)", squadSpeed))
+	ctx.Log(BehaviorEchoDrums, targetSquadID, fmt.Sprintf("gets bonus movement phase (speed %d)", squadSpeed))
 	return nil
 }

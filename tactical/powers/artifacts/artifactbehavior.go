@@ -2,9 +2,9 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/common"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combattypes"
+	"game_main/tactical/powers/powercore"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 	"sort"
@@ -23,30 +23,34 @@ const (
 	BehaviorDeadlockShackles    = "deadlock_shackles"   // Deadlock Shackles
 )
 
-// BehaviorContext bundles runtime dependencies for behavior hooks.
+// BehaviorContext bundles runtime dependencies for artifact behavior hooks.
+// It embeds powercore.PowerContext by value so the shared fields (Manager,
+// Cache, RoundNumber, Logger) live in one place; ChargeTracker is the
+// artifact-specific extension. Value embedding keeps zero-value contexts
+// usable in tests without additional nil checks.
 type BehaviorContext struct {
-	Manager       *common.EntityManager
-	cache         *combatstate.CombatQueryCache
+	powercore.PowerContext
 	ChargeTracker *ArtifactChargeTracker
 }
 
-// NewBehaviorContext creates a BehaviorContext with the given dependencies.
-func NewBehaviorContext(manager *common.EntityManager, cache *combatstate.CombatQueryCache, chargeTracker *ArtifactChargeTracker) *BehaviorContext {
-	return &BehaviorContext{
-		Manager:       manager,
-		cache:         cache,
-		ChargeTracker: chargeTracker,
+// NewBehaviorContext wraps an existing PowerContext with artifact-specific state.
+// A nil power argument is treated as a zero-valued PowerContext.
+func NewBehaviorContext(power *powercore.PowerContext, chargeTracker *ArtifactChargeTracker) *BehaviorContext {
+	ctx := &BehaviorContext{ChargeTracker: chargeTracker}
+	if power != nil {
+		ctx.PowerContext = *power
 	}
+	return ctx
 }
 
 // GetActionState returns the ActionStateData for the given squad, or nil if not found.
 func (ctx *BehaviorContext) GetActionState(squadID ecs.EntityID) *combatstate.ActionStateData {
-	return ctx.cache.FindActionStateBySquadID(squadID)
+	return ctx.Cache.FindActionStateBySquadID(squadID)
 }
 
 // SetSquadLocked fully locks a squad so it cannot move or act this turn.
 func (ctx *BehaviorContext) SetSquadLocked(squadID ecs.EntityID) {
-	actionState := ctx.cache.FindActionStateBySquadID(squadID)
+	actionState := ctx.Cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
 	}
@@ -57,7 +61,7 @@ func (ctx *BehaviorContext) SetSquadLocked(squadID ecs.EntityID) {
 
 // ResetSquadActions fully resets a squad's action state with the given movement speed.
 func (ctx *BehaviorContext) ResetSquadActions(squadID ecs.EntityID, speed int) {
-	actionState := ctx.cache.FindActionStateBySquadID(squadID)
+	actionState := ctx.Cache.FindActionStateBySquadID(squadID)
 	if actionState == nil {
 		return
 	}
@@ -127,23 +131,6 @@ func (BaseBehavior) Activate(*BehaviorContext, ecs.EntityID) error {
 	return fmt.Errorf("not player-activated")
 }
 
-// ArtifactLogger is called when an artifact activates, for combat log feedback.
-type ArtifactLogger func(behaviorKey string, squadID ecs.EntityID, message string)
-
-var artifactLogger ArtifactLogger
-
-// SetArtifactLogger sets the callback for artifact activation messages.
-func SetArtifactLogger(fn ArtifactLogger) {
-	artifactLogger = fn
-}
-
-// logArtifactActivation logs an artifact activation event if a logger is set.
-func logArtifactActivation(behaviorKey string, squadID ecs.EntityID, message string) {
-	if artifactLogger != nil {
-		artifactLogger(behaviorKey, squadID, message)
-	}
-}
-
 // Registry (same pattern as worldmap/generator.go)
 var behaviorRegistry = map[string]ArtifactBehavior{}
 
@@ -155,6 +142,14 @@ func RegisterBehavior(b ArtifactBehavior) {
 // GetBehavior returns the behavior for the given key, or nil.
 func GetBehavior(key string) ArtifactBehavior {
 	return behaviorRegistry[key]
+}
+
+// IsRegisteredBehavior reports whether the given key names a registered
+// artifact behavior. Used by the combat log to route messages to the
+// [GEAR] prefix vs. the default perk prefix.
+func IsRegisteredBehavior(key string) bool {
+	_, ok := behaviorRegistry[key]
+	return ok
 }
 
 // AllBehaviors returns all registered behaviors in deterministic order.

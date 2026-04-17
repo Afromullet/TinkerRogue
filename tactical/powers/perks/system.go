@@ -3,6 +3,7 @@ package perks
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/powers/powercore"
 
 	"github.com/bytearena/ecs"
 )
@@ -133,17 +134,17 @@ func ResetPerkRoundStateRound(s *PerkRoundState) {
 // HOOK RUNNER FUNCTIONS
 // ========================================
 
-// RunTurnStartHooks runs turn-start hooks for a squad.
+// RunTurnStartHooks runs turn-start hooks for a squad. The logger is threaded
+// through HookContext so perks can log activations via ctx.LogPerk.
 func RunTurnStartHooks(squadID ecs.EntityID, roundNumber int,
-	roundState *PerkRoundState, manager *common.EntityManager) {
+	roundState *PerkRoundState, manager *common.EntityManager, logger powercore.PowerLogger) {
 	if roundState == nil {
 		return
 	}
 	ctx := &HookContext{
-		SquadID:     squadID,
-		RoundNumber: roundNumber,
-		RoundState:  roundState,
-		Manager:     manager,
+		PowerContext: powercore.PowerContext{Manager: manager, RoundNumber: roundNumber, Logger: logger},
+		SquadID:      squadID,
+		RoundState:   roundState,
 	}
 	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
 		behavior.TurnStart(ctx)

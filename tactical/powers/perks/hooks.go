@@ -1,25 +1,31 @@
 package perks
 
 import (
-	"game_main/common"
 	"game_main/tactical/combat/combattypes"
+	"game_main/tactical/powers/powercore"
 
 	"github.com/bytearena/ecs"
 )
 
 // HookContext bundles common parameters passed to all perk hooks.
-// Some fields may be zero-valued depending on the hook type (e.g., TurnStart has no attacker).
+// It embeds powercore.PowerContext by value so Manager, Cache, RoundNumber,
+// and Logger come from one shared definition. Perk-specific fields
+// (attacker/defender identities, damage amount, RoundState) stay on this
+// struct. Value embedding keeps zero-value contexts usable in tests.
+//
+// Some fields may be zero-valued depending on the hook type (e.g. TurnStart
+// has no attacker/defender).
 type HookContext struct {
+	powercore.PowerContext
+
 	AttackerID      ecs.EntityID
 	DefenderID      ecs.EntityID
 	AttackerSquadID ecs.EntityID
 	DefenderSquadID ecs.EntityID
 	SquadID         ecs.EntityID // The squad that owns the perk (used by TurnStart, DeathOverride)
 	UnitID          ecs.EntityID // Specific unit (used by DeathOverride, DamageRedirect)
-	RoundNumber     int          // Current round (used by TurnStart)
 	DamageAmount    int          // Incoming damage (used by DamageRedirect)
 	RoundState      *PerkRoundState
-	Manager         *common.EntityManager
 }
 
 // PerkBehavior defines the contract for all perk implementations.
@@ -57,21 +63,11 @@ func (BasePerkBehavior) TargetOverride(_ *HookContext, defaultTargets []ecs.Enti
 	return defaultTargets
 }
 
-// PerkLogger is called when a perk activates, for combat log feedback.
-type PerkLogger func(perkID PerkID, squadID ecs.EntityID, message string)
-
-var perkLogger PerkLogger
-
-// SetPerkLogger sets the callback for perk activation messages.
-func SetPerkLogger(fn PerkLogger) {
-	perkLogger = fn
-}
-
-// logPerkActivation logs a perk activation event if a logger is set.
-func logPerkActivation(perkID PerkID, squadID ecs.EntityID, message string) {
-	if perkLogger != nil {
-		perkLogger(perkID, squadID, message)
-	}
+// LogPerk routes a perk activation message through the embedded PowerLogger,
+// converting the typed PerkID to the string form expected by PowerLogger.
+// Nil-safe via the underlying ctx.Log.
+func (ctx *HookContext) LogPerk(perkID PerkID, squadID ecs.EntityID, message string) {
+	ctx.Log(string(perkID), squadID, message)
 }
 
 var behaviorRegistry = map[PerkID]PerkBehavior{}

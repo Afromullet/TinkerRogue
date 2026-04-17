@@ -2,8 +2,9 @@ package perks
 
 import (
 	"game_main/common"
-	testfx "game_main/testing"
 	"game_main/tactical/combat/combattypes"
+	"game_main/tactical/powers/powercore"
+	testfx "game_main/testing"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -603,21 +604,21 @@ func TestStalwart_NoEffectWhenMoved(t *testing.T) {
 
 func TestPerkLogger_CalledOnActivation(t *testing.T) {
 	var logged []string
-	SetPerkLogger(func(perkID PerkID, squadID ecs.EntityID, message string) {
-		logged = append(logged, string(perkID)+":"+message)
+	logger := powercore.LoggerFunc(func(source string, squadID ecs.EntityID, message string) {
+		logged = append(logged, source+":"+message)
 	})
-	defer SetPerkLogger(nil)
+	ctx := &HookContext{PowerContext: powercore.PowerContext{Logger: logger}}
 
-	logPerkActivation("test_perk", 1, "test message")
+	ctx.LogPerk("test_perk", 1, "test message")
 	if len(logged) != 1 || logged[0] != "test_perk:test message" {
 		t.Errorf("Expected logger to be called, got %v", logged)
 	}
 }
 
 func TestPerkLogger_NilSafe(t *testing.T) {
-	SetPerkLogger(nil)
+	ctx := &HookContext{} // no Logger set
 	// Should not panic
-	logPerkActivation("test_perk", 1, "test message")
+	ctx.LogPerk("test_perk", 1, "test message")
 }
 
 // ========================================
@@ -719,7 +720,7 @@ func TestMultiPerk_BloodlustPlusOpeningSalvo(t *testing.T) {
 
 	// Now run AttackerDamageMod hooks through the pipeline for both perks
 	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
-	ctx := buildCombatContext(squadID, 100, 200, squadID, ecs.EntityID(999), manager)
+	ctx := buildCombatContext(squadID, 100, 200, squadID, ecs.EntityID(999), manager, nil)
 	if ctx == nil {
 		t.Fatal("Expected combat context")
 	}
@@ -763,7 +764,7 @@ func TestMultiPerk_CounterpunchPlusGrudgeBearer(t *testing.T) {
 
 	// Run combined damage mod hooks
 	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
-	ctx := buildCombatContext(squadID, 100, 200, squadID, enemySquadID, manager)
+	ctx := buildCombatContext(squadID, 100, 200, squadID, enemySquadID, manager, nil)
 
 	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
 		behavior.AttackerDamageMod(ctx, mods)

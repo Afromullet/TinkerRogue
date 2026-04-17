@@ -39,7 +39,7 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 	squadSpeed := ctx.GetSquadSpeed(attackerID)
 	actionState.MovementRemaining = squadSpeed
 	actionState.HasMoved = false
-	logArtifactActivation(BehaviorEngagementChains, attackerID, fmt.Sprintf("gets full move action (speed %d)", squadSpeed))
+	ctx.Log(BehaviorEngagementChains, attackerID, fmt.Sprintf("gets full move action (speed %d)", squadSpeed))
 }
 
 // ========================================
@@ -71,7 +71,7 @@ func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ec
 		if actionState.MovementRemaining < 0 {
 			actionState.MovementRemaining = 0
 		}
-		logArtifactActivation(BehaviorSaboteurWsHourglass, sid, fmt.Sprintf("movement reduced to %d", actionState.MovementRemaining))
+		ctx.Log(BehaviorSaboteurWsHourglass, sid, fmt.Sprintf("movement reduced to %d", actionState.MovementRemaining))
 	}
 }
 
@@ -79,7 +79,7 @@ func (SaboteursHourglassBehavior) Activate(ctx *BehaviorContext, _ ecs.EntityID)
 	if err := activateWithPending(ctx, BehaviorSaboteurWsHourglass, ChargeOncePerBattle, 0); err != nil {
 		return err
 	}
-	logArtifactActivation(BehaviorSaboteurWsHourglass, 0, "activated")
+	ctx.Log(BehaviorSaboteurWsHourglass, 0, "activated")
 	return nil
 }
 
@@ -106,6 +106,6 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	}
 	actionState.HasActed = false
 	ctx.ChargeTracker.UseCharge(BehaviorTwinStrike, ChargeOncePerBattle)
-	logArtifactActivation(BehaviorTwinStrike, targetSquadID, "activated")
+	ctx.Log(BehaviorTwinStrike, targetSquadID, "activated")
 	return nil
 }

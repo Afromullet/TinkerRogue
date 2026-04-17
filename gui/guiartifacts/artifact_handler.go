@@ -1,8 +1,9 @@
 package guiartifacts
 
 import (
-	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/powers/artifacts"
+	"game_main/tactical/powers/powercore"
 	"game_main/visual/graphics"
 	"game_main/world/coords"
 
@@ -173,8 +174,12 @@ func GetTargetType(behaviorKey string) artifacts.BehaviorTargetType {
 
 func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSquadID ecs.EntityID) {
 	ctx := artifacts.NewBehaviorContext(
-		h.deps.CombatService.EntityManager,
-		h.deps.CombatService.CombatCache,
+		powercore.NewPowerContext(
+			h.deps.CombatService.EntityManager,
+			h.deps.CombatService.CombatCache,
+			0,
+			nil,
+		),
 		h.deps.CombatService.GetChargeTracker(),
 	)
 

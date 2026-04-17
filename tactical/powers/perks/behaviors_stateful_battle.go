@@ -44,7 +44,7 @@ func (b *OpeningSalvoBehavior) AttackerDamageMod(ctx *HookContext, modifiers *co
 	}
 	modifiers.DamageMultiplier *= PerkBalance.OpeningSalvo.DamageMult
 	SetBattleState(ctx.RoundState, PerkOpeningSalvo, &OpeningSalvoState{HasAttackedThisCombat: true})
-	logPerkActivation(PerkOpeningSalvo, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (opening attack)", int((PerkBalance.OpeningSalvo.DamageMult-1)*100)))
+	ctx.LogPerk(PerkOpeningSalvo, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (opening attack)", int((PerkBalance.OpeningSalvo.DamageMult-1)*100)))
 }
 
 // ========================================
@@ -98,7 +98,7 @@ func (b *ResoluteBehavior) DeathOverride(ctx *HookContext) bool {
 	maxHP := attr.GetMaxHealth()
 	if maxHP > 0 && float64(roundStartHP)/float64(maxHP) > PerkBalance.Resolute.HPThreshold {
 		state.Used[ctx.UnitID] = true
-		logPerkActivation(PerkResolute, ctx.SquadID, "unit survives lethal damage at 1 HP")
+		ctx.LogPerk(PerkResolute, ctx.SquadID, "unit survives lethal damage at 1 HP")
 		return true
 	}
 	return false
@@ -136,7 +136,7 @@ func (b *GrudgeBearerBehavior) AttackerDamageMod(ctx *HookContext, modifiers *co
 		if stacks > 0 {
 			bonus := 1.0 + float64(stacks)*PerkBalance.GrudgeBearer.PerStackBonus
 			modifiers.DamageMultiplier *= bonus
-			logPerkActivation(PerkGrudgeBearer, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (%d grudge stacks)", int((bonus-1)*100), stacks))
+			ctx.LogPerk(PerkGrudgeBearer, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage (%d grudge stacks)", int((bonus-1)*100), stacks))
 		}
 	}
 }

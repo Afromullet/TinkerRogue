@@ -3,17 +3,30 @@ package perks
 import (
 	"game_main/common"
 	"game_main/tactical/combat/combattypes"
+	"game_main/tactical/powers/powercore"
 
 	"github.com/bytearena/ecs"
 )
 
 // SquadPerkDispatcher implements combattypes.PerkDispatcher by iterating
 // equipped PerkBehavior implementations for each squad.
-type SquadPerkDispatcher struct{}
+//
+// The dispatcher holds a single PowerLogger that is threaded into every
+// HookContext it builds. Previously a package-global (perkLogger) fulfilled
+// this role; the logger now lives on the dispatcher so each combat instance
+// can wire its own without mutating global state.
+type SquadPerkDispatcher struct {
+	logger powercore.PowerLogger
+}
+
+// SetLogger injects the PowerLogger used by perk activations.
+func (d *SquadPerkDispatcher) SetLogger(logger powercore.PowerLogger) {
+	d.logger = logger
+}
 
 func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
+	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return
 	}
@@ -25,7 +38,7 @@ func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attacker
 
 func (d *SquadPerkDispatcher) DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return
 	}
@@ -37,7 +50,7 @@ func (d *SquadPerkDispatcher) DefenderDamageMod(attackerID, defenderID, attacker
 
 func (d *SquadPerkDispatcher) AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
+	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return
 	}
@@ -49,7 +62,7 @@ func (d *SquadPerkDispatcher) AttackerPostDamage(attackerID, defenderID, attacke
 
 func (d *SquadPerkDispatcher) DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return
 	}
@@ -62,7 +75,7 @@ func (d *SquadPerkDispatcher) DefenderPostDamage(attackerID, defenderID, attacke
 func (d *SquadPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.EntityID,
 	targets []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
-	ctx := buildHookContext(attackerSquadID, manager)
+	ctx := buildHookContext(attackerSquadID, manager, d.logger)
 	if ctx == nil {
 		return targets
 	}
@@ -78,7 +91,7 @@ func (d *SquadPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.Ent
 
 func (d *SquadPerkDispatcher) CounterMod(defenderSquadID, attackerID ecs.EntityID,
 	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) bool {
-	ctx := buildHookContext(defenderSquadID, manager)
+	ctx := buildHookContext(defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return false
 	}
@@ -100,7 +113,7 @@ func (d *SquadPerkDispatcher) CoverMod(attackerID, defenderID ecs.EntityID,
 	coverBreakdown *combattypes.CoverBreakdown, manager *common.EntityManager) {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
 	defenderSquadID := getSquadIDForUnit(defenderID, manager)
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager)
+	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return
 	}
@@ -111,7 +124,7 @@ func (d *SquadPerkDispatcher) CoverMod(attackerID, defenderID ecs.EntityID,
 }
 
 func (d *SquadPerkDispatcher) DeathOverride(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	ctx := buildHookContext(squadID, manager)
+	ctx := buildHookContext(squadID, manager, d.logger)
 	if ctx == nil {
 		return false
 	}
@@ -130,7 +143,7 @@ func (d *SquadPerkDispatcher) DeathOverride(unitID, squadID ecs.EntityID, manage
 
 func (d *SquadPerkDispatcher) DamageRedirect(defenderID, defenderSquadID ecs.EntityID,
 	damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
-	ctx := buildHookContext(defenderSquadID, manager)
+	ctx := buildHookContext(defenderSquadID, manager, d.logger)
 	if ctx == nil {
 		return damageAmount, 0, 0
 	}
@@ -163,7 +176,7 @@ func (d *SquadPerkDispatcher) DispatchTurnStart(squadIDs []ecs.EntityID, roundNu
 			continue
 		}
 		ResetPerkRoundStateTurn(roundState)
-		RunTurnStartHooks(squadID, roundNumber, roundState, manager)
+		RunTurnStartHooks(squadID, roundNumber, roundState, manager, d.logger)
 	}
 }
 

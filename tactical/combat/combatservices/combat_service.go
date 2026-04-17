@@ -10,6 +10,7 @@ import (
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/powers/perks"
+	"game_main/tactical/powers/powercore"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"
 
@@ -40,12 +41,16 @@ type CombatService struct {
 	chargeTracker      *artifacts.ArtifactChargeTracker
 	artifactDispatcher *artifacts.ArtifactDispatcher
 
-	// Power system dispatchers (artifacts + perks)
+	// Power system dispatchers (artifacts + perks) and the pipeline that
+	// fans lifecycle events out to them in a declarative, registration-order
+	// sequence. Replaces four near-duplicate Fire* bodies that previously
+	// hard-coded the "artifacts → perks → GUI" ordering.
 	perkDispatcher *perks.SquadPerkDispatcher
+	powerPipeline  *powercore.PowerPipeline
 	manager        *common.EntityManager // kept for Fire* methods
 
 	// Optional GUI callbacks for UI updates (cache invalidation, visualization refresh).
-	// Set by CombatMode via Set* methods. Called after power dispatch in Fire* methods.
+	// Set by CombatMode via Set* methods. Invoked as the last pipeline subscriber.
 	onAttackCompleteGUI func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
 
 	// Exit state — set as combat ends (by turn flow on victory/defeat/flee), consumed on mode exit.
@@ -76,19 +81,65 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		BattleRecorder:     battleRecorder,
 		layerEvaluators:    make(map[ecs.EntityID]ThreatLayerEvaluator),
 		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache),
+		powerPipeline:      powercore.NewPowerPipeline(),
 		manager:            manager,
 	}
 
-	// Set up loggers and perk dispatcher
+	// Set up shared logger and construct the perk dispatcher.
 	setupPowerDispatch(cs, manager, cache)
 
-	// Wire subsystem hooks directly to Fire* methods (no callback lists).
-	// Execution order within each Fire* method:
-	//   1. Artifact behaviors (e.g., Deadlock Shackles locks before perks run)
-	//   2. Perk hooks (e.g., TurnStart tracking)
-	combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
-		cs.FireAttackComplete(attackerID, defenderID, result)
+	// Register pipeline subscribers in the order they must fire. This is the
+	// one place execution order is declared — adding a new power system is a
+	// single On* call below, not edits to four Fire* method bodies.
+	//
+	// Order rationale:
+	//   1. Artifact behaviors (e.g. Deadlock Shackles must lock before perk TurnStart)
+	//   2. Perk hooks (TurnStart, state tracking)
+	//   3. GUI callbacks (cache invalidation, visuals) — always last, nil-safe
+	cs.powerPipeline.OnPostReset(cs.artifactDispatcher.DispatchPostReset)
+	cs.powerPipeline.OnPostReset(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
+		if cs.perkDispatcher != nil {
+			cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.manager)
+		}
 	})
+
+	cs.powerPipeline.OnAttackComplete(cs.artifactDispatcher.DispatchOnAttackComplete)
+	cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+		if cs.perkDispatcher != nil {
+			cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.manager)
+		}
+	})
+	cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+		if cs.onAttackCompleteGUI != nil {
+			cs.onAttackCompleteGUI(attackerID, defenderID, result)
+		}
+	})
+
+	cs.powerPipeline.OnTurnEnd(cs.artifactDispatcher.DispatchOnTurnEnd)
+	cs.powerPipeline.OnTurnEnd(func(round int) {
+		if cs.perkDispatcher != nil {
+			cs.perkDispatcher.DispatchRoundEnd(cs.manager)
+		}
+	})
+	cs.powerPipeline.OnTurnEnd(func(round int) {
+		if cs.onTurnEndGUI != nil {
+			cs.onTurnEndGUI(round)
+		}
+	})
+
+	cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
+		if cs.perkDispatcher != nil {
+			cs.perkDispatcher.DispatchMoveTracking(squadID, cs.manager)
+		}
+	})
+	cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
+		if cs.onMoveCompleteGUI != nil {
+			cs.onMoveCompleteGUI(squadID)
+		}
+	})
+
+	// Subsystem hooks forward into the pipeline.
+	combatActSystem.SetOnAttackComplete(cs.FireAttackComplete)
 	movementSystem.SetOnMoveComplete(cs.FireMoveComplete)
 	turnManager.SetOnTurnEnd(cs.FireTurnEnd)
 	turnManager.SetPostResetHook(cs.FirePostReset)
@@ -115,45 +166,24 @@ func (cs *CombatService) SetOnTurnEndGUI(fn func(round int)) {
 	cs.onTurnEndGUI = fn
 }
 
-// FirePostReset dispatches post-reset hooks: artifacts first, then perks.
-// Called when a faction's squad actions are reset at turn start.
+// FirePostReset fans out the post-reset event through the power pipeline.
 func (cs *CombatService) FirePostReset(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	cs.artifactDispatcher.DispatchPostReset(factionID, squadIDs)
-	if cs.perkDispatcher != nil {
-		cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.manager)
-	}
+	cs.powerPipeline.FirePostReset(factionID, squadIDs)
 }
 
-// FireAttackComplete dispatches attack-complete hooks: artifacts first, then perks, then GUI.
+// FireAttackComplete fans out the attack-complete event through the power pipeline.
 func (cs *CombatService) FireAttackComplete(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
-	cs.artifactDispatcher.DispatchOnAttackComplete(attackerID, defenderID, result)
-	if cs.perkDispatcher != nil {
-		cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.manager)
-	}
-	if cs.onAttackCompleteGUI != nil {
-		cs.onAttackCompleteGUI(attackerID, defenderID, result)
-	}
+	cs.powerPipeline.FireAttackComplete(attackerID, defenderID, result)
 }
 
-// FireTurnEnd dispatches turn-end hooks: artifacts (with charge refresh) first, then perks, then GUI.
+// FireTurnEnd fans out the turn-end event through the power pipeline.
 func (cs *CombatService) FireTurnEnd(round int) {
-	cs.artifactDispatcher.DispatchOnTurnEnd(round)
-	if cs.perkDispatcher != nil {
-		cs.perkDispatcher.DispatchRoundEnd(cs.manager)
-	}
-	if cs.onTurnEndGUI != nil {
-		cs.onTurnEndGUI(round)
-	}
+	cs.powerPipeline.FireTurnEnd(round)
 }
 
-// FireMoveComplete dispatches move-complete hooks: perks only, then GUI.
+// FireMoveComplete fans out the move-complete event through the power pipeline.
 func (cs *CombatService) FireMoveComplete(squadID ecs.EntityID) {
-	if cs.perkDispatcher != nil {
-		cs.perkDispatcher.DispatchMoveTracking(squadID, cs.manager)
-	}
-	if cs.onMoveCompleteGUI != nil {
-		cs.onMoveCompleteGUI(squadID)
-	}
+	cs.powerPipeline.FireMoveComplete(squadID)
 }
 
 // GetChargeTracker returns the artifact charge tracker for the current battle.
