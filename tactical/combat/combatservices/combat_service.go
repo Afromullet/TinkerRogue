@@ -71,6 +71,11 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	// Wire up battle recorder to combat action system
 	combatActSystem.SetBattleRecorder(battleRecorder)
 
+	// Charge tracker is created once and lives for the lifetime of the service;
+	// per-battle reset happens via tracker.Reset() in InitializeCombat so the
+	// dispatcher's bindings on the PowerPipeline stay valid across battles.
+	chargeTracker := artifacts.NewArtifactChargeTracker()
+
 	cs := &CombatService{
 		EntityManager:      manager,
 		TurnManager:        turnManager,
@@ -80,7 +85,8 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		CombatActSystem:    combatActSystem,
 		BattleRecorder:     battleRecorder,
 		layerEvaluators:    make(map[ecs.EntityID]ThreatLayerEvaluator),
-		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache),
+		chargeTracker:      chargeTracker,
+		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache, chargeTracker),
 		powerPipeline:      powercore.NewPowerPipeline(),
 		manager:            manager,
 	}
@@ -194,9 +200,10 @@ func (cs *CombatService) GetChargeTracker() *artifacts.ArtifactChargeTracker {
 // InitializeCombat initializes combat with the given factions.
 // Also assigns any unassigned deployed squads to the player faction as a safety net.
 func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
-	// Reset charge tracker for the new battle
-	cs.chargeTracker = artifacts.NewArtifactChargeTracker()
-	cs.artifactDispatcher.SetChargeTracker(cs.chargeTracker)
+	// Clear all charge/pending state for the new battle. The tracker instance
+	// is shared with the ArtifactDispatcher; resetting in place preserves the
+	// pipeline subscriber bindings rather than swapping the tracker out.
+	cs.chargeTracker.Reset()
 	// Find player faction (has IsPlayerControlled = true)
 	var playerFactionID ecs.EntityID
 	for _, factionID := range factionIDs {

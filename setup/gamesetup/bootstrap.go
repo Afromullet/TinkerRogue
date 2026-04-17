@@ -40,9 +40,30 @@ func (gb *GameBootstrap) LoadGameData() {
 	perks.LoadPerkDefinitions()
 	perks.LoadPerkBalanceConfig()
 	artifacts.LoadArtifactBalanceConfig()
-	artifacts.ValidateBehaviorCoverage()
+	reportCoverage("artifact", artifacts.ValidateBehaviorCoverage())
+	reportCoverage("perk", perks.ValidateHookCoverage())
 	combatcore.LoadCombatBalanceConfig()
 	core.ValidateNodeRegistry()
+}
+
+// reportCoverage prints validation errors from the powers registries. In debug
+// builds mismatches are fatal — they almost always indicate a developer bug
+// (behavior registered with no JSON definition, or vice versa). In release
+// builds they drop to warnings so a data issue doesn't prevent shipping.
+func reportCoverage(label string, errs []error) {
+	if len(errs) == 0 {
+		return
+	}
+	if config.DEBUG_MODE {
+		for _, err := range errs {
+			log.Printf("FATAL %s coverage: %v", label, err)
+		}
+		log.Fatalf("%s registry has %d coverage errors; fix before continuing", label, len(errs))
+		return
+	}
+	for _, err := range errs {
+		log.Printf("WARNING %s coverage: %v", label, err)
+	}
 }
 
 // InitializeCoreECS initializes the ECS world and global systems.

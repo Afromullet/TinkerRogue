@@ -173,21 +173,23 @@ func LoadPerkDefinitions() {
 	}
 
 	fmt.Printf("Loaded %d perk definitions\n", len(PerkRegistry))
-
-	// Validate that every perk has registered hooks and vice versa
-	validateHookCoverage()
 }
 
-// validateHookCoverage checks that JSON definitions and behavior registrations are in sync.
-func validateHookCoverage() {
+// ValidateHookCoverage checks that JSON definitions and behavior registrations
+// are in sync. Returns the slice of problems found; empty means everything
+// matches. Callers decide whether mismatches are fatal (e.g. fail startup in
+// debug builds).
+func ValidateHookCoverage() []error {
+	var errs []error
 	for id := range PerkRegistry {
 		if GetPerkBehavior(id) == nil {
-			fmt.Printf("WARNING: Perk %q has a JSON definition but no registered behavior\n", id)
+			errs = append(errs, fmt.Errorf("perk %q has a JSON definition but no registered behavior", id))
 		}
 	}
 	for id := range behaviorRegistry {
 		if PerkRegistry[id] == nil {
-			fmt.Printf("WARNING: Perk %q has a registered behavior but no JSON definition\n", id)
+			errs = append(errs, fmt.Errorf("perk %q has a registered behavior but no JSON definition", id))
 		}
 	}
+	return errs
 }

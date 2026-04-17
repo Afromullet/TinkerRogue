@@ -86,7 +86,7 @@ func (b *StalwartBehavior) PerkID() PerkID { return PerkStalwart }
 // stalwartCounterMod gives full-damage counters if the squad did not move.
 // State: reads PerkRoundState.MovedThisTurn (shared tracking, set by dispatch).
 func (b *StalwartBehavior) CounterMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) bool {
-	if !ctx.RoundState.MovedThisTurn {
+	if !ctx.MovedThisTurn() {
 		modifiers.DamageMultiplier = 1.0 // Override 0.5 default
 		ctx.LogPerk(PerkStalwart, ctx.DefenderSquadID, "full-damage counterattack")
 	}
@@ -102,25 +102,24 @@ func (b *FortifyBehavior) PerkID() PerkID { return PerkFortify }
 // fortifyTurnStart increments stationary counter if squad didn't move.
 // State: reads MovedThisTurn, writes TurnsStationary (shared tracking).
 func (b *FortifyBehavior) TurnStart(ctx *HookContext) {
-	if ctx.RoundState.MovedThisTurn {
-		ctx.RoundState.TurnsStationary = 0
+	if ctx.MovedThisTurn() {
+		ctx.ResetTurnsStationary()
 	} else {
-		if ctx.RoundState.TurnsStationary < PerkBalance.Fortify.MaxStationaryTurns {
-			ctx.RoundState.TurnsStationary++
-		}
+		ctx.IncrementTurnsStationary(PerkBalance.Fortify.MaxStationaryTurns)
 	}
 }
 
 // fortifyCoverMod adds cover based on consecutive stationary turns.
 // State: reads PerkRoundState.TurnsStationary (shared tracking).
 func (b *FortifyBehavior) DefenderCoverMod(ctx *HookContext, coverBreakdown *combattypes.CoverBreakdown) {
-	if ctx.RoundState.TurnsStationary > 0 {
-		bonus := float64(ctx.RoundState.TurnsStationary) * PerkBalance.Fortify.PerTurnCoverBonus
+	stationary := ctx.TurnsStationary()
+	if stationary > 0 {
+		bonus := float64(stationary) * PerkBalance.Fortify.PerTurnCoverBonus
 		coverBreakdown.TotalReduction += bonus
 		if coverBreakdown.TotalReduction > 1.0 {
 			coverBreakdown.TotalReduction = 1.0
 		}
-		ctx.LogPerk(PerkFortify, ctx.DefenderSquadID, fmt.Sprintf("+%d%% cover (%d turns stationary)", int(bonus*100), ctx.RoundState.TurnsStationary))
+		ctx.LogPerk(PerkFortify, ctx.DefenderSquadID, fmt.Sprintf("+%d%% cover (%d turns stationary)", int(bonus*100), stationary))
 	}
 }
 
@@ -139,7 +138,7 @@ func (b *CounterpunchBehavior) PerkID() PerkID { return PerkCounterpunch }
 //
 //	writes CounterpunchState via SetPerkState (per-round).
 func (b *CounterpunchBehavior) TurnStart(ctx *HookContext) {
-	ready := ctx.RoundState.WasAttackedLastTurn && ctx.RoundState.DidNotAttackLastTurn
+	ready := ctx.WasAttackedLastTurn() && ctx.DidNotAttackLastTurn()
 	SetPerkState(ctx.RoundState, PerkCounterpunch, &CounterpunchState{Ready: ready})
 }
 
@@ -165,7 +164,7 @@ func (b *DeadshotsPatienceBehavior) PerkID() PerkID { return PerkDeadshotsPatien
 //
 //	writes DeadshotState via SetPerkState (per-round).
 func (b *DeadshotsPatienceBehavior) TurnStart(ctx *HookContext) {
-	ready := ctx.RoundState.WasIdleLastTurn
+	ready := ctx.WasIdleLastTurn()
 	SetPerkState(ctx.RoundState, PerkDeadshotsPatience, &DeadshotState{Ready: ready})
 }
 

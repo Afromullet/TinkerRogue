@@ -180,14 +180,17 @@ func ActivateArtifact(behavior string, targetSquadID ecs.EntityID, ctx *Behavior
 	return b.Activate(ctx, targetSquadID)
 }
 
-// ValidateBehaviorCoverage checks that JSON definitions and behavior registrations are in sync.
-func ValidateBehaviorCoverage() {
+// ValidateBehaviorCoverage checks that JSON definitions and behavior registrations
+// are in sync. Returns the slice of problems found; empty means everything matches.
+// Callers decide whether mismatches are fatal (e.g. fail startup in debug builds).
+func ValidateBehaviorCoverage() []error {
+	var errs []error
 	for id, def := range templates.ArtifactRegistry {
 		if def.Behavior == "" {
 			continue // minor artifact, no behavior expected
 		}
 		if GetBehavior(def.Behavior) == nil {
-			fmt.Printf("WARNING: Artifact %q has behavior %q but no registered behavior implementation\n", id, def.Behavior)
+			errs = append(errs, fmt.Errorf("artifact %q declares behavior %q but no implementation is registered", id, def.Behavior))
 		}
 	}
 	for key := range behaviorRegistry {
@@ -199,9 +202,10 @@ func ValidateBehaviorCoverage() {
 			}
 		}
 		if !found {
-			fmt.Printf("WARNING: Behavior %q is registered but no artifact definition references it\n", key)
+			errs = append(errs, fmt.Errorf("behavior %q is registered but no artifact definition references it", key))
 		}
 	}
+	return errs
 }
 
 // CanActivateArtifact returns true if the given artifact behavior's charge is available.
