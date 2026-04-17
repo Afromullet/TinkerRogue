@@ -41,13 +41,6 @@ func (d *ArtifactDispatcher) SetLogger(logger powercore.PowerLogger) {
 	d.logger = logger
 }
 
-// ChargeTracker returns the tracker this dispatcher holds. Exposed so
-// CombatService can reset per-battle state without replacing the dispatcher
-// (which would invalidate the PowerPipeline subscriber bindings).
-func (d *ArtifactDispatcher) ChargeTracker() *ArtifactChargeTracker {
-	return d.chargeTracker
-}
-
 func (d *ArtifactDispatcher) makeBehaviorContext(round int) *BehaviorContext {
 	return NewBehaviorContext(
 		powercore.NewPowerContext(d.manager, d.cache, round, d.logger),

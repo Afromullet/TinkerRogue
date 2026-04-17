@@ -70,45 +70,9 @@ func (ctx *HookContext) LogPerk(perkID PerkID, squadID ecs.EntityID, message str
 	ctx.Log(string(perkID), squadID, message)
 }
 
-// ------------------------------------------------------------------
-// Shared-tracking accessors
-//
-// These helpers encapsulate reads/writes of PerkRoundState's "shared tracking"
-// fields — the bits that the dispatch layer writes and multiple perks read.
-// Behaviors should prefer these methods over direct ctx.RoundState access so
-// the invariants (monotonic stationary counter, snapshot semantics, etc.) are
-// enforced in one place.
-//
-// Per-perk state (PerkState/PerkBattleState) still flows through the typed
-// GetPerkState / SetPerkState generics because each perk owns its own shape.
-// ------------------------------------------------------------------
-
-// MovedThisTurn reports whether the squad moved during the current turn.
-func (ctx *HookContext) MovedThisTurn() bool {
-	if ctx.RoundState == nil {
-		return false
-	}
-	return ctx.RoundState.MovedThisTurn
-}
-
-// TurnsStationary returns the squad's consecutive stationary turn count.
-func (ctx *HookContext) TurnsStationary() int {
-	if ctx.RoundState == nil {
-		return 0
-	}
-	return ctx.RoundState.TurnsStationary
-}
-
-// ResetTurnsStationary clears the stationary counter (e.g. when the squad moves).
-func (ctx *HookContext) ResetTurnsStationary() {
-	if ctx.RoundState == nil {
-		return
-	}
-	ctx.RoundState.TurnsStationary = 0
-}
-
-// IncrementTurnsStationary increments the stationary counter, capped at max.
-// No-op if max has already been reached — the counter is monotonic up to max.
+// IncrementTurnsStationary increments the stationary counter on RoundState,
+// capped at max. Encapsulates the monotonic-up-to-max invariant so the cap
+// check isn't duplicated at call sites.
 func (ctx *HookContext) IncrementTurnsStationary(max int) {
 	if ctx.RoundState == nil {
 		return
@@ -116,31 +80,6 @@ func (ctx *HookContext) IncrementTurnsStationary(max int) {
 	if ctx.RoundState.TurnsStationary < max {
 		ctx.RoundState.TurnsStationary++
 	}
-}
-
-// WasAttackedLastTurn reports the snapshot taken at the start of this turn.
-func (ctx *HookContext) WasAttackedLastTurn() bool {
-	if ctx.RoundState == nil {
-		return false
-	}
-	return ctx.RoundState.WasAttackedLastTurn
-}
-
-// DidNotAttackLastTurn reports the snapshot taken at the start of this turn.
-func (ctx *HookContext) DidNotAttackLastTurn() bool {
-	if ctx.RoundState == nil {
-		return false
-	}
-	return ctx.RoundState.DidNotAttackLastTurn
-}
-
-// WasIdleLastTurn reports the snapshot taken at the start of this turn
-// (neither moved nor attacked).
-func (ctx *HookContext) WasIdleLastTurn() bool {
-	if ctx.RoundState == nil {
-		return false
-	}
-	return ctx.RoundState.WasIdleLastTurn
 }
 
 var behaviorRegistry = map[PerkID]PerkBehavior{}

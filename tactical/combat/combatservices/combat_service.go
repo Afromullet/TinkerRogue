@@ -87,7 +87,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		layerEvaluators:    make(map[ecs.EntityID]ThreatLayerEvaluator),
 		chargeTracker:      chargeTracker,
 		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache, chargeTracker),
-		powerPipeline:      powercore.NewPowerPipeline(),
+		powerPipeline:      &powercore.PowerPipeline{},
 		manager:            manager,
 	}
 
@@ -144,11 +144,11 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		}
 	})
 
-	// Subsystem hooks forward into the pipeline.
-	combatActSystem.SetOnAttackComplete(cs.FireAttackComplete)
-	movementSystem.SetOnMoveComplete(cs.FireMoveComplete)
-	turnManager.SetOnTurnEnd(cs.FireTurnEnd)
-	turnManager.SetPostResetHook(cs.FirePostReset)
+	// Subsystem hooks forward into the pipeline directly — no intermediate wrapper methods.
+	combatActSystem.SetOnAttackComplete(cs.powerPipeline.FireAttackComplete)
+	movementSystem.SetOnMoveComplete(cs.powerPipeline.FireMoveComplete)
+	turnManager.SetOnTurnEnd(cs.powerPipeline.FireTurnEnd)
+	turnManager.SetPostResetHook(cs.powerPipeline.FirePostReset)
 
 	return cs
 }
@@ -170,26 +170,6 @@ func (cs *CombatService) SetOnMoveCompleteGUI(fn func(squadID ecs.EntityID)) {
 // SetOnTurnEndGUI sets the GUI callback for turn-end events.
 func (cs *CombatService) SetOnTurnEndGUI(fn func(round int)) {
 	cs.onTurnEndGUI = fn
-}
-
-// FirePostReset fans out the post-reset event through the power pipeline.
-func (cs *CombatService) FirePostReset(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	cs.powerPipeline.FirePostReset(factionID, squadIDs)
-}
-
-// FireAttackComplete fans out the attack-complete event through the power pipeline.
-func (cs *CombatService) FireAttackComplete(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
-	cs.powerPipeline.FireAttackComplete(attackerID, defenderID, result)
-}
-
-// FireTurnEnd fans out the turn-end event through the power pipeline.
-func (cs *CombatService) FireTurnEnd(round int) {
-	cs.powerPipeline.FireTurnEnd(round)
-}
-
-// FireMoveComplete fans out the move-complete event through the power pipeline.
-func (cs *CombatService) FireMoveComplete(squadID ecs.EntityID) {
-	cs.powerPipeline.FireMoveComplete(squadID)
 }
 
 // GetChargeTracker returns the artifact charge tracker for the current battle.

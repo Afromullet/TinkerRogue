@@ -26,11 +26,6 @@ type PowerPipeline struct {
 	moveComplete   []MoveCompleteHandler
 }
 
-// NewPowerPipeline returns an empty pipeline.
-func NewPowerPipeline() *PowerPipeline {
-	return &PowerPipeline{}
-}
-
 // OnPostReset appends a subscriber to the post-reset event.
 func (p *PowerPipeline) OnPostReset(h PostResetHandler) {
 	p.postReset = append(p.postReset, h)
