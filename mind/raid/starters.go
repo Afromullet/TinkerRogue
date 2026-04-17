@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/tactical/combat/combattypes"
+	"game_main/mind/combatlifecycle"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -21,7 +21,7 @@ type RaidCombatStarter struct {
 	CommanderID      ecs.EntityID
 }
 
-func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combattypes.CombatSetup, error) {
+func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifecycle.CombatSetup, error) {
 	playerFactionID, enemyFactionID, err := SetupRaidFactions(
 		manager, s.RaidEntityID,
 		s.GarrisonSquadIDs, s.DeployedSquadIDs, s.CombatPos,
@@ -30,7 +30,7 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combattypes
 		return nil, fmt.Errorf("failed to setup raid factions: %w", err)
 	}
 
-	return &combattypes.CombatSetup{
+	return &combatlifecycle.CombatSetup{
 		PlayerFactionID:      playerFactionID,
 		EnemyFactionID:       enemyFactionID,
 		EnemySquadIDs:        s.GarrisonSquadIDs,
@@ -38,7 +38,7 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combattypes
 		EncounterID:          s.RaidEntityID,
 		ThreatName:           "Garrison Raid",
 		RosterOwnerID:        s.CommanderID,
-		Type:                 combattypes.CombatTypeRaid,
-		PostCombatReturnMode: combattypes.PostCombatReturnRaid,
+		Type:                 combatlifecycle.CombatTypeRaid,
+		PostCombatReturnMode: combatlifecycle.PostCombatReturnRaid,
 	}, nil
 }

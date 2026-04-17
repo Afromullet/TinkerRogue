@@ -3,7 +3,7 @@ package encounter
 import (
 	"time"
 
-	"game_main/tactical/combat/combattypes"
+	"game_main/mind/combatlifecycle"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -72,7 +72,7 @@ type ActiveEncounter struct {
 	PlayerEntityID ecs.EntityID // Player entity (owns resource stockpile)
 
 	// Combat type (overworld, garrison defense, raid, debug)
-	Type           combattypes.CombatType
+	Type           combatlifecycle.CombatType
 	DefendedNodeID ecs.EntityID // Node being defended (0 if not garrison defense)
 }
 
@@ -89,7 +89,7 @@ type CompletedEncounter struct {
 	Duration  time.Duration
 
 	// Outcome
-	Outcome         combattypes.CombatExitReason
+	Outcome         combatlifecycle.CombatExitReason
 	RoundsCompleted int
 	VictorFaction   ecs.EntityID
 	VictorName      string

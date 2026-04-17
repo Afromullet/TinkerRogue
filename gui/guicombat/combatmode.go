@@ -10,6 +10,7 @@ import (
 	"game_main/gui/guispells"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
+	"game_main/mind/combatlifecycle"
 	"game_main/setup/config"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combattypes"
@@ -58,7 +59,7 @@ type CombatMode struct {
 	actionMap *framework.ActionMap
 
 	// Encounter callbacks (stored until deps are created in Initialize)
-	encounterCallbacks combattypes.EncounterCallbacks
+	encounterCallbacks combatlifecycle.EncounterCallbacks
 
 	// Factory for creating a fully-wired CombatService (with AI injected)
 	serviceFactory func(*common.EntityManager) *combatservices.CombatService
@@ -68,7 +69,7 @@ type CombatMode struct {
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combattypes.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combatlifecycle.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
 		encounterCallbacks: encounterCallbacks,
 		serviceFactory:     serviceFactory,
@@ -441,24 +442,13 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 	isToAnimation := toMode != nil && toMode.GetModeName() == "combat_animation"
 
 	if !isToAnimation {
-		// Get victory result (use cached if available, otherwise check now)
-		victor := cm.turnFlow.GetVictoryResult()
-		if victor == nil {
-			victor = cm.combatService.CheckVictoryCondition()
-		}
-
-		// Determine exit reason
-		reason := combattypes.ExitDefeat
-		if cm.turnFlow.IsFleeRequested() {
-			reason = combattypes.ExitFlee
-		} else if victor.IsPlayerVictory {
-			reason = combattypes.ExitVictory
-		}
+		victor := cm.combatService.GetExitResult()
+		reason := combatlifecycle.DetermineExitReason(cm.combatService.IsFleeRequested(), victor.IsPlayerVictory)
 
 		// Single call handles: overworld resolution, history recording, entity cleanup
 		if cm.deps.Encounter != nil {
 			cm.deps.Encounter.ExitCombat(reason,
-				&combattypes.EncounterOutcome{
+				&combatlifecycle.EncounterOutcome{
 					IsPlayerVictory:  victor.IsPlayerVictory,
 					VictorFaction:    victor.VictorFaction,
 					VictorName:       victor.VictorName,
@@ -484,7 +474,7 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 		}
 
 		// Clear cached victory/flee state
-		cm.turnFlow.ClearState()
+		cm.combatService.ClearExitState()
 	}
 
 	cm.visualization.ClearAllVisualizations()

@@ -22,10 +22,6 @@ type CombatTurnFlow struct {
 	turnOrderComponent   *widgets.TextDisplayComponent
 	factionInfoComponent *guisquads.DetailPanelComponent
 	squadDetailComponent *guisquads.DetailPanelComponent
-
-	// Victory tracking
-	lastVictoryResult *combatservices.VictoryCheckResult
-	fleeRequested     bool
 }
 
 // NewCombatTurnFlow creates a new turn flow manager
@@ -60,22 +56,6 @@ func (tf *CombatTurnFlow) SetUIComponents(
 	tf.squadDetailComponent = squadDetail
 }
 
-// GetVictoryResult returns the cached victory result (used during Exit)
-func (tf *CombatTurnFlow) GetVictoryResult() *combatservices.VictoryCheckResult {
-	return tf.lastVictoryResult
-}
-
-// IsFleeRequested returns whether the player requested to flee
-func (tf *CombatTurnFlow) IsFleeRequested() bool {
-	return tf.fleeRequested
-}
-
-// ClearState resets victory and flee state
-func (tf *CombatTurnFlow) ClearState() {
-	tf.lastVictoryResult = nil
-	tf.fleeRequested = false
-}
-
 // HandleEndTurn ends the current player turn and advances to the next faction
 func (tf *CombatTurnFlow) HandleEndTurn() {
 	tf.actionHandler.ClearMoveHistory()
@@ -93,13 +73,13 @@ func (tf *CombatTurnFlow) HandleEndTurn() {
 // HandleFlee handles the player requesting to flee from combat
 func (tf *CombatTurnFlow) HandleFlee() {
 	rounds := tf.combatService.TurnManager.GetCurrentRound()
-	tf.lastVictoryResult = &combatservices.VictoryCheckResult{
+	tf.combatService.MarkFleeRequested()
+	tf.combatService.CacheVictoryResult(&combatservices.VictoryCheckResult{
 		BattleOver:      true,
 		IsPlayerVictory: false,
 		VictorName:      "Retreat",
 		RoundsCompleted: rounds,
-	}
-	tf.fleeRequested = true
+	})
 
 	returnModeName := tf.getPostCombatReturnMode()
 	if returnMode, exists := tf.modeManager.GetMode(returnModeName); exists {
@@ -118,7 +98,7 @@ func (tf *CombatTurnFlow) CheckAndHandleVictory() bool {
 	}
 
 	// Cache the result for use in Exit() to avoid redundant checks
-	tf.lastVictoryResult = result
+	tf.combatService.CacheVictoryResult(result)
 
 	// Transition to post-combat mode (raid or exploration)
 	returnModeName := tf.getPostCombatReturnMode()

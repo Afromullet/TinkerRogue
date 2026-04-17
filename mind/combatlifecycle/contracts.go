@@ -1,4 +1,14 @@
-package combattypes
+// Package combatlifecycle owns the combat lifecycle vocabulary: the contracts
+// that describe how combat is started, transitioned, resolved, and cleaned up,
+// plus the orchestration entry points (ExecuteCombatStart, ExecuteResolution).
+//
+// Implementations of these contracts live in their domain packages by design:
+//   - mind/encounter: overworld and garrison-defense starters/resolvers, EncounterService transitioner
+//   - mind/raid: raid starters/resolvers
+//   - tactical/combat/combatservices: CombatService (cleaner)
+//
+// Domain knowledge stays with the domain; this package only defines the shared contracts.
+package combatlifecycle
 
 import (
 	"game_main/common"
@@ -68,7 +78,6 @@ const (
 
 // CombatTransitioner abstracts EncounterService for the pipeline.
 // EncounterService satisfies this via Go structural typing (no explicit implements).
-// This avoids combatpipeline importing encounter (which would create a cycle).
 type CombatTransitioner interface {
 	TransitionToCombat(setup *CombatSetup) error
 }
@@ -88,6 +97,20 @@ const (
 	ExitDefeat
 	ExitFlee
 )
+
+// DetermineExitReason maps combat-end state to the lifecycle exit enum.
+// Flee takes precedence over victory state: a player who wins on the same tick
+// they pressed flee is still treated as fleeing.
+func DetermineExitReason(fleeRequested, playerVictory bool) CombatExitReason {
+	switch {
+	case fleeRequested:
+		return ExitFlee
+	case playerVictory:
+		return ExitVictory
+	default:
+		return ExitDefeat
+	}
+}
 
 // String returns a human-readable name for the exit reason.
 func (r CombatExitReason) String() string {
@@ -113,15 +136,17 @@ type EncounterOutcome struct {
 	DefeatedFactions []ecs.EntityID
 }
 
-// CombatCleaner handles entity disposal when exiting combat.
+// CombatCleaner handles tactical-side entity disposal when exiting combat.
 // Implemented by CombatService (satisfies via Go structural typing, no import needed).
+// Returns the player squad IDs that were in combat so the caller can finish
+// cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
+// StripCombatComponents) without tactical/combat depending on mind/.
 type CombatCleaner interface {
-	CleanupCombat(enemySquadIDs []ecs.EntityID)
+	CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
 }
 
 // EncounterCallbacks is the GUI's narrow view of encounter services.
 // EncounterService structurally satisfies this interface — pass it directly.
-// GUI packages import tactical/combat (not mind/encounter), preserving the dependency boundary.
 type EncounterCallbacks interface {
 	ExitCombat(reason CombatExitReason, result *EncounterOutcome, cleaner CombatCleaner)
 	GetRosterOwnerID() ecs.EntityID

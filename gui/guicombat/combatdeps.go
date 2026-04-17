@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"game_main/gui/framework"
-	"game_main/tactical/combat/combattypes"
+	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/combatservices"
 )
 
@@ -27,7 +27,7 @@ type CombatModeDeps struct {
 	ModeManager *framework.UIModeManager
 
 	// Encounter callbacks (replacing direct EncounterService dependency)
-	Encounter combattypes.EncounterCallbacks
+	Encounter combatlifecycle.EncounterCallbacks
 }
 
 // NewCombatModeDeps creates a new dependencies container
@@ -36,7 +36,7 @@ func NewCombatModeDeps(
 	combatService *combatservices.CombatService,
 	queries *framework.GUIQueries,
 	modeManager *framework.UIModeManager,
-	encounter combattypes.EncounterCallbacks,
+	encounter combatlifecycle.EncounterCallbacks,
 ) *CombatModeDeps {
 	return &CombatModeDeps{
 		BattleState:   battleState,

@@ -327,7 +327,7 @@ gui/guioverworld/overworld_panels_registry.go:126  (Engage button)
 
 1. `EngageThreat(nodeID)` validates that the commander exists, has a position, and is co-located with the threat node.
 2. `TriggerCombatFromThreat` reads the threat node's `OverworldNodeData`, looks up the encounter definition in `core.GetNodeRegistry()`, and creates an `OverworldEncounterData` entity with `ThreatNodeID` set to the threat's entity ID. This `ThreatNodeID` link is critical — it is later used by `OverworldCombatResolver.Resolve` to find the threat node and apply damage to it.
-3. `OverworldCombatStarter.Prepare` validates the encounter entity via `combatlifecycle.ValidateEncounterEntity`, hides the encounter entity's sprite (stored for rollback), then calls `SpawnCombatEntities`.
+3. `OverworldCombatStarter.Prepare` validates the encounter entity via `encounter.ValidateEncounterEntity`, hides the encounter entity's sprite (stored for rollback), then calls `SpawnCombatEntities`.
 4. `SpawnCombatEntities` (returns `*SpawnResult` with `EnemySquadIDs`, `PlayerFactionID`, `EnemyFactionID`) checks whether the threat node has an NPC garrison. If it does, those existing garrison squads become the enemies (`spawnGarrisonEncounter`). If not, it generates enemies from a power budget (`GenerateEncounterSpec` → `generateEnemySquadsByPower`).
 5. Power budget generation uses `evaluation.CalculateSquadPower` to measure the player's deployed squads, applies a difficulty multiplier from the encounter's level, and iteratively adds units from a type-filtered pool until the target power is reached.
 
@@ -355,7 +355,7 @@ gui/guioverworld/overworld_action_handler.go:32   EndTurn()
 
 1. `TriggerGarrisonDefense` creates an `OverworldEncounterData` entity with `IsGarrisonDefense = true` and `AttackingFactionType` set.
 2. `GarrisonDefenseStarter.Prepare`:
-   - Validates the encounter entity via `combatlifecycle.ValidateEncounterEntity`.
+   - Validates the encounter entity via `encounter.ValidateEncounterEntity`.
    - Reads the garrison's squad IDs from `garrison.GetGarrisonAtNode`.
    - Creates two factions via `combatlifecycle.CreateFactionPair`; garrison squads join the player faction via `combatlifecycle.EnrollSquadsAtPositions` (they are the defenders), and a fresh set of generated enemy squads joins the enemy faction.
    - Enemy power is calculated from the average garrison squad power, clamped via `combatlifecycle.ClampPowerTarget`, then multiplied by a difficulty modifier derived from the attacking faction's strength. This ensures the defense is appropriately challenging regardless of the player's current roster.
@@ -509,7 +509,7 @@ Combat ends in one of three ways. All three routes pass through `CombatMode.Exit
 2. `CombatTurnFlow.CheckAndHandleVictory()` detects `BattleOver = true` from `CheckVictoryCondition()`.
 3. `modeManager.RequestTransition(returnMode, ...)` is called with either `"exploration"` or `"raid"` depending on `TacticalState.PostCombatReturnMode`.
 4. The mode manager calls `CombatMode.Exit(toMode)`.
-5. In `Exit`, the victory result is retrieved from `turnFlow.GetVictoryResult()`, `reason = ExitVictory` is set, and `encounterCallbacks.ExitCombat(ExitVictory, outcome, combatService)` is called.
+5. In `Exit`, the victory result is retrieved from `combatService.GetExitResult()`, the reason is computed via `combatlifecycle.DetermineExitReason(combatService.IsFleeRequested(), victor.IsPlayerVictory)` — returning `ExitVictory` — and `encounterCallbacks.ExitCombat(ExitVictory, outcome, combatService)` is called.
 
 ### Defeat
 
@@ -519,9 +519,9 @@ Combat ends in one of three ways. All three routes pass through `CombatMode.Exit
 ### Flee / Retreat
 
 1. Player clicks the "Flee" button (wired to `turnFlow.HandleFlee()`).
-2. `HandleFlee()` sets `fleeRequested = true` and immediately calls `modeManager.RequestTransition(returnMode, "Fled from combat")`.
-3. In `CombatMode.Exit`, `turnFlow.IsFleeRequested()` returns true, so `reason = ExitFlee`.
-4. `encounterCallbacks.ExitCombat(ExitFlee, ...)` is called.
+2. `HandleFlee()` calls `combatService.MarkFleeRequested()` + `combatService.CacheVictoryResult(...)` (a synthetic retreat result) and then `modeManager.RequestTransition(returnMode, "Fled from combat")`.
+3. In `CombatMode.Exit`, `combatlifecycle.DetermineExitReason(combatService.IsFleeRequested(), ...)` returns `ExitFlee`.
+4. `encounterCallbacks.ExitCombat(ExitFlee, ...)` is called, then `combatService.ClearExitState()` resets the flags for the next battle.
 
 ---
 
@@ -725,7 +725,7 @@ mind/combatlifecycle
   → common                   (EntityManager)
 
 mind/encounter
-  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents, EnrollSquadInFaction, CreateFactionPair, EnrollSquadsAtPositions, ValidateEncounterEntity, ClampPowerTarget)
+  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents, EnrollSquadInFaction, CreateFactionPair, EnrollSquadsAtPositions, ClampPowerTarget)
   → tactical/combat          (CombatSetup, CombatType, FactionMembershipComponent)
   → overworld/core           (OverworldEncounterData, OverworldNodeData)
   → overworld/garrison       (GarrisonData, TransferNodeOwnership)
@@ -928,7 +928,8 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `mind/combatlifecycle/starter.go` | `ExecuteCombatStart`: the single entry point for all combat initiation |
 | `mind/combatlifecycle/pipeline.go` | `CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`: the single entry point for all combat resolution |
 | `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadInFaction`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
-| `mind/combatlifecycle/helpers.go` | `ValidateEncounterEntity`, `ClampPowerTarget`: shared validation and power clamping helpers |
+| `mind/combatlifecycle/helpers.go` | `ClampPowerTarget`: shared power-clamping helper |
+| `mind/encounter/validators.go` | `ValidateEncounterEntity`: validates encounter entity + OverworldEncounterData (lives here because overworld validation is an encounter-domain concern, not lifecycle) |
 | `mind/combatlifecycle/cleanup.go` | `StripCombatComponents`: strips combat state from player squads without disposing them |
 | `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`, `CalculateIntensityReward`: reward calculation and distribution |
 | `mind/combatlifecycle/casualties.go` | `GetLivingUnitIDs`, `CountDeadUnits`: casualty counting helpers |

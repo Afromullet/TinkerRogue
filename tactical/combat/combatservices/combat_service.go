@@ -3,7 +3,6 @@ package combatservices
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
@@ -48,6 +47,10 @@ type CombatService struct {
 	// Optional GUI callbacks for UI updates (cache invalidation, visualization refresh).
 	// Set by CombatMode via Set* methods. Called after power dispatch in Fire* methods.
 	onAttackCompleteGUI func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
+
+	// Exit state — set as combat ends (by turn flow on victory/defeat/flee), consumed on mode exit.
+	fleeRequested       bool
+	cachedVictoryResult *VictoryCheckResult
 	onMoveCompleteGUI   func(squadID ecs.EntityID)
 	onTurnEndGUI        func(round int)
 }
@@ -233,6 +236,39 @@ type VictoryCheckResult struct {
 	RoundsCompleted  int
 }
 
+// MarkFleeRequested records that the player chose to flee.
+// Consumed by GetExitResult/IsFleeRequested when combat mode exits.
+func (cs *CombatService) MarkFleeRequested() {
+	cs.fleeRequested = true
+}
+
+// IsFleeRequested reports whether the player requested to flee.
+func (cs *CombatService) IsFleeRequested() bool {
+	return cs.fleeRequested
+}
+
+// CacheVictoryResult stores the victory/flee outcome so the mode exit can
+// consume it without re-running CheckVictoryCondition.
+func (cs *CombatService) CacheVictoryResult(result *VictoryCheckResult) {
+	cs.cachedVictoryResult = result
+}
+
+// GetExitResult returns the cached victory/flee outcome, falling back to a fresh
+// CheckVictoryCondition if nothing was cached (e.g., abnormal exits).
+func (cs *CombatService) GetExitResult() *VictoryCheckResult {
+	if cs.cachedVictoryResult != nil {
+		return cs.cachedVictoryResult
+	}
+	return cs.CheckVictoryCondition()
+}
+
+// ClearExitState resets the flee flag and cached victory result. Called after
+// the mode exit has consumed them, so the next combat starts clean.
+func (cs *CombatService) ClearExitState() {
+	cs.fleeRequested = false
+	cs.cachedVictoryResult = nil
+}
+
 // CheckVictoryCondition checks if battle has ended
 func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	result := &VictoryCheckResult{
@@ -347,17 +383,19 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // Combat Lifecycle Methods
 // ================================
 
-// CleanupCombat removes ALL combat entities when returning to exploration
-// Enemy squads must be provided by the encounter service for cleanup
-func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
+// CleanupCombat removes tactical-side combat entities when returning to exploration.
+// Enemy squads must be provided by the encounter service for cleanup.
+// Returns the player squad IDs that were in combat so the caller (EncounterService) can
+// finish cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
+// combatlifecycle.StripCombatComponents) without tactical/combat depending on mind/.
+func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID {
 	fmt.Println("=== Combat Cleanup Starting ===")
 
 	// Remove all active effects from player units before leaving combat
 	cs.cleanupEffects()
 
-	// Remove player squads from map and remove combat components
-	// Uses faction-based filtering instead of roster lookup
-	cs.resetPlayerSquadsToOverworld()
+	// Identify player squads from faction membership so the caller can strip their combat components.
+	playerSquadIDs := cs.collectPlayerSquadIDs()
 
 	// Build set of enemy squad IDs for unit filtering
 	enemySquadSet := make(map[ecs.EntityID]bool)
@@ -373,6 +411,7 @@ func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
 	cs.disposeEnemyUnits(enemySquadSet)
 
 	fmt.Println("=== Combat Cleanup Complete ===")
+	return playerSquadIDs
 }
 
 // cleanupEffects removes all active effects from all player squad units.
@@ -395,10 +434,10 @@ func (cs *CombatService) cleanupEffects() {
 // Helper Methods
 // ================================
 
-// resetPlayerSquadsToOverworld removes player squads from the map after combat.
-// Player squads should only exist in the roster, not on the map.
-// Uses faction membership to identify player squads, then delegates stripping to combatlifecycle.
-func (cs *CombatService) resetPlayerSquadsToOverworld() {
+// collectPlayerSquadIDs returns all squads whose faction membership is player-controlled.
+// Caller (EncounterService) uses this list to strip cross-cutting squad components via
+// combatlifecycle.StripCombatComponents — keeps tactical/combat free of mind/ imports.
+func (cs *CombatService) collectPlayerSquadIDs() []ecs.EntityID {
 	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squadcore.SquadTag) {
 		entity := result.Entity
@@ -416,7 +455,7 @@ func (cs *CombatService) resetPlayerSquadsToOverworld() {
 		}
 		playerSquadIDs = append(playerSquadIDs, entity.GetID())
 	}
-	combatlifecycle.StripCombatComponents(cs.EntityManager, playerSquadIDs)
+	return playerSquadIDs
 }
 
 // disposeEntitiesByTag disposes all entities with a given tag

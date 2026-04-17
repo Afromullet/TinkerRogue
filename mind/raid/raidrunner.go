@@ -6,7 +6,6 @@ import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"
-	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/garrisongen"
 
@@ -53,7 +52,7 @@ func NewRaidRunner(manager *common.EntityManager, encounterService *encounter.En
 	// Guard: only process results when raid is active AND not retreated.
 	// Without this guard, retreating from a raid and then triggering an overworld
 	// encounter would cause the listener to process the overworld result as a raid.
-	encounterService.SetPostCombatCallback(func(reason combattypes.CombatExitReason, result *combattypes.EncounterOutcome) {
+	encounterService.SetPostCombatCallback(func(reason combatlifecycle.CombatExitReason, result *combatlifecycle.EncounterOutcome) {
 		raidState := GetRaidState(rr.manager)
 		if rr.raidEntityID != 0 && raidState != nil && raidState.Status == RaidActive {
 			rr.ResolveEncounter(reason, result)
@@ -211,7 +210,7 @@ func (rr *RaidRunner) processStairsRoom(raidState *RaidStateData, room *RoomData
 
 // ResolveEncounter processes the result of a completed combat encounter.
 // Called via PostCombatCallback from EncounterService.
-func (rr *RaidRunner) ResolveEncounter(reason combattypes.CombatExitReason, result *combattypes.EncounterOutcome) {
+func (rr *RaidRunner) ResolveEncounter(reason combatlifecycle.CombatExitReason, result *combatlifecycle.EncounterOutcome) {
 	raidState := GetRaidState(rr.manager)
 	if raidState == nil {
 		return
@@ -241,13 +240,13 @@ func (rr *RaidRunner) ResolveEncounter(reason combattypes.CombatExitReason, resu
 
 	var rewardText string
 	switch reason {
-	case combattypes.ExitVictory:
+	case combatlifecycle.ExitVictory:
 		resolver := &RaidRoomResolver{RaidState: raidState, RoomNodeID: rr.currentRoomNodeID}
 		result := combatlifecycle.ExecuteResolution(rr.manager, resolver)
 		if result != nil {
 			rewardText = result.RewardText
 		}
-	case combattypes.ExitDefeat, combattypes.ExitFlee:
+	case combatlifecycle.ExitDefeat, combatlifecycle.ExitFlee:
 		resolver := &RaidDefeatResolver{}
 		combatlifecycle.ExecuteResolution(rr.manager, resolver)
 	}
@@ -267,7 +266,7 @@ func (rr *RaidRunner) ResolveEncounter(reason combattypes.CombatExitReason, resu
 		UnitsLost:  unitsLostTotal,
 		AlertLevel: alertLevel,
 		RewardText: rewardText,
-		IsVictory:  reason == combattypes.ExitVictory,
+		IsVictory:  reason == combatlifecycle.ExitVictory,
 	}
 }
 
