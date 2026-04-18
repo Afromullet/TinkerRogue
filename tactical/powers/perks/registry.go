@@ -186,7 +186,7 @@ func ValidateHookCoverage() []error {
 			errs = append(errs, fmt.Errorf("perk %q has a JSON definition but no registered behavior", id))
 		}
 	}
-	for id := range behaviorRegistry {
+	for id := range perkBehaviorImpls {
 		if PerkRegistry[id] == nil {
 			errs = append(errs, fmt.Errorf("perk %q has a registered behavior but no JSON definition", id))
 		}

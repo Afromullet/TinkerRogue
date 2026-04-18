@@ -2,6 +2,7 @@ package perks
 
 import (
 	"game_main/common"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -44,6 +45,23 @@ func GetRoundState(squadID ecs.EntityID, manager *common.EntityManager) *PerkRou
 	)
 }
 
+// ForEachFriendlySquad invokes fn for each active squad in the same faction as
+// squadID, excluding squadID itself. Iteration stops early when fn returns false.
+// No-op if squadID has no faction (not in combat).
+func ForEachFriendlySquad(squadID ecs.EntityID, manager *common.EntityManager, fn func(ecs.EntityID) bool) {
+	faction := combatstate.GetSquadFaction(squadID, manager)
+	if faction == 0 {
+		return
+	}
+	for _, friendlyID := range combatstate.GetActiveSquadsForFaction(faction, manager) {
+		if friendlyID == squadID {
+			continue
+		}
+		if !fn(friendlyID) {
+			return
+		}
+	}
+}
 
 // forEachPerkBehavior iterates over active perks for ownerSquadID, calling fn
 // for each registered PerkBehavior. If fn returns false, iteration stops early.

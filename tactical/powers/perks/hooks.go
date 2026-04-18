@@ -82,14 +82,17 @@ func (ctx *HookContext) IncrementTurnsStationary(max int) {
 	}
 }
 
-var behaviorRegistry = map[PerkID]PerkBehavior{}
+// perkBehaviorImpls maps each PerkID to its runtime PerkBehavior implementation.
+// Populated at init() time by RegisterPerkBehavior. Distinct from the JSON
+// metadata map PerkRegistry in registry.go, which stores static definitions.
+var perkBehaviorImpls = map[PerkID]PerkBehavior{}
 
 // RegisterPerkBehavior registers a perk behavior by its PerkID.
 func RegisterPerkBehavior(b PerkBehavior) {
-	behaviorRegistry[b.PerkID()] = b
+	perkBehaviorImpls[b.PerkID()] = b
 }
 
 // GetPerkBehavior returns the behavior for a perk, or nil if not found.
 func GetPerkBehavior(perkID PerkID) PerkBehavior {
-	return behaviorRegistry[perkID]
+	return perkBehaviorImpls[perkID]
 }
