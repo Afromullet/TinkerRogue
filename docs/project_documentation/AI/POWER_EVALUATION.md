@@ -56,7 +56,7 @@ Power Calculation (Shared)
 
 **Consumers:**
 - **AI Threat System** - `FactionThreatLevelManager` calls `CalculateSquadPowerByRange()` to build threat-by-range maps
-- **Encounter Generation** - `GenerateEncounterSpec()` calls `CalculateSquadPower()` to assess player strength and `EstimateUnitPowerFromTemplate()` to build enemy squads within power budgets
+- **Encounter Generation** - `SpawnCombatEntities()` (via `generateAttackerSquads()`) calls `CalculateSquadPower()` to assess player strength and `EstimateUnitPowerFromTemplate()` to build enemy squads within power budgets
 
 ---
 

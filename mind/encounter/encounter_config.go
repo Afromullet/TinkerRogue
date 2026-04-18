@@ -2,13 +2,24 @@ package encounter
 
 import (
 	"game_main/common"
-	"game_main/mind/combatlifecycle"
 	"game_main/mind/evaluation"
 	"game_main/overworld/core"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
+
+// clampPowerTarget applies min/max bounds from the difficulty modifier to a raw power target.
+// If raw is zero or negative, returns the minimum. If above max, returns the max.
+func clampPowerTarget(raw float64, mod templates.JSONEncounterDifficulty) float64 {
+	if raw <= 0.0 {
+		return mod.MinTargetPower
+	}
+	if raw > mod.MaxTargetPower {
+		return mod.MaxTargetPower
+	}
+	return raw
+}
 
 // getDifficultyModifier retrieves difficulty settings for a given encounter level.
 // Falls back to level 3 (fair fight) if level is invalid.
@@ -86,7 +97,7 @@ func calculateTargetPower(
 		totalPower += evaluation.CalculateSquadPower(squadID, manager, config)
 	}
 	avgPower := totalPower / float64(len(squadIDs))
-	return combatlifecycle.ClampPowerTarget(avgPower*difficultyMod.PowerMultiplier, difficultyMod)
+	return clampPowerTarget(avgPower*difficultyMod.PowerMultiplier, difficultyMod)
 }
 
 // GetSquadPreferences retrieves preferred squad composition for an encounter type.

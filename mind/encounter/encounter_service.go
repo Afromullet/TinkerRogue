@@ -147,10 +147,12 @@ func (es *EncounterService) ExitCombat(
 	// All cleanup steps reference this snapshot so new fields don't get missed.
 	enc := *es.activeEncounter
 
-	// Step 1: Resolve combat outcome based on type + reason
+	// Step 1: Resolve combat outcome based on type + reason.
+	// Starters that own their own resolution (e.g. raid via its callback) set
+	// SkipServiceResolution so EncounterService stays agnostic of which types those are.
 	switch reason {
 	case combatlifecycle.ExitVictory, combatlifecycle.ExitDefeat:
-		if enc.Type != combatlifecycle.CombatTypeRaid {
+		if !enc.SkipServiceResolution {
 			es.resolveEncounterOutcome(&enc, result.IsPlayerVictory)
 		}
 	case combatlifecycle.ExitFlee:
@@ -162,8 +164,8 @@ func (es *EncounterService) ExitCombat(
 		}
 	}
 
-	// Step 2: Mark encounter defeated on victory (non-raid)
-	if result.IsPlayerVictory && enc.Type != combatlifecycle.CombatTypeRaid {
+	// Step 2: Mark encounter defeated on victory (unless owned by callback)
+	if result.IsPlayerVictory && !enc.SkipServiceResolution {
 		es.markEncounterDefeated(enc.EncounterID)
 	}
 
@@ -305,6 +307,7 @@ func (es *EncounterService) TransitionToCombat(setup *combatlifecycle.CombatSetu
 		PlayerEntityID:         playerEntityID,
 		Type:                   setup.Type,
 		DefendedNodeID:         setup.DefendedNodeID,
+		SkipServiceResolution:  setup.SkipServiceResolution,
 	}
 
 	return nil

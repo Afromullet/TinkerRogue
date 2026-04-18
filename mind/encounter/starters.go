@@ -2,11 +2,9 @@ package encounter
 
 import (
 	"fmt"
-	"math"
 
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/mind/evaluation"
 	"game_main/overworld/garrison"
 	"game_main/world/coords"
 
@@ -42,14 +40,7 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 		s.hiddenRenderable = renderable
 	}
 
-	// Check if the threat node has an NPC garrison; if so, use garrison squads directly
-	var spawnResult *SpawnResult
-	garrisonData := getGarrisonForEncounter(manager, encounterData)
-	if garrisonData != nil {
-		spawnResult, err = spawnGarrisonEncounter(manager, s.RosterOwnerID, s.PlayerPos, garrisonData, s.EncounterID)
-	} else {
-		spawnResult, err = SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
-	}
+	spawnResult, err := SpawnCombatEntities(manager, s.RosterOwnerID, s.PlayerPos, encounterData, s.EncounterID)
 	if err != nil {
 		// Rollback sprite hiding on spawn failure
 		if renderable != nil {
@@ -79,8 +70,7 @@ func (s *OverworldCombatStarter) Rollback() {
 }
 
 // GarrisonDefenseStarter prepares garrison defense encounters.
-// Gets garrison data, creates factions, adds garrison squads to player faction,
-// generates enemy squads via power budget.
+// The garrison squads defend; attackers are generated via power budget against them.
 type GarrisonDefenseStarter struct {
 	EncounterID  ecs.EntityID
 	TargetNodeID ecs.EntityID
@@ -92,13 +82,11 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, err
 	}
 
-	// Get garrison data
 	garrisonData := garrison.GetGarrisonAtNode(manager, s.TargetNodeID)
 	if garrisonData == nil || len(garrisonData.SquadIDs) == 0 {
 		return nil, fmt.Errorf("no garrison at node %d", s.TargetNodeID)
 	}
 
-	// Get node position for combat
 	nodeEntity := manager.FindEntityByID(s.TargetNodeID)
 	if nodeEntity == nil {
 		return nil, fmt.Errorf("node entity %d not found", s.TargetNodeID)
@@ -108,38 +96,28 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, fmt.Errorf("node %d has no position", s.TargetNodeID)
 	}
 
-	// Create factions
-	fm, playerFactionID, enemyFactionID := combatlifecycle.CreateFactionPair(manager, "Garrison Defense", "Attacking Forces", s.EncounterID)
+	garrisonPositions := generatePlayerSquadPositions(*nodePos, len(garrisonData.SquadIDs))
 
-	// Add garrison squads to player faction (they defend)
-	garrisonPositions := generatePositionsAroundPoint(*nodePos, len(garrisonData.SquadIDs), -math.Pi/2, math.Pi/2, PlayerMinDistance, PlayerMaxDistance)
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, garrisonData.SquadIDs, garrisonPositions, true); err != nil {
-		return nil, fmt.Errorf("failed to add garrison squads: %w", err)
+	enemyIDs, enemyPositions, err := generateAttackerSquads(manager, *nodePos, garrisonData.SquadIDs, encounterData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate attackers: %w", err)
 	}
 
-	// Calculate attacker power from garrison strength (not roster owner)
-	powerConfig := evaluation.GetPowerConfigByProfile(DefaultPowerProfile)
-	difficultyMod := getDifficultyModifier(encounterData.Level)
-	targetEnemyPower := calculateTargetPower(manager, garrisonData.SquadIDs, powerConfig, difficultyMod)
-
-	enemySquadSpecs := generateEnemySquadsByPower(
-		manager, targetEnemyPower, difficultyMod, encounterData, *nodePos, powerConfig,
+	spawnResult, err := assembleCombatFactions(
+		manager, s.EncounterID,
+		"Garrison Defense", "Attacking Forces",
+		garrisonData.SquadIDs, enemyIDs,
+		garrisonPositions, enemyPositions,
+		true,
 	)
-
-	enemySquadIDs := make([]ecs.EntityID, len(enemySquadSpecs))
-	enemyPositions := make([]coords.LogicalPosition, len(enemySquadSpecs))
-	for i, spec := range enemySquadSpecs {
-		enemySquadIDs[i] = spec.SquadID
-		enemyPositions[i] = spec.Position
-	}
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, enemySquadIDs, enemyPositions, false); err != nil {
-		return nil, fmt.Errorf("failed to add enemy squads: %w", err)
+	if err != nil {
+		return nil, err
 	}
 
 	return &combatlifecycle.CombatSetup{
-		PlayerFactionID: playerFactionID,
-		EnemyFactionID:  enemyFactionID,
-		EnemySquadIDs:   enemySquadIDs,
+		PlayerFactionID: spawnResult.PlayerFactionID,
+		EnemyFactionID:  spawnResult.EnemyFactionID,
+		EnemySquadIDs:   spawnResult.EnemySquadIDs,
 		CombatPosition:  *nodePos,
 		EncounterID:     s.EncounterID,
 		ThreatID:        s.TargetNodeID,

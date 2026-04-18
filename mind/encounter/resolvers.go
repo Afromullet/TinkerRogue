@@ -57,7 +57,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	nodeData.Intensity -= damageDealt
 	currentTick := core.GetCurrentTick(manager)
 
-	rewards := combatlifecycle.CalculateIntensityReward(oldIntensity)
+	rewards := CalculateIntensityReward(oldIntensity)
 
 	target := combatlifecycle.GrantTarget{
 		PlayerEntityID: r.PlayerEntityID,

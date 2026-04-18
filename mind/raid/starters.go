@@ -31,14 +31,15 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifec
 	}
 
 	return &combatlifecycle.CombatSetup{
-		PlayerFactionID:      playerFactionID,
-		EnemyFactionID:       enemyFactionID,
-		EnemySquadIDs:        s.GarrisonSquadIDs,
-		CombatPosition:       s.CombatPos,
-		EncounterID:          s.RaidEntityID,
-		ThreatName:           "Garrison Raid",
-		RosterOwnerID:        s.CommanderID,
-		Type:                 combatlifecycle.CombatTypeRaid,
-		PostCombatReturnMode: combatlifecycle.PostCombatReturnRaid,
+		PlayerFactionID:       playerFactionID,
+		EnemyFactionID:        enemyFactionID,
+		EnemySquadIDs:         s.GarrisonSquadIDs,
+		CombatPosition:        s.CombatPos,
+		EncounterID:           s.RaidEntityID,
+		ThreatName:            "Garrison Raid",
+		RosterOwnerID:         s.CommanderID,
+		Type:                  combatlifecycle.CombatTypeRaid,
+		PostCombatReturnMode:  combatlifecycle.PostCombatReturnRaid,
+		SkipServiceResolution: true,
 	}, nil
 }

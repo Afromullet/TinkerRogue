@@ -30,7 +30,7 @@ Technical reference for TinkerRogue's encounter generation, combat lifecycle, an
 
 The encounter system creates balanced combat scenarios by using the shared power evaluation system (documented in [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md#power-evaluation-system)) to match enemy squad power against the player's deployed forces. Encounters can be triggered by overworld threat nodes, random events, or garrison defenses.
 
-**Integration with Power System:** `GenerateEncounterSpec()` calls `CalculateSquadPower()` to assess player strength, then uses `EstimateUnitPowerFromTemplate()` to build enemy squads within a power budget. This ensures the same power formula drives both AI threat assessment and encounter balancing.
+**Integration with Power System:** `SpawnCombatEntities()` calls `CalculateSquadPower()` (via `generateAttackerSquads()`) to assess player strength, then uses `EstimateUnitPowerFromTemplate()` to build enemy squads within a power budget. This ensures the same power formula drives both AI threat assessment and encounter balancing.
 
 **Integration with AI:** Once combat begins, enemy squads are controlled by the AI controller (documented in [AI Algorithm Architecture](AI_ALGORITHM_ARCHITECTURE.md#core-ai-systems)), which uses threat layers (documented in [Behavior & Threat Layers](BEHAVIOR_THREAT_LAYERS.md)) for positioning decisions.
 
@@ -51,48 +51,37 @@ Player Triggers Encounter
 |  |
 |  +- SpawnCombatEntities()
 |     |
-|     +- Check for NPC garrison (if ThreatNodeID has garrison)
-|     |  +- spawnGarrisonEncounter() - uses existing garrison squads as enemies
+|     +- ensurePlayerSquadsDeployed() - auto-deploys if needed, returns deployed IDs
 |     |
-|     +- Standard path: GenerateEncounterSpec()
-|        |
-|        +- Ensure player squads deployed (auto-deploys if needed)
-|        |
-|        +- Calculate total player power
-|        |  +- For each squad: CalculateSquadPower()
-|        |
-|        +- Calculate average squad power
-|        |
-|        +- getDifficultyModifier(level)
-|        |  +- Lookup JSONEncounterDifficulty from EncounterDifficultyTemplates
-|        |  +- Apply GlobalDifficulty.Encounter() overlay
-|        |     +- PowerMultiplier *= diff.PowerMultiplierScale
-|        |     +- SquadCount += diff.SquadCountOffset
-|        |     +- MinUnitsPerSquad += diff.MinUnitsPerSquadOffset
-|        |     +- MaxUnitsPerSquad += diff.MaxUnitsPerSquadOffset
-|        |
-|        +- targetEnemySquadPower = avgPlayerPower * difficultyMod.PowerMultiplier
-|        |  (clamped to MinTargetPower / MaxTargetPower)
-|        |
-|        +- generateEnemySquadsByPower()
-|        |  +- getSquadComposition() - encounter type preferences or random
-|        |  +- Pre-compute enemy positions (circle around player)
-|        |  +- For each squad (count from difficulty):
-|        |     +- createSquadForPowerBudget()
-|        |        +- filterUnitsBySquadType() (melee/ranged/magic)
-|        |        +- Add units until power budget reached (PowerThreshold=0.95)
-|        |        |  +- EstimateUnitPowerFromTemplate() for each candidate
-|        |        +- Ensure MinUnitsPerSquad minimum
-|        |
-|        +- Return EncounterSpec
-|           +- PlayerSquadIDs
-|           +- EnemySquads (EnemySquadSpec with SquadID, Position, Power, Type, Name)
-|           +- Difficulty
-|           +- EncounterType
-|
-+- Create factions (CombatFactionManager.CreateFactionWithPlayer)
-+- Assign player squads to faction
-+- Assign enemy squads to faction + CreateActionStateForSquad
+|     +- Check for NPC garrison (if ThreatNodeID has garrison)
+|     |  +- Garrison branch: use garrisonData.SquadIDs as enemies,
+|     |  |  position them via generatePositionsAroundPoint (full circle)
+|     |  |
+|     |  +- Non-garrison branch: generateAttackerSquads()
+|     |     |
+|     |     +- getDifficultyModifier(level)
+|     |     |  +- Lookup JSONEncounterDifficulty from EncounterDifficultyTemplates
+|     |     |  +- Apply GlobalDifficulty.Encounter() overlay
+|     |     |     +- PowerMultiplier *= diff.PowerMultiplierScale
+|     |     |     +- SquadCount += diff.SquadCountOffset
+|     |     |     +- MinUnitsPerSquad += diff.MinUnitsPerSquadOffset
+|     |     |     +- MaxUnitsPerSquad += diff.MaxUnitsPerSquadOffset
+|     |     |
+|     |     +- calculateTargetPower(sourceSquadIDs, config, difficultyMod)
+|     |     |  +- For each source squad: CalculateSquadPower()
+|     |     |  +- Average, scale by PowerMultiplier, clamp to Min/MaxTargetPower
+|     |     |
+|     |     +- generateEnemySquadsByPower()
+|     |        +- getSquadComposition() - encounter type preferences or random
+|     |        +- Pre-compute enemy positions (circle around centerPos)
+|     |        +- For each squad (count from difficulty):
+|     |           +- createSquadForPowerBudget()
+|     |              +- filterUnitsBySquadType() (melee/ranged/magic)
+|     |              +- Add units until power budget reached (PowerThreshold=0.95)
+|     |              |  +- EstimateUnitPowerFromTemplate() for each candidate
+|     |              +- Ensure MinUnitsPerSquad minimum
+|     |
+|     +- assembleCombatFactions() - creates faction pair, enrolls player + enemy squads
 |
 +- EncounterService tracks ActiveEncounter
 |  (EncounterID, EnemySquadIDs, PlayerFactionID, EnemyFactionID, timing, etc.)
@@ -167,13 +156,12 @@ calculateRewards(intensity, encounter):
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `mind/encounter/encounter_generator.go` | Enemy creation | `GenerateEncounterSpec()` |
-| `mind/encounter/encounter_setup.go` | Combat initialization | `SpawnCombatEntities()`, `spawnGarrisonEncounter()`, `generateEnemySquadsByPower()`, `createSquadForPowerBudget()` |
+| `mind/encounter/encounter_setup.go` | Combat initialization | `SpawnCombatEntities()`, `generateAttackerSquads()`, `assembleCombatFactions()`, `generateEnemySquadsByPower()`, `createSquadForPowerBudget()` |
 | `mind/encounter/encounter_service.go` | Encounter lifecycle | `EncounterService`, `StartEncounter()`, `StartGarrisonDefense()`, `ExitCombat()`, `EndEncounter()`, `RecordEncounterCompletion()` |
 | `mind/encounter/encounter_trigger.go` | Encounter creation | `TriggerCombatFromThreat()`, `TriggerRandomEncounter()`, `TriggerGarrisonDefense()` |
 | `mind/encounter/encounter_config.go` | Difficulty config | `getDifficultyModifier()`, `GetSquadPreferences()` |
 | `mind/encounter/rewards.go` | Combat rewards | `calculateRewards()`, `grantRewards()`, `grantExperience()` |
-| `mind/encounter/types.go` | Type definitions | `ActiveEncounter`, `CompletedEncounter`, `EncounterSpec`, `EnemySquadSpec`, `CombatResult`, `CombatExitReason` |
+| `mind/encounter/types.go` | Type definitions | `ActiveEncounter`, `CompletedEncounter`, `SpawnResult`, `EnemySquadSpec`, `ModeCoordinator` |
 
 ---
 

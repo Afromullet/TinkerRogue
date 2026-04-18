@@ -74,6 +74,10 @@ type ActiveEncounter struct {
 	// Combat type (overworld, garrison defense, raid, debug)
 	Type           combatlifecycle.CombatType
 	DefendedNodeID ecs.EntityID // Node being defended (0 if not garrison defense)
+
+	// SkipServiceResolution is true when resolution is handled by an external callback
+	// (e.g., RaidRunner) rather than EncounterService itself.
+	SkipServiceResolution bool
 }
 
 // CompletedEncounter represents a finished encounter for history tracking
@@ -95,23 +99,11 @@ type CompletedEncounter struct {
 	VictorName      string
 }
 
-// SpawnResult holds the output of SpawnCombatEntities or spawnGarrisonEncounter.
-// Replaces the multi-return ([]EntityID, EntityID, EntityID, error).
+// SpawnResult holds the output of SpawnCombatEntities.
 type SpawnResult struct {
 	EnemySquadIDs   []ecs.EntityID
 	PlayerFactionID ecs.EntityID
 	EnemyFactionID  ecs.EntityID
-}
-
-// EncounterSpec describes what to create for an encounter.
-// Pure data structure - no combat references.
-// This allows encounter generation to be decoupled from combat setup.
-type EncounterSpec struct {
-	PlayerSquadIDs []ecs.EntityID   // Player's deployed squads
-	EnemySquads    []EnemySquadSpec // Enemy squads to create
-	Difficulty     int              // Encounter difficulty level
-	EncounterType  string           // Type of encounter (goblin, bandit, etc.)
-	PlayerStartPos coords.LogicalPosition
 }
 
 // EnemySquadSpec describes a single enemy squad to create.

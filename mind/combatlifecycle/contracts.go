@@ -68,6 +68,11 @@ type CombatSetup struct {
 	Type                 CombatType
 	DefendedNodeID       ecs.EntityID
 	PostCombatReturnMode string // "" = default, PostCombatReturnRaid = return to raid mode
+
+	// SkipServiceResolution indicates the starter's domain handles resolution
+	// via its own post-combat callback (e.g., RaidRunner). When true,
+	// EncounterService.ExitCombat skips resolveEncounterOutcome and markEncounterDefeated.
+	SkipServiceResolution bool
 }
 
 // PostCombatReturnMode constants for compile-time safety.

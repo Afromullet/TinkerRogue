@@ -328,7 +328,7 @@ gui/guioverworld/overworld_panels_registry.go:126  (Engage button)
 1. `EngageThreat(nodeID)` validates that the commander exists, has a position, and is co-located with the threat node.
 2. `TriggerCombatFromThreat` reads the threat node's `OverworldNodeData`, looks up the encounter definition in `core.GetNodeRegistry()`, and creates an `OverworldEncounterData` entity with `ThreatNodeID` set to the threat's entity ID. This `ThreatNodeID` link is critical — it is later used by `OverworldCombatResolver.Resolve` to find the threat node and apply damage to it.
 3. `OverworldCombatStarter.Prepare` validates the encounter entity via `encounter.ValidateEncounterEntity`, hides the encounter entity's sprite (stored for rollback), then calls `SpawnCombatEntities`.
-4. `SpawnCombatEntities` (returns `*SpawnResult` with `EnemySquadIDs`, `PlayerFactionID`, `EnemyFactionID`) checks whether the threat node has an NPC garrison. If it does, those existing garrison squads become the enemies (`spawnGarrisonEncounter`). If not, it generates enemies from a power budget (`GenerateEncounterSpec` → `generateEnemySquadsByPower`).
+4. `SpawnCombatEntities` (returns `*SpawnResult` with `EnemySquadIDs`, `PlayerFactionID`, `EnemyFactionID`) checks whether the threat node has an NPC garrison. If it does, those existing garrison squads become the enemies. If not, it generates enemies from a power budget via `generateAttackerSquads` → `generateEnemySquadsByPower`. Faction creation and squad enrollment run through the shared `assembleCombatFactions` helper in both branches.
 5. Power budget generation uses `evaluation.CalculateSquadPower` to measure the player's deployed squads, applies a difficulty multiplier from the encounter's level, and iteratively adds units from a type-filtered pool until the target power is reached.
 
 **CombatSetup produced:**
@@ -358,7 +358,7 @@ gui/guioverworld/overworld_action_handler.go:32   EndTurn()
    - Validates the encounter entity via `encounter.ValidateEncounterEntity`.
    - Reads the garrison's squad IDs from `garrison.GetGarrisonAtNode`.
    - Creates two factions via `combatlifecycle.CreateFactionPair`; garrison squads join the player faction via `combatlifecycle.EnrollSquadsAtPositions` (they are the defenders), and a fresh set of generated enemy squads joins the enemy faction.
-   - Enemy power is calculated from the average garrison squad power, clamped via `combatlifecycle.ClampPowerTarget`, then multiplied by a difficulty modifier derived from the attacking faction's strength. This ensures the defense is appropriately challenging regardless of the player's current roster.
+   - Enemy power is calculated from the average garrison squad power, clamped via `encounter.clampPowerTarget`, then multiplied by a difficulty modifier derived from the attacking faction's strength. This ensures the defense is appropriately challenging regardless of the player's current roster.
    - `RosterOwnerID = 0` because there is no commander directing this battle — the garrison defends autonomously.
 3. The node's `LogicalPosition` is used as `CombatPosition`.
 
@@ -396,7 +396,7 @@ gui/guiraid/raidmode.go:289         OnDeployConfirmed()
 - `RosterOwnerID = commanderID`
 - `EncounterID = raidEntityID` (the raid entity, not an OverworldEncounterData entity)
 
-The `CombatTypeRaid` type causes `EncounterService.ExitCombat` to skip overworld resolution, because raid resolution is handled separately by `RaidRunner.ResolveEncounter` via the post-combat listener callback.
+`RaidCombatStarter` sets `SkipServiceResolution = true` on its `CombatSetup`, which flows through to `ActiveEncounter`. When `EncounterService.ExitCombat` sees that flag it skips overworld resolution and defeat-marking — raid resolution is handled separately by `RaidRunner.ResolveEncounter` via the post-combat listener callback. EncounterService does not check `CombatType` by name for this, so any future combat type with its own resolver can opt into the same behavior just by setting the flag.
 
 ### Pathway 4: Debug "Start Raid" (Roguelike Mode)
 
@@ -561,7 +561,7 @@ Activated when: `Type = CombatTypeOverworld` and `ThreatNodeID != 0`.
 - Counts dead enemy units via `combatlifecycle.CountDeadUnits`.
 - Converts enemy casualties to intensity damage: every 5 enemies killed = 1 intensity point.
 - Reduces `nodeData.Intensity` by the damage amount.
-- If intensity reaches 0 or below: calls `threat.DestroyThreatNode` (removes the node from the world) and grants full rewards via `combatlifecycle.CalculateIntensityReward(oldIntensity)`.
+- If intensity reaches 0 or below: calls `threat.DestroyThreatNode` (removes the node from the world) and grants full rewards via `encounter.CalculateIntensityReward(oldIntensity)`.
 - If intensity is still positive: grants partial rewards (`rewards.Scale(0.5)`) and resets `nodeData.GrowthProgress = 0.0`.
 
 **On player defeat:**
@@ -725,7 +725,7 @@ mind/combatlifecycle
   → common                   (EntityManager)
 
 mind/encounter
-  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents, EnrollSquadInFaction, CreateFactionPair, EnrollSquadsAtPositions, ClampPowerTarget)
+  → mind/combatlifecycle     (ExecuteResolution, StripCombatComponents, EnrollSquadInFaction, CreateFactionPair, EnrollSquadsAtPositions)
   → tactical/combat          (CombatSetup, CombatType, FactionMembershipComponent)
   → overworld/core           (OverworldEncounterData, OverworldNodeData)
   → overworld/garrison       (GarrisonData, TransferNodeOwnership)
@@ -767,12 +767,16 @@ ExecuteCombatStart()                          mind/combatlifecycle/starter.go
      ├─→ starter.Prepare(manager)
      │       │
      │       ├─→ [Overworld] SpawnCombatEntities()
-     │       │      ├─→ GenerateEncounterSpec()
+     │       │      ├─→ ensurePlayerSquadsDeployed()
+     │       │      ├─→ [if garrison present] use garrisonData.SquadIDs as enemies
+     │       │      ├─→ [else] generateAttackerSquads()
      │       │      │      └─→ generateEnemySquadsByPower()
      │       │      │              └─→ createSquadForPowerBudget()
-     │       │      └─→ CombatFactionManager.AddSquadToFaction()
+     │       │      └─→ assembleCombatFactions() (create pair + enroll both sides)
      │       │
-     │       ├─→ [Garrison] GetGarrisonAtNode() + generateEnemySquadsByPower()
+     │       ├─→ [Garrison Defense] GarrisonDefenseStarter.Prepare()
+     │       │      ├─→ generateAttackerSquads() (power derived from garrison)
+     │       │      └─→ assembleCombatFactions() (garrison as defenders)
      │       │
      │       └─→ [Raid] SetupRaidFactions() (uses pre-created garrison squads)
      │
@@ -928,15 +932,16 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `mind/combatlifecycle/starter.go` | `ExecuteCombatStart`: the single entry point for all combat initiation |
 | `mind/combatlifecycle/pipeline.go` | `CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`: the single entry point for all combat resolution |
 | `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadInFaction`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
-| `mind/combatlifecycle/helpers.go` | `ClampPowerTarget`: shared power-clamping helper |
+| `mind/encounter/encounter_config.go` | `clampPowerTarget`: encounter power-clamping helper (encounter-only; raid uses archetypes) |
 | `mind/encounter/validators.go` | `ValidateEncounterEntity`: validates encounter entity + OverworldEncounterData (lives here because overworld validation is an encounter-domain concern, not lifecycle) |
 | `mind/combatlifecycle/cleanup.go` | `StripCombatComponents`: strips combat state from player squads without disposing them |
-| `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`, `CalculateIntensityReward`: reward calculation and distribution |
+| `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`: generic reward calculation and distribution primitives |
+| `mind/encounter/rewards.go` | `CalculateIntensityReward`: threat-intensity-based reward calculation (encounter-domain) |
 | `mind/combatlifecycle/casualties.go` | `GetLivingUnitIDs`, `CountDeadUnits`: casualty counting helpers |
 | `mind/encounter/encounter_service.go` | `EncounterService`: tracks `ActiveEncounter`, implements `TransitionToCombat`, `ExitCombat`, `SetPostCombatCallback` |
 | `mind/encounter/starters.go` | `OverworldCombatStarter`, `GarrisonDefenseStarter`: two of the three `CombatStarter` implementations |
 | `mind/encounter/encounter_trigger.go` | `TriggerCombatFromThreat`, `TriggerRandomEncounter`, `TriggerGarrisonDefense`: creates encounter entities |
-| `mind/encounter/encounter_setup.go` | `SpawnCombatEntities` (returns `*SpawnResult`), `GenerateEncounterSpec`: combat entity creation |
+| `mind/encounter/encounter_setup.go` | `SpawnCombatEntities` (returns `*SpawnResult`), `generateAttackerSquads`, `assembleCombatFactions`: combat entity creation |
 | `mind/encounter/resolvers.go` | `OverworldCombatResolver`, `GarrisonDefenseResolver`, `FleeResolver` |
 | `mind/encounter/types.go` | `ActiveEncounter`, `CompletedEncounter`, `SpawnResult`, `ModeCoordinator` interface |
 | `mind/raid/starters.go` | `RaidCombatStarter`: raid-specific `CombatStarter` implementation |
