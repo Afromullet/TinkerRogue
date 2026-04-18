@@ -18,7 +18,7 @@ func TestNewChargeTracker(t *testing.T) {
 	if !ct.IsAvailable(BehaviorEchoDrums) {
 		t.Error("Expected echo_drums to be available on fresh tracker")
 	}
-	if ct.HasPendingEffects() {
+	if ct.Pending.Has() {
 		t.Error("Expected no pending effects on fresh tracker")
 	}
 }
@@ -71,12 +71,12 @@ func TestRefreshRoundCharges(t *testing.T) {
 func TestPendingEffects(t *testing.T) {
 	ct := NewArtifactChargeTracker()
 
-	ct.AddPendingEffect(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
-	ct.AddPendingEffect(BehaviorSaboteurWsHourglass, ecs.EntityID(20))
-	ct.AddPendingEffect("other_effect", ecs.EntityID(30))
+	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
+	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(20))
+	ct.Pending.Add("other_effect", ecs.EntityID(30))
 
 	// Consume matching effects
-	matched := ct.ConsumePendingEffects(BehaviorSaboteurWsHourglass)
+	matched := ct.Pending.Consume(BehaviorSaboteurWsHourglass)
 	if len(matched) != 2 {
 		t.Errorf("Expected 2 matched effects, got %d", len(matched))
 	}
@@ -88,13 +88,13 @@ func TestPendingEffects(t *testing.T) {
 	}
 
 	// Consume again returns empty
-	matched2 := ct.ConsumePendingEffects(BehaviorSaboteurWsHourglass)
+	matched2 := ct.Pending.Consume(BehaviorSaboteurWsHourglass)
 	if len(matched2) != 0 {
 		t.Errorf("Expected 0 matched effects on second consume, got %d", len(matched2))
 	}
 
 	// Other effect still present
-	other := ct.ConsumePendingEffects("other_effect")
+	other := ct.Pending.Consume("other_effect")
 	if len(other) != 1 {
 		t.Errorf("Expected 1 other effect, got %d", len(other))
 	}
@@ -105,7 +105,7 @@ func TestReset(t *testing.T) {
 
 	ct.UseCharge(BehaviorDeadlockShackles, ChargeOncePerBattle)
 	ct.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
-	ct.AddPendingEffect(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
+	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
 
 	ct.Reset()
 
@@ -115,7 +115,7 @@ func TestReset(t *testing.T) {
 	if !ct.IsAvailable(BehaviorEchoDrums) {
 		t.Error("Expected echo_drums available after reset")
 	}
-	if ct.PendingEffectCount() != 0 {
-		t.Errorf("Expected 0 pending effects after reset, got %d", ct.PendingEffectCount())
+	if ct.Pending.Count() != 0 {
+		t.Errorf("Expected 0 pending effects after reset, got %d", ct.Pending.Count())
 	}
 }

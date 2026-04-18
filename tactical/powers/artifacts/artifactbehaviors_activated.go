@@ -33,7 +33,7 @@ func activateWithPending(ctx *BehaviorContext, behaviorKey string, chargeType Ch
 	if err := requireCharge(ctx, behaviorKey); err != nil {
 		return err
 	}
-	ctx.ChargeTracker.AddPendingEffect(behaviorKey, targetSquadID)
+	ctx.ChargeTracker.Pending.Add(behaviorKey, targetSquadID)
 	ctx.ChargeTracker.UseCharge(behaviorKey, chargeType)
 	return nil
 }
@@ -49,7 +49,7 @@ func applyPendingToTargets(
 	if ctx.ChargeTracker == nil {
 		return
 	}
-	pendingEffects := ctx.ChargeTracker.ConsumePendingEffects(behaviorKey)
+	pendingEffects := ctx.ChargeTracker.Pending.Consume(behaviorKey)
 	if len(pendingEffects) == 0 {
 		return
 	}

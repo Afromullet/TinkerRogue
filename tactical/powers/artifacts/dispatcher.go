@@ -67,7 +67,7 @@ func (d *ArtifactDispatcher) DispatchPostReset(factionID ecs.EntityID, squadIDs 
 	}
 
 	// Fire behaviors with pending effects (these target enemy squads, not the equipping squad)
-	for _, key := range d.chargeTracker.PendingBehaviorKeys() {
+	for _, key := range d.chargeTracker.Pending.Keys() {
 		if !fired[key] {
 			b := GetBehavior(key)
 			if b != nil {

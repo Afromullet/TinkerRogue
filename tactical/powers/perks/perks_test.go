@@ -720,9 +720,10 @@ func TestMultiPerk_BloodlustPlusOpeningSalvo(t *testing.T) {
 
 	// Now run AttackerDamageMod hooks through the pipeline for both perks
 	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
-	ctx := buildCombatContext(squadID, 100, 200, squadID, ecs.EntityID(999), manager, nil)
-	if ctx == nil {
-		t.Fatal("Expected combat context")
+	ctx := &HookContext{
+		RoundState: rs,
+		AttackerID: 100, DefenderID: 200,
+		AttackerSquadID: squadID, DefenderSquadID: ecs.EntityID(999),
 	}
 
 	// Run hooks manually like the runner does
@@ -764,7 +765,11 @@ func TestMultiPerk_CounterpunchPlusGrudgeBearer(t *testing.T) {
 
 	// Run combined damage mod hooks
 	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
-	ctx := buildCombatContext(squadID, 100, 200, squadID, enemySquadID, manager, nil)
+	ctx := &HookContext{
+		RoundState: rs,
+		AttackerID: 100, DefenderID: 200,
+		AttackerSquadID: squadID, DefenderSquadID: enemySquadID,
+	}
 
 	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
 		behavior.AttackerDamageMod(ctx, mods)

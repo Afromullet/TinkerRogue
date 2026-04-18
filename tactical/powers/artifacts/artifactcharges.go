@@ -1,7 +1,5 @@
 package artifacts
 
-import "github.com/bytearena/ecs"
-
 // ChargeType determines when an artifact charge refreshes.
 type ChargeType int
 
@@ -11,16 +9,13 @@ const (
 )
 
 // ArtifactChargeTracker tracks per-battle and per-round charge usage for major
-// artifacts and owns the pending-effect queue used by deferred behaviors.
-//
-// Pending-effect mechanics are encapsulated in PendingEffectQueue — see
-// pending_effects.go for the two-phase pattern documentation. The tracker
-// delegates its pending-effect methods to the queue so existing callers keep
-// working while the mechanics live in a single named file.
+// artifacts. Deferred-effect mechanics live on the embedded Pending queue —
+// see pending_effects.go for the two-phase pattern documentation. Callers
+// reach the queue directly via tracker.Pending (no forwarding methods).
 type ArtifactChargeTracker struct {
 	usedThisBattle map[string]bool
 	usedThisRound  map[string]bool
-	pending        *PendingEffectQueue
+	Pending        *PendingEffectQueue
 }
 
 // NewArtifactChargeTracker creates a new tracker with initialized state.
@@ -28,7 +23,7 @@ func NewArtifactChargeTracker() *ArtifactChargeTracker {
 	return &ArtifactChargeTracker{
 		usedThisBattle: make(map[string]bool),
 		usedThisRound:  make(map[string]bool),
-		pending:        NewPendingEffectQueue(),
+		Pending:        NewPendingEffectQueue(),
 	}
 }
 
@@ -52,36 +47,9 @@ func (ct *ArtifactChargeTracker) RefreshRoundCharges() {
 	ct.usedThisRound = make(map[string]bool)
 }
 
-// --- Pending-effect API (delegates to PendingEffectQueue) ---
-
-// AddPendingEffect queues a deferred artifact effect for later consumption.
-func (ct *ArtifactChargeTracker) AddPendingEffect(behavior string, targetSquadID ecs.EntityID) {
-	ct.pending.Add(behavior, targetSquadID)
-}
-
-// ConsumePendingEffects removes and returns all pending effects matching the given behavior.
-func (ct *ArtifactChargeTracker) ConsumePendingEffects(behavior string) []PendingArtifactEffect {
-	return ct.pending.Consume(behavior)
-}
-
-// HasPendingEffects returns true if there are any pending effects queued.
-func (ct *ArtifactChargeTracker) HasPendingEffects() bool {
-	return ct.pending.Has()
-}
-
-// PendingBehaviorKeys returns the unique behavior keys that have pending effects.
-func (ct *ArtifactChargeTracker) PendingBehaviorKeys() []string {
-	return ct.pending.Keys()
-}
-
-// PendingEffectCount returns the number of pending effects queued.
-func (ct *ArtifactChargeTracker) PendingEffectCount() int {
-	return ct.pending.Count()
-}
-
 // Reset clears all charge tracking state (battle charges, round charges, pending effects).
 func (ct *ArtifactChargeTracker) Reset() {
 	ct.usedThisBattle = make(map[string]bool)
 	ct.usedThisRound = make(map[string]bool)
-	ct.pending.Reset()
+	ct.Pending.Reset()
 }

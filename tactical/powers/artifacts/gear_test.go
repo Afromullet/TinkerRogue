@@ -479,7 +479,7 @@ func TestActivateSaboteursHourglass(t *testing.T) {
 		t.Fatalf("Failed to activate Saboteur's Hourglass: %v", err)
 	}
 
-	consumed := charges.ConsumePendingEffects(BehaviorSaboteurWsHourglass)
+	consumed := charges.Pending.Consume(BehaviorSaboteurWsHourglass)
 	if len(consumed) != 1 {
 		t.Errorf("Expected 1 pending effect, got %d", len(consumed))
 	}

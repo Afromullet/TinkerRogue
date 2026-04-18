@@ -24,66 +24,86 @@ func (d *SquadPerkDispatcher) SetLogger(logger powercore.PowerLogger) {
 	d.logger = logger
 }
 
-func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
-	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
-	if ctx == nil {
+// combatCtx returns a HookContext with the attacker/defender identifiers
+// common to every damage-pipeline hook and CoverMod. Five dispatch methods
+// use this exact shape; centralising the literal keeps them in sync.
+func combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID) HookContext {
+	return HookContext{
+		AttackerID: attackerID, DefenderID: defenderID,
+		AttackerSquadID: attackerSquadID, DefenderSquadID: defenderSquadID,
+	}
+}
+
+// run is the shared dispatch primitive. Callers provide a HookContext
+// populated with the per-hook identifiers they need (AttackerID, UnitID,
+// etc.); run fills in the dispatcher-owned fields (PowerContext, RoundState)
+// and iterates equipped perks on ownerSquadID. Returning false from hook
+// terminates iteration early — used by CounterMod, DeathOverride, and
+// DamageRedirect.
+//
+// The PowerContext and RoundState fields on the passed-in ctx are always
+// overwritten; callers should leave them zero-valued.
+func (d *SquadPerkDispatcher) run(ownerSquadID ecs.EntityID, manager *common.EntityManager, ctx HookContext, hook func(*HookContext, PerkBehavior) bool) {
+	roundState := GetRoundState(ownerSquadID, manager)
+	if roundState == nil {
 		return
 	}
-	forEachPerkBehavior(attackerSquadID, manager, func(behavior PerkBehavior) bool {
-		behavior.AttackerDamageMod(ctx, modifiers)
-		return true
+	ctx.PowerContext = powercore.PowerContext{Manager: manager, Logger: d.logger}
+	ctx.RoundState = roundState
+	forEachPerkBehavior(ownerSquadID, manager, func(b PerkBehavior) bool {
+		return hook(&ctx, b)
 	})
+}
+
+// --- Damage pipeline hooks ---
+
+func (d *SquadPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
+	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
+	d.run(attackerSquadID, manager, combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID),
+		func(ctx *HookContext, b PerkBehavior) bool {
+			b.AttackerDamageMod(ctx, modifiers)
+			return true
+		})
 }
 
 func (d *SquadPerkDispatcher) DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return
-	}
-	forEachPerkBehavior(defenderSquadID, manager, func(behavior PerkBehavior) bool {
-		behavior.DefenderDamageMod(ctx, modifiers)
-		return true
-	})
+	d.run(defenderSquadID, manager, combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID),
+		func(ctx *HookContext, b PerkBehavior) bool {
+			b.DefenderDamageMod(ctx, modifiers)
+			return true
+		})
 }
 
 func (d *SquadPerkDispatcher) AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(attackerSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return
-	}
-	forEachPerkBehavior(attackerSquadID, manager, func(behavior PerkBehavior) bool {
-		behavior.AttackerPostDamage(ctx, damageDealt, wasKill)
-		return true
-	})
+	d.run(attackerSquadID, manager, combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID),
+		func(ctx *HookContext, b PerkBehavior) bool {
+			b.AttackerPostDamage(ctx, damageDealt, wasKill)
+			return true
+		})
 }
 
 func (d *SquadPerkDispatcher) DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
 	damageDealt int, wasKill bool, manager *common.EntityManager) {
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return
-	}
-	forEachPerkBehavior(defenderSquadID, manager, func(behavior PerkBehavior) bool {
-		behavior.DefenderPostDamage(ctx, damageDealt, wasKill)
-		return true
-	})
+	d.run(defenderSquadID, manager, combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID),
+		func(ctx *HookContext, b PerkBehavior) bool {
+			b.DefenderPostDamage(ctx, damageDealt, wasKill)
+			return true
+		})
 }
+
+// --- Targeting, counter, cover, and lifecycle hooks ---
 
 func (d *SquadPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.EntityID,
 	targets []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
-	ctx := buildHookContext(attackerSquadID, manager, d.logger)
-	if ctx == nil {
-		return targets
-	}
-	ctx.AttackerID = attackerID
-	ctx.AttackerSquadID = attackerSquadID
-	ctx.DefenderSquadID = defenderSquadID
-	forEachPerkBehavior(attackerSquadID, manager, func(behavior PerkBehavior) bool {
-		targets = behavior.TargetOverride(ctx, targets)
+	d.run(attackerSquadID, manager, HookContext{
+		AttackerID:      attackerID,
+		AttackerSquadID: attackerSquadID,
+		DefenderSquadID: defenderSquadID,
+	}, func(ctx *HookContext, b PerkBehavior) bool {
+		targets = b.TargetOverride(ctx, targets)
 		return true
 	})
 	return targets
@@ -91,16 +111,13 @@ func (d *SquadPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.Ent
 
 func (d *SquadPerkDispatcher) CounterMod(defenderSquadID, attackerID ecs.EntityID,
 	modifiers *combattypes.DamageModifiers, manager *common.EntityManager) bool {
-	ctx := buildHookContext(defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return false
-	}
-	ctx.DefenderSquadID = defenderSquadID
-	ctx.AttackerID = attackerID
-	ctx.SquadID = defenderSquadID
 	skip := false
-	forEachPerkBehavior(defenderSquadID, manager, func(behavior PerkBehavior) bool {
-		if behavior.CounterMod(ctx, modifiers) {
+	d.run(defenderSquadID, manager, HookContext{
+		AttackerID:      attackerID,
+		DefenderSquadID: defenderSquadID,
+		SquadID:         defenderSquadID,
+	}, func(ctx *HookContext, b PerkBehavior) bool {
+		if b.CounterMod(ctx, modifiers) {
 			skip = true
 			return false
 		}
@@ -113,26 +130,20 @@ func (d *SquadPerkDispatcher) CoverMod(attackerID, defenderID ecs.EntityID,
 	coverBreakdown *combattypes.CoverBreakdown, manager *common.EntityManager) {
 	attackerSquadID := getSquadIDForUnit(attackerID, manager)
 	defenderSquadID := getSquadIDForUnit(defenderID, manager)
-	ctx := buildCombatContext(defenderSquadID, attackerID, defenderID, attackerSquadID, defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return
-	}
-	forEachPerkBehavior(defenderSquadID, manager, func(behavior PerkBehavior) bool {
-		behavior.DefenderCoverMod(ctx, coverBreakdown)
-		return true
-	})
+	d.run(defenderSquadID, manager, combatCtx(attackerID, defenderID, attackerSquadID, defenderSquadID),
+		func(ctx *HookContext, b PerkBehavior) bool {
+			b.DefenderCoverMod(ctx, coverBreakdown)
+			return true
+		})
 }
 
 func (d *SquadPerkDispatcher) DeathOverride(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool {
-	ctx := buildHookContext(squadID, manager, d.logger)
-	if ctx == nil {
-		return false
-	}
-	ctx.UnitID = unitID
-	ctx.SquadID = squadID
 	prevented := false
-	forEachPerkBehavior(squadID, manager, func(behavior PerkBehavior) bool {
-		if behavior.DeathOverride(ctx) {
+	d.run(squadID, manager, HookContext{
+		UnitID:  unitID,
+		SquadID: squadID,
+	}, func(ctx *HookContext, b PerkBehavior) bool {
+		if b.DeathOverride(ctx) {
 			prevented = true
 			return false
 		}
@@ -143,18 +154,15 @@ func (d *SquadPerkDispatcher) DeathOverride(unitID, squadID ecs.EntityID, manage
 
 func (d *SquadPerkDispatcher) DamageRedirect(defenderID, defenderSquadID ecs.EntityID,
 	damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
-	ctx := buildHookContext(defenderSquadID, manager, d.logger)
-	if ctx == nil {
-		return damageAmount, 0, 0
-	}
-	ctx.UnitID = defenderID
-	ctx.SquadID = defenderSquadID
-	ctx.DefenderID = defenderID
-	ctx.DefenderSquadID = defenderSquadID
-	ctx.DamageAmount = damageAmount
 	reducedDmg, redirectTarget, redirectAmt := damageAmount, ecs.EntityID(0), 0
-	forEachPerkBehavior(defenderSquadID, manager, func(behavior PerkBehavior) bool {
-		rd, rt, ra := behavior.DamageRedirect(ctx)
+	d.run(defenderSquadID, manager, HookContext{
+		DefenderID:      defenderID,
+		DefenderSquadID: defenderSquadID,
+		UnitID:          defenderID,
+		SquadID:         defenderSquadID,
+		DamageAmount:    damageAmount,
+	}, func(ctx *HookContext, b PerkBehavior) bool {
+		rd, rt, ra := b.DamageRedirect(ctx)
 		if rt != 0 {
 			reducedDmg, redirectTarget, redirectAmt = rd, rt, ra
 			return false

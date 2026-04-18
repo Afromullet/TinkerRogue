@@ -58,7 +58,7 @@ func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ec
 	if ctx.ChargeTracker == nil {
 		return
 	}
-	pendingEffects := ctx.ChargeTracker.ConsumePendingEffects(BehaviorSaboteurWsHourglass)
+	pendingEffects := ctx.ChargeTracker.Pending.Consume(BehaviorSaboteurWsHourglass)
 	if len(pendingEffects) == 0 {
 		return
 	}
