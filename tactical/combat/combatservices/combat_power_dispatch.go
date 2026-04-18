@@ -12,14 +12,15 @@ import (
 )
 
 // setupPowerDispatch configures the shared PowerLogger and creates the perk dispatcher.
-// The actual dispatch wiring happens in NewCombatService via Fire* methods.
+// The actual dispatch wiring happens in NewCombatService, where subscribers are
+// registered on cs.powerPipeline in declared execution order.
 //
-// Execution order per event (enforced by Fire* methods on CombatService):
+// Execution order per event (declared by On* calls in NewCombatService):
 //
 //	PostReset:        artifacts.OnPostReset → perks.TurnStart
-//	OnAttackComplete: artifacts.OnAttackComplete → perks state tracking
-//	OnTurnEnd:        artifacts charge refresh + OnTurnEnd → perks round reset
-//	OnMoveComplete:   perks movement tracking (no artifact hook)
+//	OnAttackComplete: artifacts.OnAttackComplete → perks state tracking → GUI
+//	OnTurnEnd:        artifacts charge refresh + OnTurnEnd → perks round reset → GUI
+//	OnMoveComplete:   perks movement tracking → GUI (no artifact hook)
 func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache *combatstate.CombatQueryCache) {
 	// Single PowerLogger shared by artifacts and perks. Source tags ("engagement_chains",
 	// "counterpunch") flow through unchanged; the [GEAR] / [PERK] prefix is decided

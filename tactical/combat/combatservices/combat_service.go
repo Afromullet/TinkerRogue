@@ -47,7 +47,6 @@ type CombatService struct {
 	// hard-coded the "artifacts → perks → GUI" ordering.
 	perkDispatcher *perks.SquadPerkDispatcher
 	powerPipeline  *powercore.PowerPipeline
-	manager        *common.EntityManager // kept for Fire* methods
 
 	// Optional GUI callbacks for UI updates (cache invalidation, visualization refresh).
 	// Set by CombatMode via Set* methods. Invoked as the last pipeline subscriber.
@@ -88,7 +87,6 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		chargeTracker:      chargeTracker,
 		artifactDispatcher: artifacts.NewArtifactDispatcher(manager, cache, chargeTracker),
 		powerPipeline:      &powercore.PowerPipeline{},
-		manager:            manager,
 	}
 
 	// Set up shared logger and construct the perk dispatcher.
@@ -105,14 +103,14 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	cs.powerPipeline.OnPostReset(cs.artifactDispatcher.DispatchPostReset)
 	cs.powerPipeline.OnPostReset(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
 		if cs.perkDispatcher != nil {
-			cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.manager)
+			cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.EntityManager)
 		}
 	})
 
 	cs.powerPipeline.OnAttackComplete(cs.artifactDispatcher.DispatchOnAttackComplete)
 	cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		if cs.perkDispatcher != nil {
-			cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.manager)
+			cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.EntityManager)
 		}
 	})
 	cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
@@ -124,7 +122,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 	cs.powerPipeline.OnTurnEnd(cs.artifactDispatcher.DispatchOnTurnEnd)
 	cs.powerPipeline.OnTurnEnd(func(round int) {
 		if cs.perkDispatcher != nil {
-			cs.perkDispatcher.DispatchRoundEnd(cs.manager)
+			cs.perkDispatcher.DispatchRoundEnd(cs.EntityManager)
 		}
 	})
 	cs.powerPipeline.OnTurnEnd(func(round int) {
@@ -135,7 +133,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 
 	cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
 		if cs.perkDispatcher != nil {
-			cs.perkDispatcher.DispatchMoveTracking(squadID, cs.manager)
+			cs.perkDispatcher.DispatchMoveTracking(squadID, cs.EntityManager)
 		}
 	})
 	cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
