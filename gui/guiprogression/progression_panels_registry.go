@@ -122,7 +122,7 @@ func buildLibraryPanel(
 		result.Container.AddChild(builders.CreateSmallLabel(source.label))
 
 		result.Container.AddChild(builders.CreateSmallLabel("Unlocked:"))
-		unlocked := widgets.NewCachedListWrapper(builders.CreateListWithConfig(builders.ListConfig{
+		unlockedBase := builders.CreateListWithConfig(builders.ListConfig{
 			Entries:        []interface{}{},
 			MinWidth:       panelWidth - 20,
 			MinHeight:      120,
@@ -130,11 +130,12 @@ func buildLibraryPanel(
 			OnEntrySelected: func(e interface{}) {
 				pickPanel(pm).onUnlockedSelected(e.(*libraryEntry))
 			},
-		}))
-		result.Container.AddChild(unlocked)
+		})
+		unlocked := widgets.NewCachedListWrapper(unlockedBase)
+		result.Container.AddChild(unlockedBase)
 
 		result.Container.AddChild(builders.CreateSmallLabel("Locked:"))
-		locked := widgets.NewCachedListWrapper(builders.CreateListWithConfig(builders.ListConfig{
+		lockedBase := builders.CreateListWithConfig(builders.ListConfig{
 			Entries:        []interface{}{},
 			MinWidth:       panelWidth - 20,
 			MinHeight:      180,
@@ -142,8 +143,9 @@ func buildLibraryPanel(
 			OnEntrySelected: func(e interface{}) {
 				pickPanel(pm).onLockedSelected(e.(*libraryEntry))
 			},
-		}))
-		result.Container.AddChild(locked)
+		})
+		locked := widgets.NewCachedListWrapper(lockedBase)
+		result.Container.AddChild(lockedBase)
 
 		detail := builders.CreateCachedTextArea(builders.TextAreaConfig{
 			MinWidth:  panelWidth - 20,
