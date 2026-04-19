@@ -1,6 +1,8 @@
 package spells
 
 import (
+	"game_main/templates"
+
 	"github.com/bytearena/ecs"
 )
 
@@ -24,7 +26,7 @@ type ManaData struct {
 // SpellBookData holds references to spells a squad can cast via its leader.
 // SpellIDs are keys into the global SpellRegistry.
 type SpellBookData struct {
-	SpellIDs []string
+	SpellIDs []templates.SpellID
 }
 
 // SpellCastResult contains the outcome of casting a spell.

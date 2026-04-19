@@ -9,6 +9,7 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/tactical/squads/unitprogression"
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -53,6 +54,22 @@ type savedSquadMana struct {
 
 type savedSpellBook struct {
 	SpellIDs []string `json:"spellIDs"`
+}
+
+func spellIDsToStrings(ids []templates.SpellID) []string {
+	out := make([]string, len(ids))
+	for i, id := range ids {
+		out[i] = string(id)
+	}
+	return out
+}
+
+func stringsToSpellIDs(ids []string) []templates.SpellID {
+	out := make([]templates.SpellID, len(ids))
+	for i, id := range ids {
+		out[i] = templates.SpellID(id)
+	}
+	return out
 }
 
 type savedSquadMember struct {
@@ -162,7 +179,7 @@ func (c *SquadChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 			ss.Mana = &savedSquadMana{CurrentMana: mana.CurrentMana, MaxMana: mana.MaxMana}
 		}
 		if sb := common.GetComponentType[*spells.SpellBookData](entity, spells.SpellBookComponent); sb != nil {
-			ss.SpellBook = &savedSpellBook{SpellIDs: sb.SpellIDs}
+			ss.SpellBook = &savedSpellBook{SpellIDs: spellIDsToStrings(sb.SpellIDs)}
 		}
 
 		// Save all member units
@@ -315,7 +332,7 @@ func (c *SquadChunk) Load(em *common.EntityManager, data json.RawMessage, idMap 
 		}
 		if ss.SpellBook != nil {
 			squadEntity.AddComponent(spells.SpellBookComponent, &spells.SpellBookData{
-				SpellIDs: ss.SpellBook.SpellIDs,
+				SpellIDs: stringsToSpellIDs(ss.SpellBook.SpellIDs),
 			})
 		}
 

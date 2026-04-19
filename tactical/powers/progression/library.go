@@ -101,8 +101,8 @@ func IsPerkUnlocked(playerID ecs.EntityID, perkID perks.PerkID, manager *common.
 }
 
 // IsSpellUnlocked reports whether the player has the given spell in their library.
-func IsSpellUnlocked(playerID ecs.EntityID, spellID string, manager *common.EntityManager) bool {
-	return spellLib.isUnlocked(playerID, spellID, manager)
+func IsSpellUnlocked(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool {
+	return spellLib.isUnlocked(playerID, string(spellID), manager)
 }
 
 // UnlockPerk spends SkillPoints to add a perk to the library. Idempotent.
@@ -115,12 +115,12 @@ func UnlockPerk(playerID ecs.EntityID, perkID perks.PerkID, manager *common.Enti
 }
 
 // UnlockSpell spends ArcanaPoints to add a spell to the library. Idempotent.
-func UnlockSpell(playerID ecs.EntityID, spellID string, manager *common.EntityManager) error {
+func UnlockSpell(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) error {
 	def := templates.GetSpellDefinition(spellID)
 	if def == nil {
 		return fmt.Errorf("%w: %s", ErrUnknownSpell, spellID)
 	}
-	return spellLib.unlock(playerID, spellID, def.UnlockCost, manager)
+	return spellLib.unlock(playerID, string(spellID), def.UnlockCost, manager)
 }
 
 // AddArcanaPoints grants Arcana Points to a player's progression.

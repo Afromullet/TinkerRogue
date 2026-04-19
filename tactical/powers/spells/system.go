@@ -15,7 +15,7 @@ import (
 // AddSpellCapabilityToSquad attaches ManaComponent and SpellBookComponent to a squad entity.
 // Call this after squad creation when the leader's unit type has spells.
 // Does nothing if spellIDs is empty.
-func AddSpellCapabilityToSquad(squadID ecs.EntityID, manager *common.EntityManager, startingMana, maxMana int, spellIDs []string) {
+func AddSpellCapabilityToSquad(squadID ecs.EntityID, manager *common.EntityManager, startingMana, maxMana int, spellIDs []templates.SpellID) {
 	if len(spellIDs) == 0 {
 		return
 	}
@@ -60,7 +60,7 @@ func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManag
 // filterSpellsByPlayerLibrary intersects a list of spell IDs with the active player's
 // unlocked spell library. Returns the input unchanged if no player or progression data
 // is found (so enemy squads and untested fixtures keep their full spell list).
-func filterSpellsByPlayerLibrary(spellIDs []string, manager *common.EntityManager) []string {
+func filterSpellsByPlayerLibrary(spellIDs []templates.SpellID, manager *common.EntityManager) []templates.SpellID {
 	playerID := findPlayerEntityID(manager)
 	if playerID == 0 {
 		return spellIDs
@@ -69,7 +69,7 @@ func filterSpellsByPlayerLibrary(spellIDs []string, manager *common.EntityManage
 	if data == nil {
 		return spellIDs
 	}
-	filtered := make([]string, 0, len(spellIDs))
+	filtered := make([]templates.SpellID, 0, len(spellIDs))
 	for _, id := range spellIDs {
 		if progression.IsSpellUnlocked(playerID, id, manager) {
 			filtered = append(filtered, id)
@@ -103,7 +103,7 @@ func findPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
 // Tier 3 recommendations).
 func ExecuteSpellCast(
 	casterEntityID ecs.EntityID,
-	spellID string,
+	spellID templates.SpellID,
 	targetSquadIDs []ecs.EntityID,
 	manager *common.EntityManager,
 ) *SpellCastResult {

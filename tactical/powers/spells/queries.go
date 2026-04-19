@@ -18,7 +18,7 @@ func GetSpellBook(entityID ecs.EntityID, manager *common.EntityManager) *SpellBo
 }
 
 // HasEnoughMana checks if an entity has enough mana to cast the given spell.
-func HasEnoughMana(entityID ecs.EntityID, spellID string, manager *common.EntityManager) bool {
+func HasEnoughMana(entityID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool {
 	mana := GetManaData(entityID, manager)
 	if mana == nil {
 		return false
@@ -52,7 +52,7 @@ func GetCastableSpells(entityID ecs.EntityID, manager *common.EntityManager) []*
 }
 
 // HasSpellInBook checks if a spell is in the entity's spellbook.
-func HasSpellInBook(entityID ecs.EntityID, spellID string, manager *common.EntityManager) bool {
+func HasSpellInBook(entityID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool {
 	book := GetSpellBook(entityID, manager)
 	if book == nil {
 		return false

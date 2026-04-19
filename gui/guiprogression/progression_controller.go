@@ -150,9 +150,13 @@ var (
 		unlockBtnText: "Unlock Spell",
 		detailPrompt:  "Select a spell to view details.",
 		allItems:      allSpellItems,
-		isUnlocked:    progression.IsSpellUnlocked,
+		isUnlocked: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
+			return progression.IsSpellUnlocked(playerID, templates.SpellID(itemID), manager)
+		},
 		currentPoints: func(d *progression.ProgressionData) int { return d.ArcanaPoints },
-		unlock:        progression.UnlockSpell,
+		unlock: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) error {
+			return progression.UnlockSpell(playerID, templates.SpellID(itemID), manager)
+		},
 	}
 )
 
@@ -177,7 +181,7 @@ func allPerkItems() []libraryItem {
 
 func allSpellItems() []libraryItem {
 	ids := templates.GetAllSpellIDs()
-	sort.Strings(ids)
+	sort.Slice(ids, func(i, j int) bool { return string(ids[i]) < string(ids[j]) })
 	items := make([]libraryItem, 0, len(ids))
 	for _, id := range ids {
 		def := templates.GetSpellDefinition(id)
@@ -185,7 +189,7 @@ func allSpellItems() []libraryItem {
 			continue
 		}
 		items = append(items, libraryItem{
-			id:         id,
+			id:         string(id),
 			name:       def.Name,
 			unlockCost: def.UnlockCost,
 			detail:     formatSpellBody(def),

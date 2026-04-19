@@ -35,7 +35,7 @@ func (h *SpellCastingHandler) EnterSpellMode() {
 }
 
 // SelectSpell validates mana and enters targeting based on spell type.
-func (h *SpellCastingHandler) SelectSpell(spellID string) {
+func (h *SpellCastingHandler) SelectSpell(spellID templates.SpellID) {
 	squadID := h.deps.BattleState.SelectedSquadID
 	if squadID == 0 {
 		return

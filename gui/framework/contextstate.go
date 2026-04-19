@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"game_main/templates"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"
@@ -25,8 +26,8 @@ type TacticalState struct {
 	ShowHealthBars bool // Whether health bars are displayed above squads
 
 	// Spell Casting State
-	InSpellMode     bool   // Whether spell mode is active
-	SelectedSpellID string // Which spell is being targeted
+	InSpellMode     bool             // Whether spell mode is active
+	SelectedSpellID templates.SpellID // Which spell is being targeted
 
 	// Artifact Activation State
 	InArtifactMode          bool   // Whether artifact mode is active

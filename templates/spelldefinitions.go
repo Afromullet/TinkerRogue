@@ -6,6 +6,11 @@ import (
 	"os"
 )
 
+// SpellID is a typed string for spell identifiers, providing compile-time safety
+// at API boundaries. Values originate from JSON (gamedata/spelldata.json); unlike
+// perks.PerkID there are no named Go constants.
+type SpellID string
+
 // SpellTargetType determines how a spell selects its targets.
 type SpellTargetType string
 
@@ -31,32 +36,32 @@ type SpellStatModifier struct {
 
 // SpellDefinition is a static blueprint for a spell loaded from JSON.
 type SpellDefinition struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Description   string             `json:"description"`
-	ManaCost      int                `json:"manaCost"`
-	Damage        int                `json:"damage"`
-	TargetType    SpellTargetType    `json:"targetType"`
-	EffectType    SpellEffectType    `json:"effectType"`
-	Shape         *JSONTargetArea    `json:"shape,omitempty"`
-	VXType        string             `json:"vxType"`
-	VXDuration    int                `json:"vxDuration"`
-	Duration      int                `json:"duration,omitempty"`      // turns for buff/debuff
+	ID            SpellID             `json:"id"`
+	Name          string              `json:"name"`
+	Description   string              `json:"description"`
+	ManaCost      int                 `json:"manaCost"`
+	Damage        int                 `json:"damage"`
+	TargetType    SpellTargetType     `json:"targetType"`
+	EffectType    SpellEffectType     `json:"effectType"`
+	Shape         *JSONTargetArea     `json:"shape,omitempty"`
+	VXType        string              `json:"vxType"`
+	VXDuration    int                 `json:"vxDuration"`
+	Duration      int                 `json:"duration,omitempty"`      // turns for buff/debuff
 	StatModifiers []SpellStatModifier `json:"statModifiers,omitempty"` // stat changes
-	UnlockCost    int                `json:"unlockCost"`              // Arcana points to unlock
+	UnlockCost    int                 `json:"unlockCost"`              // Arcana points to unlock
 }
 
 // SpellRegistry is the global registry of all spell definitions, keyed by spell ID.
-var SpellRegistry = make(map[string]*SpellDefinition)
+var SpellRegistry = make(map[SpellID]*SpellDefinition)
 
 // GetSpellDefinition looks up a spell by ID. Returns nil if not found.
-func GetSpellDefinition(id string) *SpellDefinition {
+func GetSpellDefinition(id SpellID) *SpellDefinition {
 	return SpellRegistry[id]
 }
 
 // GetAllSpellIDs returns all spell IDs from the registry.
-func GetAllSpellIDs() []string {
-	ids := make([]string, 0, len(SpellRegistry))
+func GetAllSpellIDs() []SpellID {
+	ids := make([]SpellID, 0, len(SpellRegistry))
 	for id := range SpellRegistry {
 		ids = append(ids, id)
 	}

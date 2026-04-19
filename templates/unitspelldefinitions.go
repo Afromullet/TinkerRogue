@@ -4,11 +4,11 @@ import "fmt"
 
 // UnitSpellRegistry maps unit type names to the spell IDs they can cast.
 // Populated from unitspells.json at startup.
-var UnitSpellRegistry map[string][]string
+var UnitSpellRegistry map[string][]SpellID
 
 type jsonUnitSpellMapping struct {
-	UnitType string   `json:"unitType"`
-	Spells   []string `json:"spells"`
+	UnitType string    `json:"unitType"`
+	Spells   []SpellID `json:"spells"`
 }
 
 type jsonUnitSpellFile struct {
@@ -20,7 +20,7 @@ func LoadUnitSpellDefinitions() {
 	var data jsonUnitSpellFile
 	readAndUnmarshal("gamedata/unitspells.json", &data)
 
-	UnitSpellRegistry = make(map[string][]string, len(data.UnitSpells))
+	UnitSpellRegistry = make(map[string][]SpellID, len(data.UnitSpells))
 	for _, mapping := range data.UnitSpells {
 		// Validate spell IDs exist in the spell registry
 		for _, spellID := range mapping.Spells {
@@ -36,6 +36,6 @@ func LoadUnitSpellDefinitions() {
 
 // GetSpellsForUnitType returns the spell IDs available to a given unit type.
 // Returns nil if the unit type has no spells.
-func GetSpellsForUnitType(unitType string) []string {
+func GetSpellsForUnitType(unitType string) []SpellID {
 	return UnitSpellRegistry[unitType]
 }
