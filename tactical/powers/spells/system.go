@@ -5,6 +5,7 @@ import (
 	"game_main/common"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
+	"game_main/tactical/powers/progression"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 
@@ -33,6 +34,9 @@ func AddSpellCapabilityToSquad(squadID ecs.EntityID, manager *common.EntityManag
 
 // InitSquadSpellsFromLeader checks the squad's leader unit type and adds spell capability
 // if that unit type has spells defined in UnitSpellRegistry. Call after CreateSquadFromTemplate.
+// Spells are filtered against the owning player's progression library — spells not yet
+// unlocked do not appear in the squad's spellbook. If no player is found, all spells pass
+// through (e.g. enemy squads or pre-player-init test fixtures).
 func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManager) {
 	leaderID := squadcore.GetLeaderID(squadID, manager)
 	if leaderID == 0 {
@@ -46,8 +50,45 @@ func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManag
 	if len(spellIDs) == 0 {
 		return
 	}
+
+	spellIDs = filterSpellsByPlayerLibrary(spellIDs, manager)
+
 	cfg := templates.GameConfig.Commander
 	AddSpellCapabilityToSquad(squadID, manager, cfg.StartingMana, cfg.MaxMana, spellIDs)
+}
+
+// filterSpellsByPlayerLibrary intersects a list of spell IDs with the active player's
+// unlocked spell library. Returns the input unchanged if no player or progression data
+// is found (so enemy squads and untested fixtures keep their full spell list).
+func filterSpellsByPlayerLibrary(spellIDs []string, manager *common.EntityManager) []string {
+	playerID := findPlayerEntityID(manager)
+	if playerID == 0 {
+		return spellIDs
+	}
+	data := progression.GetProgression(playerID, manager)
+	if data == nil {
+		return spellIDs
+	}
+	filtered := make([]string, 0, len(spellIDs))
+	for _, id := range spellIDs {
+		if progression.IsSpellUnlocked(playerID, id, manager) {
+			filtered = append(filtered, id)
+		}
+	}
+	return filtered
+}
+
+// findPlayerEntityID returns the first Player-tagged entity's ID, or 0 if none exists.
+func findPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
+	tag, ok := manager.WorldTags["players"]
+	if !ok {
+		return 0
+	}
+	results := manager.World.Query(tag)
+	if len(results) == 0 {
+		return 0
+	}
+	return results[0].Entity.GetID()
 }
 
 // ExecuteSpellCast performs a spell cast from a squad against target squads.

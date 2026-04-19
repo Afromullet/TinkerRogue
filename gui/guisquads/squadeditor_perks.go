@@ -8,18 +8,20 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/powers/perks"
+	"game_main/tactical/powers/progression"
 
+	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
 // perkPanelController manages the perk equip/unequip UI within the squad editor.
 type perkPanelController struct {
-	equippedList *widget.List
+	equippedList  *widget.List
 	availableList *widget.List
-	detailArea   *widgets.CachedTextAreaWrapper
-	equipBtn     *widget.Button
-	unequipBtn   *widget.Button
-	slotLabel    *widget.Text
+	detailArea    *widgets.CachedTextAreaWrapper
+	equipBtn      *widget.Button
+	unequipBtn    *widget.Button
+	slotLabel     *widget.Text
 
 	// Panel container (for SubMenuController registration)
 	container *widget.Container
@@ -76,15 +78,23 @@ func (pc *perkPanelController) refreshPerkPanel() {
 		}
 	}
 
-	// Build available entries (all perks not currently equipped)
+	// Build available entries (perks unlocked in the owning player's library and not already equipped)
+	ownerPlayerID := ecs.EntityID(0)
+	if pc.mode.Context != nil && pc.mode.Context.PlayerData != nil {
+		ownerPlayerID = pc.mode.Context.PlayerData.PlayerEntityID
+	}
 	allIDs := perks.GetAllPerkIDs()
 	availableEntries := make([]interface{}, 0, len(allIDs)-len(equippedIDs))
 	for _, id := range allIDs {
-		if !equippedSet[id] {
-			def := perks.GetPerkDefinition(id)
-			if def != nil {
-				availableEntries = append(availableEntries, def)
-			}
+		if equippedSet[id] {
+			continue
+		}
+		if ownerPlayerID != 0 && !progression.IsPerkUnlocked(ownerPlayerID, id, manager) {
+			continue
+		}
+		def := perks.GetPerkDefinition(id)
+		if def != nil {
+			availableEntries = append(availableEntries, def)
 		}
 	}
 

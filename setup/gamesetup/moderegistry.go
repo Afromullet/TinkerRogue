@@ -9,6 +9,7 @@ import (
 	"game_main/gui/guiexploration"
 	"game_main/gui/guinodeplacement"
 	"game_main/gui/guioverworld"
+	"game_main/gui/guiprogression"
 	"game_main/gui/guiraid"
 	"game_main/gui/guisquads"
 	"game_main/gui/guiunitview"
@@ -49,6 +50,7 @@ func RegisterOverworldModes(coordinator *framework.GameModeCoordinator, manager 
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewArtifactMode(manager),
+		guiprogression.NewProgressionMode(manager),
 		guiunitview.NewUnitViewMode(manager),
 	}
 
@@ -70,6 +72,7 @@ func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 		guisquads.NewSquadEditorMode(manager),
 		guisquads.NewUnitPurchaseMode(manager),
 		guisquads.NewArtifactMode(manager),
+		guiprogression.NewProgressionMode(manager),
 		guiunitview.NewUnitViewMode(manager),
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService, newCombatServiceFactory()),

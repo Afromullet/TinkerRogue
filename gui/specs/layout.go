@@ -217,6 +217,17 @@ const (
 	SquadEditorSubMenuOffset = 0.15
 )
 
+// ProgressionModeLayout defines layout constants for the progression library mode.
+const (
+	// Library panels (perks on left, spells on right) — locked/unlocked lists + detail + unlock button.
+	ProgressionLibraryPanelWidth  = PanelWidthMedium // 0.30
+	ProgressionLibraryPanelHeight = 0.70
+
+	// Header panel (center-top) — Arcana / Skill totals and title label.
+	ProgressionHeaderWidth  = 0.50
+	ProgressionHeaderHeight = CommanderSelectorHeight
+)
+
 // UnitPurchaseLayout defines layout constants for unit purchase mode
 const (
 	// Unit list (left side)

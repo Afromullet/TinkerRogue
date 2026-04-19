@@ -25,6 +25,8 @@
     "commandPostManaRestore": 15,
     "baseGoldPerRoom": 75,
     "baseXPPerRoom": 40,
+    "baseArcanaPerRoom": 1,
+    "baseSkillPerRoom": 1,
     "floorScalePercent": 25
   },
   "archetypeAssignment": {

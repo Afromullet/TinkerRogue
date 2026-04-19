@@ -212,6 +212,11 @@ func (sem *SquadEditorMode) buildNavigationActions() *widget.Container {
 				sem.ModeManager.RequestTransition(mode, "Artifacts clicked")
 			}
 		}},
+		{Text: "Progression", OnClick: func() {
+			if mode, exists := sem.ModeManager.GetMode("progression_manager"); exists {
+				sem.ModeManager.RequestTransition(mode, "Progression clicked")
+			}
+		}},
 		{Text: closeText, OnClick: func() {
 			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {
 				sem.ModeManager.RequestTransition(returnMode, "Close button pressed")

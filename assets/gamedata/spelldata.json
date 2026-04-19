@@ -10,7 +10,8 @@
       "effectType": "damage",
       "shape": { "type": "Circle", "size": 1 },
       "vxType": "fire",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 4
     },
     {
       "id": "lightning_bolt",
@@ -21,7 +22,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "electricity",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "blizzard",
@@ -33,7 +35,8 @@
       "effectType": "damage",
       "shape": { "type": "Square", "size": 2 },
       "vxType": "ice",
-      "vxDuration": 4
+      "vxDuration": 4,
+      "unlockCost": 6
     },
     {
       "id": "spark",
@@ -44,7 +47,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "electricity",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 1
     },
     {
       "id": "singe",
@@ -55,7 +59,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 1
     },
     {
       "id": "frost_snap",
@@ -67,7 +72,8 @@
       "effectType": "damage",
       "shape": { "type": "Square", "size": 1 },
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "chain_lightning",
@@ -79,7 +85,8 @@
       "effectType": "damage",
       "shape": { "type": "Line", "length": 3 },
       "vxType": "electricity",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 4
     },
     {
       "id": "ice_lance",
@@ -91,7 +98,8 @@
       "effectType": "damage",
       "shape": { "type": "Line", "length": 4 },
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "miasma",
@@ -103,7 +111,8 @@
       "effectType": "damage",
       "shape": { "type": "Rectangle", "width": 5, "height": 2 },
       "vxType": "cloud",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 4
     },
     {
       "id": "scalding_gust",
@@ -115,7 +124,8 @@
       "effectType": "damage",
       "shape": { "type": "Cone", "length": 3 },
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 4
     },
     {
       "id": "wall_of_flame",
@@ -127,7 +137,8 @@
       "effectType": "damage",
       "shape": { "type": "Line", "length": 5 },
       "vxType": "fire",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 5
     },
     {
       "id": "fog_of_ruin",
@@ -139,7 +150,8 @@
       "effectType": "damage",
       "shape": { "type": "Rectangle", "width": 3, "height": 4 },
       "vxType": "cloud",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 5
     },
     {
       "id": "thunder_cone",
@@ -151,7 +163,8 @@
       "effectType": "damage",
       "shape": { "type": "Cone", "length": 4 },
       "vxType": "electricity",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 5
     },
     {
       "id": "noxious_eruption",
@@ -163,7 +176,8 @@
       "effectType": "damage",
       "shape": { "type": "Cone", "length": 5 },
       "vxType": "cloud",
-      "vxDuration": 4
+      "vxDuration": 4,
+      "unlockCost": 6
     },
     {
       "id": "immolation",
@@ -175,7 +189,8 @@
       "effectType": "damage",
       "shape": { "type": "Circle", "size": 2 },
       "vxType": "fire",
-      "vxDuration": 4
+      "vxDuration": 4,
+      "unlockCost": 8
     },
     {
       "id": "obliterate",
@@ -186,7 +201,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "electricity",
-      "vxDuration": 3
+      "vxDuration": 3,
+      "unlockCost": 8
     },
     {
       "id": "firestorm",
@@ -198,7 +214,8 @@
       "effectType": "damage",
       "shape": { "type": "Circle", "size": 3 },
       "vxType": "fire",
-      "vxDuration": 4
+      "vxDuration": 4,
+      "unlockCost": 8
     },
     {
       "id": "absolute_zero",
@@ -210,7 +227,8 @@
       "effectType": "damage",
       "shape": { "type": "Square", "size": 3 },
       "vxType": "ice",
-      "vxDuration": 5
+      "vxDuration": 5,
+      "unlockCost": 8
     },
     {
       "id": "war_cry",
@@ -224,7 +242,8 @@
         { "stat": "strength", "modifier": 4 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "arcane_shield",
@@ -238,7 +257,8 @@
         { "stat": "armor", "modifier": 3 }
       ],
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "weaken",
@@ -252,7 +272,8 @@
         { "stat": "strength", "modifier": -3 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "frost_slow",
@@ -267,7 +288,8 @@
         { "stat": "movementspeed", "modifier": -1 }
       ],
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "shield_wall",
@@ -282,7 +304,8 @@
         { "stat": "movementspeed", "modifier": -1 }
       ],
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "brace_for_impact",
@@ -297,7 +320,8 @@
         { "stat": "strength", "modifier": 2 }
       ],
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "intimidating_roar",
@@ -312,7 +336,8 @@
         { "stat": "armor", "modifier": -2 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "ground_slam",
@@ -324,7 +349,8 @@
       "effectType": "damage",
       "shape": { "type": "Circle", "size": 1 },
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "rally",
@@ -338,7 +364,8 @@
         { "stat": "leadership", "modifier": 5 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "battle_focus",
@@ -352,7 +379,8 @@
         { "stat": "weapon", "modifier": 3 }
       ],
       "vxType": "fire",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "reckless_charge",
@@ -367,7 +395,8 @@
         { "stat": "armor", "modifier": -2 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 1
     },
     {
       "id": "expose_weakness",
@@ -381,7 +410,8 @@
         { "stat": "armor", "modifier": -3 }
       ],
       "vxType": "cloud",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "hamstring",
@@ -396,7 +426,8 @@
         { "stat": "dexterity", "modifier": -3 }
       ],
       "vxType": "cloud",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "crippling_poison",
@@ -411,7 +442,8 @@
         { "stat": "dexterity", "modifier": -3 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "smoke_bomb",
@@ -425,7 +457,8 @@
         { "stat": "dexterity", "modifier": 5 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 1
     },
     {
       "id": "steady_aim",
@@ -439,7 +472,8 @@
         { "stat": "dexterity", "modifier": 5 }
       ],
       "vxType": "ice",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "volley",
@@ -451,7 +485,8 @@
       "effectType": "damage",
       "shape": { "type": "Square", "size": 1 },
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "piercing_shot",
@@ -465,7 +500,8 @@
         { "stat": "armor", "modifier": -4 }
       ],
       "vxType": "fire",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "suppressive_fire",
@@ -480,7 +516,8 @@
         { "stat": "movementspeed", "modifier": -1 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "thundering_charge",
@@ -495,7 +532,8 @@
         { "stat": "strength", "modifier": 3 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "trample",
@@ -507,7 +545,8 @@
       "effectType": "damage",
       "shape": { "type": "Line", "length": 3 },
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "evasive_maneuver",
@@ -522,7 +561,8 @@
         { "stat": "movementspeed", "modifier": 1 }
       ],
       "vxType": "ice",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     },
     {
       "id": "harrying_strikes",
@@ -537,7 +577,8 @@
         { "stat": "strength", "modifier": -2 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "divine_protection",
@@ -552,7 +593,8 @@
         { "stat": "leadership", "modifier": 3 }
       ],
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "smite",
@@ -563,7 +605,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "electricity",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "natures_grasp",
@@ -578,7 +621,8 @@
         { "stat": "dexterity", "modifier": -3 }
       ],
       "vxType": "cloud",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "spectral_volley",
@@ -590,7 +634,8 @@
       "effectType": "damage",
       "shape": { "type": "Line", "length": 3 },
       "vxType": "ice",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 3
     },
     {
       "id": "savagery",
@@ -605,7 +650,8 @@
         { "stat": "strength", "modifier": 2 }
       ],
       "vxType": "fire",
-      "vxDuration": 2
+      "vxDuration": 2,
+      "unlockCost": 2
     },
     {
       "id": "wind_shot",
@@ -616,7 +662,8 @@
       "targetType": "single",
       "effectType": "damage",
       "vxType": "ice",
-      "vxDuration": 1
+      "vxDuration": 1,
+      "unlockCost": 2
     }
   ]
 }

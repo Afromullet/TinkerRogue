@@ -3,6 +3,7 @@ package combatlifecycle
 import (
 	"fmt"
 	"game_main/common"
+	"game_main/tactical/powers/progression"
 	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/unitprogression"
 	"math"
@@ -18,6 +19,8 @@ type Reward struct {
 	Gold       int
 	Experience int
 	Mana       int
+	ArcanaPts  int
+	SkillPts   int
 }
 
 // Scale returns a new Reward with all values multiplied by factor.
@@ -27,6 +30,8 @@ func (r Reward) Scale(factor float64) Reward {
 		Gold:       int(math.Round(float64(r.Gold) * factor)),
 		Experience: int(math.Round(float64(r.Experience) * factor)),
 		Mana:       int(math.Round(float64(r.Mana) * factor)),
+		ArcanaPts:  int(math.Round(float64(r.ArcanaPts) * factor)),
+		SkillPts:   int(math.Round(float64(r.SkillPts) * factor)),
 	}
 }
 
@@ -56,6 +61,18 @@ func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 
 	if r.Mana > 0 && len(target.SquadIDs) > 0 {
 		if desc := grantManaToSquads(manager, target.SquadIDs, r.Mana); desc != "" {
+			parts = append(parts, desc)
+		}
+	}
+
+	if r.ArcanaPts > 0 && target.PlayerEntityID != 0 {
+		if desc := grantProgressionPoints(manager, target.PlayerEntityID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints); desc != "" {
+			parts = append(parts, desc)
+		}
+	}
+
+	if r.SkillPts > 0 && target.PlayerEntityID != 0 {
+		if desc := grantProgressionPoints(manager, target.PlayerEntityID, r.SkillPts, "Skill", progression.AddSkillPoints); desc != "" {
 			parts = append(parts, desc)
 		}
 	}
@@ -117,6 +134,23 @@ func grantManaToSquads(manager *common.EntityManager, squadIDs []ecs.EntityID, a
 	desc := fmt.Sprintf("%d mana to %d squads", amount, restored)
 	fmt.Printf("Granted %s\n", desc)
 	return desc
+}
+
+// grantProgressionPoints adds progression points of a given currency to the player's
+// ProgressionData. Returns "" if the player has no progression component.
+func grantProgressionPoints(
+	manager *common.EntityManager,
+	playerEntityID ecs.EntityID,
+	amount int,
+	label string,
+	add func(ecs.EntityID, int, *common.EntityManager),
+) string {
+	if progression.GetProgression(playerEntityID, manager) == nil {
+		return ""
+	}
+	add(playerEntityID, amount, manager)
+	fmt.Printf("Granted %d %s to player %d\n", amount, label, playerEntityID)
+	return fmt.Sprintf("%d %s", amount, label)
 }
 
 // FormatDescription joins non-empty reward description parts into a single string.

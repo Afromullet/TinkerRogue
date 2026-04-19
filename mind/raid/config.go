@@ -52,6 +52,8 @@ type RewardSettings struct {
 	CommandPostManaRestore int `json:"commandPostManaRestore"`
 	BaseGoldPerRoom        int `json:"baseGoldPerRoom"`
 	BaseXPPerRoom          int `json:"baseXPPerRoom"`
+	BaseArcanaPerRoom      int `json:"baseArcanaPerRoom"`
+	BaseSkillPerRoom       int `json:"baseSkillPerRoom"`
 	FloorScalePercent      int `json:"floorScalePercent"`
 }
 

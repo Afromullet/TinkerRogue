@@ -7,11 +7,14 @@ import "game_main/mind/combatlifecycle"
 func CalculateIntensityReward(intensity int) combatlifecycle.Reward {
 	baseGold := 100 + (intensity * 50)
 	baseXP := 50 + (intensity * 25)
+	basePoints := 1 + intensity
 
 	typeMultiplier := 1.0 + (float64(intensity) * 0.1)
 
 	return combatlifecycle.Reward{
 		Gold:       int(float64(baseGold) * typeMultiplier),
 		Experience: int(float64(baseXP) * typeMultiplier),
+		ArcanaPts:  int(float64(basePoints) * typeMultiplier),
+		SkillPts:   int(float64(basePoints) * typeMultiplier),
 	}
 }

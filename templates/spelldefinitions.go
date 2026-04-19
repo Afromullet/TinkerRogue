@@ -43,6 +43,7 @@ type SpellDefinition struct {
 	VXDuration    int                `json:"vxDuration"`
 	Duration      int                `json:"duration,omitempty"`      // turns for buff/debuff
 	StatModifiers []SpellStatModifier `json:"statModifiers,omitempty"` // stat changes
+	UnlockCost    int                `json:"unlockCost"`              // Arcana points to unlock
 }
 
 // SpellRegistry is the global registry of all spell definitions, keyed by spell ID.

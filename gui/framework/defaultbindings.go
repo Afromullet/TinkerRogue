@@ -80,6 +80,14 @@ func DefaultSquadDeploymentBindings() *ActionMap {
 		BindMouse(ebiten.MouseButtonLeft, ActionMouseClick)
 }
 
+// DefaultProgressionBindings returns progression library mode key bindings.
+// Only ESC is needed today; all interactions are widget-driven. Add hotkeys here
+// (e.g. tab-switching between perks/spells) if the panel grows.
+func DefaultProgressionBindings() *ActionMap {
+	return NewActionMap("progression").
+		Bind(ebiten.KeyEscape, ActionCancel)
+}
+
 // DefaultArtifactBindings returns artifact mode key bindings.
 func DefaultArtifactBindings() *ActionMap {
 	return NewActionMap("artifact").
