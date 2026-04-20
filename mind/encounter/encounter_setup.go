@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math"
 
+	"game_main/campaign/overworld/core"
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/spawning"
-	"game_main/overworld/core"
-	"game_main/overworld/garrison"
+	"game_main/campaign/overworld/garrison"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 	"game_main/world/coords"

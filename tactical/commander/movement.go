@@ -3,7 +3,7 @@ package commander
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

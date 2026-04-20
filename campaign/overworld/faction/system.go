@@ -3,10 +3,10 @@ package faction
 import (
 	"fmt"
 
+	"game_main/campaign/overworld/core"
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/garrison"
-	"game_main/overworld/threat"
+	"game_main/campaign/overworld/garrison"
+	"game_main/campaign/overworld/threat"
 	"game_main/templates"
 	"game_main/world/coords"
 

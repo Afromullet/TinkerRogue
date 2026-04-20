@@ -8,10 +8,10 @@ package tick
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/faction"
-	"game_main/overworld/influence"
-	"game_main/overworld/threat"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/faction"
+	"game_main/campaign/overworld/influence"
+	"game_main/campaign/overworld/threat"
 
 	"github.com/bytearena/ecs"
 )

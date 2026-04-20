@@ -5,8 +5,8 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/overworld/core"
-	"game_main/overworld/garrison"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/garrison"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/squadcore"
 

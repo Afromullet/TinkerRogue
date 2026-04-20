@@ -2,7 +2,7 @@ package threat
 
 import (
 	"game_main/common"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 )
 
 // CountThreatNodes returns the total number of threat nodes.

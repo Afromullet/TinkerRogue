@@ -2,7 +2,7 @@ package spawning
 
 import (
 	"game_main/common"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 )
 
 // getSquadComposition returns squad type distribution based on encounter type.

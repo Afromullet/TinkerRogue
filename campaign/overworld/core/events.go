@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 	"game_main/setup/config"
-	"game_main/overworld/overworldlog"
+	"game_main/campaign/overworld/overworldlog"
 
 	"github.com/bytearena/ecs"
 )

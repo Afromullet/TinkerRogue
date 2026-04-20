@@ -7,7 +7,7 @@ import (
 	"sort"
 
 	"game_main/gui/widgetresources"
-	"game_main/mind/raid"
+	"game_main/campaign/raid"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"

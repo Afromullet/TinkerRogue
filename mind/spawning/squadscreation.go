@@ -6,7 +6,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/evaluation"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"

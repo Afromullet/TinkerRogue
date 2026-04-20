@@ -7,7 +7,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/templates"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"

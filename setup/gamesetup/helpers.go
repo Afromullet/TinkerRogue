@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"game_main/common"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/setup/config"
 	"game_main/templates"
 	"game_main/testing"

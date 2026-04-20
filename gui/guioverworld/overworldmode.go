@@ -7,9 +7,9 @@ import (
 	"game_main/gui/framework"
 	"game_main/mind/encounter"
 	"game_main/mind/combatlifecycle"
-	"game_main/overworld/core"
-	"game_main/overworld/threat"
-	"game_main/overworld/tick"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/threat"
+	"game_main/campaign/overworld/tick"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"

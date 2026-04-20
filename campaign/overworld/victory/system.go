@@ -3,8 +3,8 @@ package victory
 import (
 	"fmt"
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/threat"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/threat"
 
 	"github.com/bytearena/ecs"
 )

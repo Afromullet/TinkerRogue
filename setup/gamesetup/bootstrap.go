@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/tick"
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/node"
-	"game_main/overworld/tick"
+	"game_main/campaign/overworld/node"
 	"game_main/setup/config"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/commander"

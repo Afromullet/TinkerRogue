@@ -2,8 +2,8 @@ package commander
 
 import (
 	"fmt"
+	"game_main/campaign/overworld/tick"
 	"game_main/common"
-	"game_main/overworld/tick"
 
 	"github.com/bytearena/ecs"
 )

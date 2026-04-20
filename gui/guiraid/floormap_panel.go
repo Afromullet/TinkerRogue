@@ -5,7 +5,7 @@ import (
 
 	"game_main/gui/framework"
 	"game_main/gui/specs"
-	"game_main/mind/raid"
+	"game_main/campaign/raid"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"

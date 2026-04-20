@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/node"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/node"
 	"game_main/templates"
 	"game_main/world/coords"
 

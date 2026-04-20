@@ -5,8 +5,8 @@ import (
 	"image/color"
 
 	"game_main/gui/widgetresources"
-	"game_main/overworld/core"
-	"game_main/overworld/node"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/node"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"

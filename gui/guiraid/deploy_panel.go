@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"game_main/gui/framework"
-	"game_main/mind/raid"
+	"game_main/campaign/raid"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/ebitenui/ebitenui/widget"

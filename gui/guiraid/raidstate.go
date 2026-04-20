@@ -1,6 +1,6 @@
 package guiraid
 
-import "game_main/mind/raid"
+import "game_main/campaign/raid"
 
 // RaidPanel identifies which sub-panel is currently displayed.
 type RaidPanel int

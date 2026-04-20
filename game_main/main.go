@@ -13,7 +13,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guistartmenu"
 	"game_main/input"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/setup/config"
 	"game_main/setup/gamesetup"
 	"game_main/visual/graphics"

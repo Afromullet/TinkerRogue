@@ -5,7 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/gui/framework"
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/tactical/commander"
 	"game_main/visual/maprender"
 	"game_main/world/coords"

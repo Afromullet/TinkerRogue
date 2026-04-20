@@ -6,7 +6,7 @@ import (
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/spawning"
-	"game_main/overworld/garrison"
+	"game_main/campaign/overworld/garrison"
 	"game_main/world/coords"
 
 	"github.com/bytearena/ecs"

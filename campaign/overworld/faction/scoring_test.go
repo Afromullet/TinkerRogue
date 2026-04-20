@@ -1,7 +1,7 @@
 package faction
 
 import (
-	"game_main/overworld/core"
+	"game_main/campaign/overworld/core"
 	"game_main/templates"
 	"testing"
 )

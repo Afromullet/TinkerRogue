@@ -3,8 +3,8 @@ package chunks
 import (
 	"encoding/json"
 	"fmt"
+	"game_main/campaign/raid"
 	"game_main/common"
-	"game_main/mind/raid"
 	"game_main/setup/savesystem"
 
 	"github.com/bytearena/ecs"
@@ -18,7 +18,7 @@ func init() {
 // RoomData, AlertData, GarrisonSquad, and Deployment entities.
 type RaidChunk struct{}
 
-func (c *RaidChunk) ChunkID() string  { return "raid" }
+func (c *RaidChunk) ChunkID() string   { return "raid" }
 func (c *RaidChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
@@ -219,7 +219,7 @@ func (c *RaidChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *
 			RoomsCleared:     sf.RoomsCleared,
 			RoomsTotal:       sf.RoomsTotal,
 			GarrisonSquadIDs: sf.GarrisonSquadIDs, // remapped later
-			ReserveSquadIDs:  sf.ReserveSquadIDs,   // remapped later
+			ReserveSquadIDs:  sf.ReserveSquadIDs,  // remapped later
 			IsComplete:       sf.IsComplete,
 		})
 		idMap.Register(sf.EntityID, entity.GetID())
@@ -272,7 +272,7 @@ func (c *RaidChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *
 		entity := em.World.NewEntity()
 		entity.AddComponent(raid.DeploymentComponent, &raid.DeploymentData{
 			DeployedSquadIDs: sd.DeployedSquadIDs, // remapped later
-			ReserveSquadIDs:  sd.ReserveSquadIDs,   // remapped later
+			ReserveSquadIDs:  sd.ReserveSquadIDs,  // remapped later
 		})
 		idMap.Register(sd.EntityID, entity.GetID())
 	}

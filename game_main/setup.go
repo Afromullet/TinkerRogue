@@ -10,7 +10,7 @@ import (
 	"game_main/gui/widgetresources"
 	"game_main/input"
 	"game_main/mind/encounter"
-	"game_main/mind/raid"
+	"game_main/campaign/raid"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/unitdefs"

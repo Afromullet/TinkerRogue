@@ -2,8 +2,8 @@ package bootstrap
 
 import (
 	"game_main/common"
-	"game_main/overworld/core"
-	"game_main/overworld/faction"
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/faction"
 	"game_main/world/coords"
 	"game_main/world/worldmapcore"
 	"log"
