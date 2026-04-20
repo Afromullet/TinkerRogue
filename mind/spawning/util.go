@@ -1,13 +1,60 @@
-package encounter
+package spawning
 
 import (
 	"game_main/common"
 	"game_main/mind/evaluation"
-	"game_main/overworld/core"
 	"game_main/templates"
+	"game_main/world/coords"
+	"math"
 
 	"github.com/bytearena/ecs"
 )
+
+// GeneratePositionsAroundPoint creates positions distributed around a center point.
+// arcStart/arcEnd define the angle range in radians (0 to 2*Pi for full circle).
+// minDistance/maxDistance define the radius range from center.
+func GeneratePositionsAroundPoint(
+	center coords.LogicalPosition,
+	count int,
+	arcStart, arcEnd float64,
+	minDistance, maxDistance int,
+) []coords.LogicalPosition {
+	positions := make([]coords.LogicalPosition, count)
+	arcRange := arcEnd - arcStart
+	mapWidth := coords.CoordManager.GetDungeonWidth()
+	mapHeight := coords.CoordManager.GetDungeonHeight()
+
+	for i := 0; i < count; i++ {
+		angle := arcStart + (float64(i)/float64(count))*arcRange
+		distance := minDistance + (i % (maxDistance - minDistance + 1))
+
+		offsetX := int(math.Round(float64(distance) * math.Cos(angle)))
+		offsetY := int(math.Round(float64(distance) * math.Sin(angle)))
+
+		pos := coords.LogicalPosition{
+			X: clampPosition(center.X+offsetX, 0, mapWidth-1),
+			Y: clampPosition(center.Y+offsetY, 0, mapHeight-1),
+		}
+		positions[i] = pos
+	}
+	return positions
+}
+
+// GeneratePlayerSquadPositions creates positions for player squads around a starting point.
+// Uses a forward-facing arc (-Pi/2 to Pi/2) at PlayerMinDistance..PlayerMaxDistance.
+func GeneratePlayerSquadPositions(startPos coords.LogicalPosition, count int) []coords.LogicalPosition {
+	return GeneratePositionsAroundPoint(startPos, count, -math.Pi/2, math.Pi/2, PlayerMinDistance, PlayerMaxDistance)
+}
+
+func clampPosition(value, min, max int) int {
+	if value < min {
+		return min
+	}
+	if value > max {
+		return max
+	}
+	return value
+}
 
 // clampPowerTarget applies min/max bounds from the difficulty modifier to a raw power target.
 // If raw is zero or negative, returns the minimum. If above max, returns the max.
@@ -27,7 +74,6 @@ func clampPowerTarget(raw float64, mod templates.JSONEncounterDifficulty) float6
 func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 	var result templates.JSONEncounterDifficulty
 
-	// Search for matching difficulty level in templates
 	found := false
 	for _, t := range templates.EncounterDifficultyTemplates {
 		if t.Level == level {
@@ -38,7 +84,6 @@ func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 	}
 
 	if !found {
-		// Fallback to level 3 (fair fight) if not found
 		for _, t := range templates.EncounterDifficultyTemplates {
 			if t.Level == 3 {
 				result = t
@@ -49,7 +94,6 @@ func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 	}
 
 	if !found {
-		// Last resort fallback (should never happen if JSON loads correctly)
 		result = templates.JSONEncounterDifficulty{
 			Level:            3,
 			Name:             "Fair Fight",
@@ -62,7 +106,6 @@ func getDifficultyModifier(level int) templates.JSONEncounterDifficulty {
 		}
 	}
 
-	// Apply global difficulty overlay
 	diff := templates.GlobalDifficulty.Encounter()
 	result.PowerMultiplier *= diff.PowerMultiplierScale
 
@@ -98,17 +141,4 @@ func calculateTargetPower(
 	}
 	avgPower := totalPower / float64(len(squadIDs))
 	return clampPowerTarget(avgPower*difficultyMod.PowerMultiplier, difficultyMod)
-}
-
-// GetSquadPreferences retrieves preferred squad composition for an encounter type.
-// Returns nil if encounter type not found (allows random composition fallback).
-func GetSquadPreferences(encounterTypeID string) []string {
-	enc := core.GetNodeRegistry().GetEncounterByTypeID(encounterTypeID)
-	if enc != nil && enc.ID != "default" {
-		// Return copy to prevent external modification
-		prefs := make([]string, len(enc.SquadPreferences))
-		copy(prefs, enc.SquadPreferences)
-		return prefs
-	}
-	return nil // Not found - allows caller to handle random composition
 }

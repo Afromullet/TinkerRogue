@@ -5,6 +5,7 @@ import (
 
 	"game_main/common"
 	"game_main/mind/combatlifecycle"
+	"game_main/mind/spawning"
 	"game_main/overworld/garrison"
 	"game_main/world/coords"
 
@@ -96,9 +97,9 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, fmt.Errorf("node %d has no position", s.TargetNodeID)
 	}
 
-	garrisonPositions := generatePlayerSquadPositions(*nodePos, len(garrisonData.SquadIDs))
+	garrisonPositions := spawning.GeneratePlayerSquadPositions(*nodePos, len(garrisonData.SquadIDs))
 
-	enemyIDs, enemyPositions, err := generateAttackerSquads(manager, *nodePos, garrisonData.SquadIDs, encounterData)
+	enemyIDs, enemyPositions, err := spawning.GenerateAttackerSquads(manager, *nodePos, garrisonData.SquadIDs, encounterData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate attackers: %w", err)
 	}

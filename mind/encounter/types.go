@@ -9,32 +9,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Squad type identifiers for composition control
-const (
-	SquadTypeMelee   = "melee"
-	SquadTypeRanged  = "ranged"
-	SquadTypeMagic   = "magic"
-	SquadTypeSupport = "support"
-)
-
-// Position generation constants
-const (
-	EnemySpacingDistance = 10 // Distance from player for enemy squad spawns
-	PlayerMinDistance    = 3  // Minimum distance for player squad positioning
-	PlayerMaxDistance    = 4  // Maximum distance for player squad positioning
-)
-
-// Squad creation constants (non-difficulty-dependent)
-const (
-	PowerThreshold          = 0.95 // Stop adding units at 95% target power
-	LeadershipAttributeBase = 20   // Base leadership for squad leaders
-)
-
-// Power profile constant
-const (
-	DefaultPowerProfile = "Balanced" // Default power calculation profile
-)
-
 // Combat resolution constants
 const (
 	EnemiesPerIntensityPoint = 5 // Every 5 enemies killed = 1 intensity reduction
@@ -104,13 +78,4 @@ type SpawnResult struct {
 	EnemySquadIDs   []ecs.EntityID
 	PlayerFactionID ecs.EntityID
 	EnemyFactionID  ecs.EntityID
-}
-
-// EnemySquadSpec describes a single enemy squad to create.
-type EnemySquadSpec struct {
-	SquadID  ecs.EntityID           // ID of created squad (filled after generation)
-	Position coords.LogicalPosition // Where to spawn the squad
-	Power    float64                // Target power level
-	Type     string                 // Squad archetype (melee, ranged, magic)
-	Name     string                 // Squad display name
 }
