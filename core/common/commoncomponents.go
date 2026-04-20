@@ -1,7 +1,7 @@
 package common
 
 import (
-	"game_main/setup/config"
+	"game_main/core/config"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

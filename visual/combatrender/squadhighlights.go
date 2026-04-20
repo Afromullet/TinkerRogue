@@ -2,7 +2,7 @@ package combatrender
 
 import (
 	"game_main/visual/rendering"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"image/color"
 
 	"github.com/bytearena/ecs"

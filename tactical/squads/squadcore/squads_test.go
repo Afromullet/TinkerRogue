@@ -2,11 +2,11 @@ package squadcore
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	testfx "game_main/testing"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"

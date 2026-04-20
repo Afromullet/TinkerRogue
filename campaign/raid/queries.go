@@ -1,7 +1,7 @@
 package raid
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 )
 
 // GetRaidState returns the singleton RaidStateData, or nil if no raid is active.

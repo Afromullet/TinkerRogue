@@ -1,7 +1,7 @@
 package worldmapcore
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"os"
 	"path/filepath"
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"game_main/setup/config"
+	"game_main/core/config"
 	"game_main/setup/gamesetup"
 	"game_main/gui/framework"
 	"game_main/gui/widgetresources"

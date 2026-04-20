@@ -1,7 +1,7 @@
 package widgetresources
 
 import (
-	"game_main/setup/config"
+	"game_main/core/config"
 	"image/color"
 	"strconv"
 

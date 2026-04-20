@@ -1,7 +1,7 @@
 package graphics
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 )
 
 var GreenColorMatrix = ColorMatrix{0, 1, 0, 1, true}

@@ -1,8 +1,8 @@
 package gamesetup
 
 import (
-	"game_main/common"
-	"game_main/setup/config"
+	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/progression"
 	"game_main/templates"
@@ -10,7 +10,7 @@ import (
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/roster"
 	_ "game_main/tactical/squads/squadcommands" // Blank import to trigger init() for command queue components
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"log"

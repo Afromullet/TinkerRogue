@@ -5,7 +5,7 @@ import (
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/powercore"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

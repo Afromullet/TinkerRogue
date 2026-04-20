@@ -2,7 +2,7 @@ package combatcore
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"

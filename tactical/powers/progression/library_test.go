@@ -2,7 +2,7 @@ package progression
 
 import (
 	"errors"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/powers/perks"
 	"game_main/templates"
 	testfx "game_main/testing"

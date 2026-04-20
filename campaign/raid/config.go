@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"game_main/world/coords"
+	"game_main/core/coords"
 )
 
 // RaidConfig holds the loaded raid configuration. Set by LoadRaidConfig.

@@ -1,9 +1,9 @@
 package commander
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/squads/roster"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"

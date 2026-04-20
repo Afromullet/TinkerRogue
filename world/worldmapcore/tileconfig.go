@@ -1,7 +1,7 @@
 package worldmapcore
 
 import (
-	"game_main/setup/config"
+	"game_main/core/config"
 	"path/filepath"
 )
 

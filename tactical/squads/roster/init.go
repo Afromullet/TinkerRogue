@@ -1,6 +1,6 @@
 package roster
 
-import "game_main/common"
+import "game_main/core/common"
 
 // init registers the roster subsystem with the ECS component registry.
 func init() {

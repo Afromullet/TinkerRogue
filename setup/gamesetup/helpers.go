@@ -6,9 +6,9 @@ import (
 	_ "net/http/pprof" // Blank import to register pprof handlers
 	"runtime"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/core"
-	"game_main/setup/config"
+	"game_main/core/config"
 	"game_main/templates"
 	"game_main/testing"
 	"game_main/world/worldmapcore"

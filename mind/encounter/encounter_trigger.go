@@ -3,7 +3,7 @@ package encounter
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/core"
 
 	"github.com/bytearena/ecs"

@@ -1,7 +1,7 @@
 package raid
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/mind/combatlifecycle"
 
 	"github.com/bytearena/ecs"

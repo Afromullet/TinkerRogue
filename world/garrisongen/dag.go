@@ -1,6 +1,6 @@
 package garrisongen
 
-import "game_main/common"
+import "game_main/core/common"
 
 // Room type constants for garrison raid floors
 const (

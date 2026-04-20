@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"game_main/campaign/overworld/core"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/garrison"
 	"game_main/campaign/overworld/threat"
 	"game_main/templates"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

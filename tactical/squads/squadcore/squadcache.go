@@ -13,7 +13,7 @@ package squadcore
 // iterate Views instead of running queries.
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 
 	"github.com/bytearena/ecs"
 )

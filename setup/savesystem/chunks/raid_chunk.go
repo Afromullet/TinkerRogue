@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/campaign/raid"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/setup/savesystem"
 
 	"github.com/bytearena/ecs"

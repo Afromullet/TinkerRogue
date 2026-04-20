@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"os"
 	"path/filepath"
 	"time"

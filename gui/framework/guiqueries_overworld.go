@@ -1,9 +1,9 @@
 package framework
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/core"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

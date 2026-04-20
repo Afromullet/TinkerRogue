@@ -6,9 +6,9 @@ import (
 
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/tick"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/node"
-	"game_main/setup/config"
+	"game_main/core/config"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/commander"
 	"game_main/tactical/powers/artifacts"
@@ -17,7 +17,7 @@ import (
 	"game_main/templates"
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
 

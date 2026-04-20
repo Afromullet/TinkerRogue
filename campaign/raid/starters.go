@@ -3,9 +3,9 @@ package raid
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

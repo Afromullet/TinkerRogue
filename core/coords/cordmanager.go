@@ -1,7 +1,7 @@
 // Package coords - coordinate manager and conversion utilities
 package coords
 
-import "game_main/setup/config"
+import "game_main/core/config"
 
 // CoordManager is a global coordinate manager instance.
 var CoordManager *CoordinateManager

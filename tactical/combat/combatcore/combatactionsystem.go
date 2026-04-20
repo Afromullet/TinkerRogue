@@ -2,7 +2,7 @@ package combatcore
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatmath"
 	"game_main/tactical/combat/combatstate"

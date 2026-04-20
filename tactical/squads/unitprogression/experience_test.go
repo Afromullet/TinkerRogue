@@ -1,7 +1,7 @@
 package unitprogression
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	testfx "game_main/testing"
 	"math/rand"
 	"testing"

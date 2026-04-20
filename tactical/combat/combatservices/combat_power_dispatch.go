@@ -2,7 +2,7 @@ package combatservices
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"

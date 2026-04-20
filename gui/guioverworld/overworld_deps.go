@@ -1,7 +1,7 @@
 package guioverworld
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/mind/combatlifecycle"
 	"game_main/mind/encounter"

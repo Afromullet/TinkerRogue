@@ -1,10 +1,10 @@
 package spawning
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/mind/evaluation"
 	"game_main/templates"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"math"
 
 	"github.com/bytearena/ecs"

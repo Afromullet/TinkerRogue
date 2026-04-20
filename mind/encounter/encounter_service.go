@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/mind/combatlifecycle"
 	"game_main/campaign/overworld/core"
 

@@ -2,7 +2,7 @@ package combatlifecycle
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/unitprogression"

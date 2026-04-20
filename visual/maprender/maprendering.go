@@ -1,7 +1,7 @@
 package maprender
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"

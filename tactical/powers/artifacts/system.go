@@ -2,7 +2,7 @@ package artifacts
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"

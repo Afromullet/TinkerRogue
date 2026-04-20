@@ -1,7 +1,7 @@
 package combatlifecycle
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 )
 
 // ExecuteCombatStart is THE single entry point for all combat initiation.

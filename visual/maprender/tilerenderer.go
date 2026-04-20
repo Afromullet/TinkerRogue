@@ -3,7 +3,7 @@ package maprender
 import (
 	"game_main/visual/graphics"
 	"game_main/visual/rendering"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"

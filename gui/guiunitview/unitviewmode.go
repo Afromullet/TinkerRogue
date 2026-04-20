@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/tactical/squads/unitprogression"
 

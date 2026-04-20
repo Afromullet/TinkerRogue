@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/mind/evaluation"
 	"game_main/tactical/squads/squadcore"
 

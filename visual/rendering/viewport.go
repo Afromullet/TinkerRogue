@@ -1,7 +1,7 @@
 package rendering
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"

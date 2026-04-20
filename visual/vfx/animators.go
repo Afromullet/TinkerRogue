@@ -1,7 +1,7 @@
 package vfx
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"math"
 )
 

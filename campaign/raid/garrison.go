@@ -3,10 +3,10 @@ package raid
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/garrisongen"
 
 	"github.com/bytearena/ecs"

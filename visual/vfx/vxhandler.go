@@ -2,7 +2,7 @@ package vfx
 
 import (
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )

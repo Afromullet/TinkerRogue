@@ -3,13 +3,13 @@ package guinodeplacement
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guioverworld"
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/node"
 	"game_main/templates"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"

@@ -1,7 +1,7 @@
 package core
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 )
 
 // WalkableGrid tracks which overworld tiles are walkable (passable terrain).

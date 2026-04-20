@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
 	"game_main/gui/guiinspect"
@@ -10,7 +10,7 @@ import (
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"time"
 
 	"github.com/bytearena/ecs"

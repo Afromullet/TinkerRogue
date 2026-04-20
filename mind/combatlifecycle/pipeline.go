@@ -1,6 +1,6 @@
 package combatlifecycle
 
-import "game_main/common"
+import "game_main/core/common"
 
 // CombatResolver handles context-specific combat resolution.
 // Each combat type implements this: overworld, raid, garrison defense, flee.

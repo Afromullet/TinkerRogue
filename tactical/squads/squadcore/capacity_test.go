@@ -1,8 +1,8 @@
 package squadcore
 
 import (
-	"game_main/common"
-	"game_main/setup/config"
+	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 

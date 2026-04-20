@@ -2,7 +2,7 @@ package combatservices
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
@@ -12,7 +12,7 @@ import (
 	"game_main/tactical/powers/perks"
 	"game_main/tactical/powers/powercore"
 	"game_main/tactical/squads/squadcore"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

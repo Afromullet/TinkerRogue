@@ -3,7 +3,7 @@ package gamesetup
 import (
 	"log"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
 	"game_main/gui/guiexploration"

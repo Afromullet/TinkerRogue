@@ -6,9 +6,9 @@ package worldmapcore
 import (
 	"errors"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

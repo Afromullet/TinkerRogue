@@ -1,6 +1,6 @@
 package behavior
 
-import "game_main/world/coords"
+import "game_main/core/coords"
 
 // FalloffFunc defines how threat decreases with distance
 // Returns multiplier in range [0.0, 1.0]

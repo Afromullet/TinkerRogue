@@ -1,7 +1,7 @@
 package common
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

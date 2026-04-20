@@ -1,7 +1,7 @@
 package worldmapcore
 
 import (
-	"game_main/world/coords"
+	"game_main/core/coords"
 )
 
 // POIData describes a placed point of interest with type and terrain info

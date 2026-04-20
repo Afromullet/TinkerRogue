@@ -2,7 +2,7 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guiinspect"
 	"game_main/tactical/squads/squadcore"

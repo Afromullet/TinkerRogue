@@ -3,7 +3,7 @@ package progression
 import (
 	"errors"
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/tactical/powers/perks"
 	"game_main/templates"
 

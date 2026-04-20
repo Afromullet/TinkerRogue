@@ -3,7 +3,7 @@ package artifacts
 import (
 	"encoding/json"
 	"fmt"
-	"game_main/setup/config"
+	"game_main/core/config"
 	"os"
 )
 

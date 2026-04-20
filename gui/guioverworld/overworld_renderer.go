@@ -3,12 +3,12 @@ package guioverworld
 import (
 	"image/color"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/campaign/overworld/core"
 	"game_main/tactical/commander"
 	"game_main/visual/maprender"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"

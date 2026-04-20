@@ -6,7 +6,7 @@ import (
 	"game_main/templates"
 	"game_main/visual/graphics"
 	"game_main/visual/vfx"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/powers/perks"

@@ -4,9 +4,9 @@
 package rendering
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2"

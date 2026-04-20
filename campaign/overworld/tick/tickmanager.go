@@ -7,7 +7,7 @@ package tick
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/faction"
 	"game_main/campaign/overworld/influence"

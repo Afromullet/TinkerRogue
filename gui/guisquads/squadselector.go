@@ -2,7 +2,7 @@ package guisquads
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"

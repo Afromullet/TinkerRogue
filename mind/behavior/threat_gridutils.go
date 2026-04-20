@@ -1,6 +1,6 @@
 package behavior
 
-import "game_main/world/coords"
+import "game_main/core/coords"
 
 // GridIterator is a callback function for iterating over map grid positions.
 type GridIterator func(pos coords.LogicalPosition)

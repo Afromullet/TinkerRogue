@@ -1,7 +1,7 @@
 package garrisongen
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
 )

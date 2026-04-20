@@ -3,9 +3,9 @@ package node
 import (
 	"math"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/campaign/overworld/core"
-	"game_main/world/coords"
+	"game_main/core/coords"
 )
 
 // CountPlayerNodes returns the total number of player-placed nodes.

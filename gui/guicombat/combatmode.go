@@ -2,7 +2,7 @@ package guicombat
 
 import (
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
@@ -11,7 +11,7 @@ import (
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
 	"game_main/mind/combatlifecycle"
-	"game_main/setup/config"
+	"game_main/core/config"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/combat/combatservices"

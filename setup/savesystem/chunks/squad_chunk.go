@@ -3,14 +3,14 @@ package chunks
 import (
 	"encoding/json"
 	"fmt"
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/setup/savesystem"
 	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/tactical/squads/unitprogression"
 	"game_main/templates"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )

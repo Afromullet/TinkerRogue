@@ -3,7 +3,7 @@ package guisquads
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
 	"game_main/tactical/squads/roster"
@@ -12,7 +12,7 @@ import (
 
 	"game_main/visual/combatrender"
 	"game_main/visual/graphics"
-	"game_main/world/coords"
+	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

@@ -3,7 +3,7 @@ package guiexploration
 import (
 	"fmt"
 
-	"game_main/common"
+	"game_main/core/common"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"

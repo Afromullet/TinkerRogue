@@ -1,7 +1,7 @@
 package core
 
 import (
-	"game_main/common"
+	"game_main/core/common"
 )
 
 // ResourceCost defines the iron, wood, and stone cost for an action.
