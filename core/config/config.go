@@ -14,7 +14,7 @@ const (
 	DISPLAY_DEATAILED_COMBAT_OUTPUT = false
 
 	// DEBUG_MODE enables debug visualization and logging
-	DEBUG_MODE = false
+	DEBUG_MODE = true
 
 	// ENABLE_BENCHMARKING enables pprof profiling server on localhost:6060
 	ENABLE_BENCHMARKING = true
@@ -79,21 +79,34 @@ func SetConfigFromJSON(
 	DefaultMapHeight = mapHeight
 }
 
-// assetRoot is the resolved path to the assets directory.
-// Initialized once on first use via getAssetRoot().
+// AssetRootRelative is the path to the assets directory, relative to the
+// project root. If the folder is ever moved or renamed, change this one constant.
+const AssetRootRelative = "resources/assets"
+
+// AssetRootEnvVar, when set, overrides AssetRootRelative at runtime.
+// Useful for tests, packaged builds, or running from an unusual CWD.
+const AssetRootEnvVar = "TINKERROGUE_ASSET_ROOT"
+
+// assetRoot is the resolved path to the assets directory, cached after first lookup.
 var assetRoot string
 
-// getAssetRoot returns the path to the assets directory, detecting whether
-// we're running from game_main/ (legacy) or the project root.
+// getAssetRoot returns the path to the assets directory. Resolution order:
+//  1. TINKERROGUE_ASSET_ROOT env var (if set)
+//  2. AssetRootRelative relative to CWD (normal case: running from project root)
+//  3. "../" + AssetRootRelative (legacy: running from game_main/)
 func getAssetRoot() string {
 	if assetRoot != "" {
 		return assetRoot
 	}
-	if info, err := os.Stat("assets"); err == nil && info.IsDir() {
-		assetRoot = "assets"
+	if env := os.Getenv(AssetRootEnvVar); env != "" {
+		assetRoot = env
 		return assetRoot
 	}
-	assetRoot = filepath.Join("..", "assets")
+	if info, err := os.Stat(AssetRootRelative); err == nil && info.IsDir() {
+		assetRoot = AssetRootRelative
+		return assetRoot
+	}
+	assetRoot = filepath.Join("..", AssetRootRelative)
 	return assetRoot
 }
 
