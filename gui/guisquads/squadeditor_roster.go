@@ -72,47 +72,48 @@ func (sem *SquadEditorMode) onNewSquad() {
 	sem.GetEbitenUI().AddWindow(dialog)
 }
 
-// onAddUnitFromRoster adds a unit from the roster to the squad
-func (sem *SquadEditorMode) onAddUnitFromRoster() {
+// tryAddSelectedRosterUnitToCell executes an AddUnitCommand using the currently
+// selected roster entry and the given cell coordinates. Returns true if the
+// command was dispatched. Does not alter sem.selectedGridCell.
+func (sem *SquadEditorMode) tryAddSelectedRosterUnitToCell(row, col int) bool {
 	if !sem.squadNav.HasSquads() {
 		sem.SetStatus("No squad selected")
-		return
+		return false
 	}
-
 	selectedEntry := sem.rosterList.SelectedEntry()
 	if selectedEntry == nil {
-		sem.SetStatus("No unit selected from roster")
-		return
+		return false
+	}
+	entry, ok := selectedEntry.(rstr.RosterUnitEntry)
+	if !ok || entry.TemplateName == "" {
+		return false
 	}
 
+	cmd := squadcommands.NewAddUnitCommand(
+		sem.Queries.ECSManager,
+		sem.Context.PlayerData.PlayerEntityID,
+		sem.squadNav.CurrentID(),
+		entry.TemplateName,
+		row, col,
+	)
+	sem.CommandHistory.Execute(cmd)
+	return true
+}
+
+// onAddUnitFromRoster adds a unit from the roster to the squad
+func (sem *SquadEditorMode) onAddUnitFromRoster() {
 	if sem.selectedGridCell == nil {
 		sem.SetStatus("No grid cell selected. Click an empty cell first")
 		return
 	}
-
-	entry, ok := selectedEntry.(rstr.RosterUnitEntry)
-	if !ok {
+	if sem.rosterList.SelectedEntry() == nil {
+		sem.SetStatus("No unit selected from roster")
+		return
+	}
+	if !sem.tryAddSelectedRosterUnitToCell(sem.selectedGridCell.Row, sem.selectedGridCell.Col) {
 		sem.SetStatus("Invalid roster selection")
 		return
 	}
-	if entry.TemplateName == "" {
-		return
-	}
-
-	currentSquadID := sem.squadNav.CurrentID()
-	templateName := entry.TemplateName
-
-	// Create and execute add unit command
-	cmd := squadcommands.NewAddUnitCommand(
-		sem.Queries.ECSManager,
-		sem.Context.PlayerData.PlayerEntityID,
-		currentSquadID,
-		templateName,
-		sem.selectedGridCell.Row,
-		sem.selectedGridCell.Col,
-	)
-
-	sem.CommandHistory.Execute(cmd)
 	sem.selectedGridCell = nil
 }
 

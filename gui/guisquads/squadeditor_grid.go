@@ -41,7 +41,14 @@ func (sem *SquadEditorMode) onGridCellClicked(row, col int) {
 		sem.selectedUnitID = 0
 		sem.selectedGridCell = nil
 	} else {
-		// Empty cell clicked with no unit selected - show roster for placement
+		// Fast path: roster panel open + unit selected → add directly on click.
+		if sem.subMenus.IsActive("roster") && sem.rosterList.SelectedEntry() != nil {
+			if sem.tryAddSelectedRosterUnitToCell(row, col) {
+				sem.selectedGridCell = nil
+				return
+			}
+		}
+		// Fallback: stash cell, open roster, require "Add to Squad" button.
 		sem.selectedGridCell = &GridCell{Row: row, Col: col}
 		sem.subMenus.Show("roster")
 		sem.SetStatus(fmt.Sprintf("Selected cell [%d,%d]. Click 'Add to Squad' to place a unit here", row, col))
