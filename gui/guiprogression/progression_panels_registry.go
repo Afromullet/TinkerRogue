@@ -86,6 +86,16 @@ func buildHeaderPanel(result *framework.PanelResult, mode framework.UIMode) erro
 	result.Container.AddChild(arcanaLabel)
 	result.Container.AddChild(skillLabel)
 
+	// Debug: add-point buttons (mirrors unitviewmode.go "Add 100 XP" pattern).
+	result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+		Text:    "+1 Skill",
+		OnClick: func() { pm.onAddSkillPoint() },
+	}))
+	result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+		Text:    "+1 Arcana",
+		OnClick: func() { pm.onAddArcanaPoint() },
+	}))
+
 	result.Custom["arcanaLabel"] = arcanaLabel
 	result.Custom["skillLabel"] = skillLabel
 	return nil

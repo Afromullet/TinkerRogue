@@ -7,6 +7,7 @@ package guiprogression
 import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/tactical/powers/progression"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -44,6 +45,18 @@ func (pm *ProgressionMode) activePlayerID() ecs.EntityID {
 		return 0
 	}
 	return pm.Context.PlayerData.PlayerEntityID
+}
+
+// onAddSkillPoint grants 1 Skill Point and refreshes the UI (debug).
+func (pm *ProgressionMode) onAddSkillPoint() {
+	progression.AddSkillPoints(pm.activePlayerID(), 1, pm.Context.ECSManager)
+	pm.controller.refresh()
+}
+
+// onAddArcanaPoint grants 1 Arcana Point and refreshes the UI (debug).
+func (pm *ProgressionMode) onAddArcanaPoint() {
+	progression.AddArcanaPoints(pm.activePlayerID(), 1, pm.Context.ECSManager)
+	pm.controller.refresh()
 }
 
 func (pm *ProgressionMode) Initialize(ctx *framework.UIContext) error {
