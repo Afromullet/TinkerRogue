@@ -7,18 +7,10 @@
 
 # Documentation cleanup after perks are wrapped up
 
-- ARCHITECTURE_LAYERS.md
-- GAMEDATA_OVERVIEW
-
-- ENTITY_REFERENCE.md
-- DATA_FLOW_PATTERNS.md
-
 
 - DOCUMENTATION.md
 
-# Character Progression
 
-- Need an unlock system for perks and spells
 
 
 # Future AI cleanup
@@ -66,7 +58,6 @@
 - combatqueries.go still has functions which search the entire ecs space
 
 
-- JSON file error handling
 
 - Testing package has some functions which create initial player commanders and squads. move them to another package - probably bootstrap
 
@@ -98,8 +89,3 @@
 - Explore the go fix command
 
 
-# Overworld (Defer)
-
-- System for gaining overworld resources. Whether it's through battle or territory tbd
-- Overworld node spawning is far too clustered together. All nodes spawn close to eachother. 
-- Consider using an interface for intent in overworld

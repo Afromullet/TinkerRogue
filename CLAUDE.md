@@ -1,6 +1,6 @@
 # TinkerRogue Developer Guide
 
-**Last Updated:** 2026-03-25
+**Last Updated:** 2026-04-21
 
 Quick reference for working with TinkerRogue. For detailed ECS patterns, see `docs/project_documentation/ECS_BEST_PRACTICES.md`.
 
@@ -29,25 +29,31 @@ go vet ./...                    # Check for mistakes
 ## Core Architecture
 
 ### Global Instances
-- `coords.CoordManager` - Coordinate conversions (use for ALL tile indexing)
-- `common.GlobalPositionSystem` - O(1) spatial grid queries
-- `common.EntityManager` - Passed as parameter (NOT global)
+- `core/coords.CoordManager` - Coordinate conversions (use for ALL tile indexing)
+- `core/common.GlobalPositionSystem` - O(1) spatial grid queries
+- `core/common.EntityManager` - Passed as parameter (NOT global)
 
 ### Key Systems
-- **ECS Core:** `common/ecsutil.go`, `common/commoncomponents.go`
-- **Coordinates:** `world/coords/cordmanager.go`, `world/coords/position.go`
-- **Position:** `common/positionsystem.go`, `world/coords/position.go`
+- **ECS Core:** `core/common/ecsutil.go`, `core/common/commoncomponents.go`
+- **Coordinates:** `core/coords/cordmanager.go`, `core/coords/position.go`
+- **Position:** `core/common/positionsystem.go`, `core/coords/position.go`
+- **Config:** `core/config/` (Global game config constants and flags)
 - **Input:** `input/cameracontroller.go` (Camera and input control)
 - **Squads:** `tactical/squads/` (Squad and squad member management)
 - **Commander:** `tactical/commander/` (Roster, turn state, movement commands)
 - **Combat:** `tactical/combat/` (Turn manager, combat state, combat actions)
+- **Power Core:** `tactical/powers/powercore/` (Shared power pipeline, context, logging)
 - **Spells:** `tactical/powers/spells/` (Spell casting system)
 - **Effects:** `tactical/powers/effects/` (Effect system, used by spells and artifacts)
 - **Artifacts:** `tactical/powers/artifacts/` (Artifact inventory, behaviors, charges)
+- **Perks:** `tactical/powers/perks/` (Perk registry, behaviors, hooks, dispatcher)
+- **Progression:** `tactical/powers/progression/` (Progression components and perk/spell library)
 - **AI:** `mind/ai/`, `mind/behavior/`, `mind/evaluation/` (Game AI, controls enemies)
 - **Combat Lifecycle:** `mind/combatlifecycle/` (Combat setup, cleanup, rewards, casualties)
-- **Encounter Generation:** `mind/encounter/`, `mind/raid/` (Random encounter and raid generation)
-- **Overworld:** `overworld/` (Factions, garrisons, influence, threats, victory conditions)
+- **Encounter Generation:** `mind/encounter/` (Random encounter generation)
+- **Spawning:** `mind/spawning/` (Automatic Squad creation and composition)
+- **Overworld:** `campaign/overworld/` (Factions, garrisons, influence, threats, victory conditions)
+- **Raid:** `campaign/raid/` (Raid encounters, floor graph, deployment, recovery)
 - **Templates:** `templates/` (Entity factory, artifact/spell definitions, game config, name generation)
 - **GUI Framework:** `gui/framework/`, `gui/specs/` (Mode manager, context switching, layout specs)
 - **GUI Widgets:** `gui/builders/`, `gui/widgetresources/`, `gui/widgets/` (Reusable GUI elements)
@@ -59,12 +65,18 @@ go vet ./...                    # Check for mistakes
 - **GUI Node Placement:** `gui/guinodeplacement/` (Node placement mode and rendering)
 - **GUI Artifacts:** `gui/guiartifacts/` (Artifact panel and handlers)
 - **GUI Spells:** `gui/guispells/` (Spell panel and handlers)
+- **GUI Progression:** `gui/guiprogression/` (Progression mode, panels, controller)
 - **GUI Inspect:** `gui/guiinspect/` (Unit inspection panel)
 - **GUI Unit View:** `gui/guiunitview/` (Unit view mode)
 - **GUI Start Menu:** `gui/guistartmenu/` (Start menu)
 - **Graphics:** `visual/graphics/`, `visual/rendering/` (Game graphics and batch drawing)
-- **Worldmap:** `world/worldmap/` (Generator registry, map generation algorithms)
-- **Setup:** `setup/gamesetup/`, `setup/config/`, `setup/savesystem/` (Game config, booting, saves)
+- **Map Rendering:** `visual/maprender/` (Map and tile rendering)
+- **Combat Rendering:** `visual/combatrender/` (Squad renderer, combat overlays, highlights)
+- **VFX:** `visual/vfx/` (Visual effects, animators, renderers)
+- **Worldgen:** `world/worldgen/` (Map generator algorithms and registry)
+- **Worldmap Core:** `world/worldmapcore/` (Dungeon tiles, biomes, generator interface)
+- **Garrison Gen:** `world/garrisongen/` (Garrison map generation, DAG, terrain)
+- **Setup:** `setup/gamesetup/`, `setup/savesystem/` (Booting, save system)
 - **Testing:** `testing/` (Test fixtures and bootstrap utilities)
 
 ---

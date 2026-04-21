@@ -1,5 +1,7 @@
 # TinkerRogue Entity & Component Reference
 
+**Last Updated:** 2026-04-21
+
 This document is the definitive reference for every ECS entity type in TinkerRogue. It documents the exact components attached to each entity at creation time, including field names, types, and purposes. Component definitions are sourced directly from the codebase; do not use this document as a substitute for reading source, but use it to quickly understand what data lives on any given entity.
 
 ---
@@ -57,8 +59,26 @@ Each entity section contains a component table with these columns:
 - **Singleton** — Only one entity of this type should exist at a time in the ECS world.
 - **Dynamic** — This component is added/removed during gameplay (not only at creation).
 - **Optional** — Only added if a condition is met at creation time (noted in the entry).
-- Component variables are prefixed with their package: `common.PositionComponent`, `squads.SquadComponent`, etc.
-- Tag variables follow the same package-prefix convention: `squads.SquadTag`, `combat.FactionTag`.
+- Component variables are prefixed with their package: `common.PositionComponent`, `squadcore.SquadComponent`, etc.
+- Tag variables follow the same package-prefix convention: `squadcore.SquadTag`, `combatstate.FactionTag`.
+
+### Package path cheatsheet
+
+| Prefix | Import path |
+|---|---|
+| `common` | `game_main/core/common` |
+| `coords` | `game_main/core/coords` |
+| `squadcore` | `game_main/tactical/squads/squadcore` |
+| `roster` | `game_main/tactical/squads/roster` |
+| `unitprogression` | `game_main/tactical/squads/unitprogression` |
+| `commander` | `game_main/tactical/commander` |
+| `combatstate` | `game_main/tactical/combat/combatstate` |
+| `spells` | `game_main/tactical/powers/spells` |
+| `perks` | `game_main/tactical/powers/perks` |
+| `progression` | `game_main/tactical/powers/progression` |
+| `artifacts` | `game_main/tactical/powers/artifacts` |
+| `core` (overworld) | `game_main/campaign/overworld/core` |
+| `raid` | `game_main/campaign/raid` |
 
 ### Component Access Pattern
 
@@ -89,8 +109,8 @@ type LogicalPosition struct {
 }
 ```
 
-**Package:** `game_main/world/coords`
-**Query Tag:** Included in `rendering.RenderablesTag` (combined with `RenderableComponent`)
+**Package:** `game_main/core/coords`
+**Query Tag:** Included in `common.RenderablesTag` (combined with `RenderableComponent`)
 
 ### `common.AttributeComponent` — `*common.Attributes`
 
@@ -107,8 +127,8 @@ type Attributes struct {
     Weapon     int // Damage increase modifier
 
     // Turn-Based Combat
-    MovementSpeed int // Tiles per turn (default: 3)
-    AttackRange   int // Attack distance in tiles (default: 1)
+    MovementSpeed int // Tiles per turn
+    AttackRange   int // Attack distance in tiles
 
     // Runtime State
     CurrentHealth int  // Current HP; changes during combat
@@ -118,11 +138,11 @@ type Attributes struct {
 
 **Derived methods:** `GetMaxHealth()`, `GetPhysicalDamage()`, `GetPhysicalResistance()`, `GetHitRate()`, `GetCritChance()`, `GetDodgeChance()`, `GetMagicDamage()`, `GetMagicDefense()`, `GetHealingAmount()`, `GetUnitCapacity()`, `GetCapacityCost()`, `GetMovementSpeed()`, `GetAttackRange()`
 
-**Package:** `game_main/common`
+**Package:** `game_main/core/common`
 
 ### `common.NameComponent` — `*common.Name`
 
-Display name string for a unit. Distinct from `squads.UnitTypeComponent`, which holds the template type identifier used for roster grouping.
+Display name string for a unit. Distinct from `squadcore.UnitTypeComponent`, which holds the template type identifier used for roster grouping.
 
 ```go
 type Name struct {
@@ -130,9 +150,9 @@ type Name struct {
 }
 ```
 
-**Package:** `game_main/common`
+**Package:** `game_main/core/common`
 
-### `rendering.RenderableComponent` — `*rendering.Renderable`
+### `common.RenderableComponent` — `*common.Renderable`
 
 Sprite image and visibility flag. The rendering system skips entities where `Visible` is `false` or `Image` is `nil`. Units inside a squad have `Visible = false` because only the squad entity renders on the overworld.
 
@@ -143,8 +163,8 @@ type Renderable struct {
 }
 ```
 
-**Package:** `game_main/visual/rendering`
-**Query Tag:** `rendering.RenderablesTag` (combined with `common.PositionComponent`)
+**Package:** `game_main/core/common`
+**Query Tag:** `common.RenderablesTag` (combined with `common.PositionComponent`)
 
 ### `common.ResourceStockpileComponent` — `*common.ResourceStockpile`
 
@@ -159,7 +179,7 @@ type ResourceStockpile struct {
 }
 ```
 
-**Package:** `game_main/common`
+**Package:** `game_main/core/common`
 
 ---
 
@@ -167,22 +187,23 @@ type ResourceStockpile struct {
 
 ### Player Entity
 
-The single player-controlled top-level entity. Tracks resources, roster limits, and links to all commanders. There is exactly one player entity per game session.
+The single player-controlled top-level entity. Tracks resources, roster limits, progression state, and links to all commanders and artifacts. There is exactly one player entity per game session.
 
-**Created by:** `InitializePlayerData()` in `gamesetup/playerinit.go`
+**Created by:** `InitializePlayerData()` in `setup/gamesetup/playerinit.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `common.PlayerComponent` | part of `players` WorldTag | `*common.Player` | (empty marker struct) | Marks entity as the player; used in tag `players = BuildTag(PlayerComponent, PositionComponent)` |
-| `rendering.RenderableComponent` | `rendering.RenderablesTag` | `*rendering.Renderable` | `Image`, `Visible: true` | Player sprite loaded from `config.PlayerImagePath` |
+| `common.PlayerComponent` | part of `players` WorldTag | `*common.Player` | (empty marker struct) | Marks entity as the player; the tag `players = BuildTag(PlayerComponent, PositionComponent)` is stored on `WorldTags["players"]` |
+| `common.RenderableComponent` | `common.RenderablesTag` | `*common.Renderable` | `Image`, `Visible: true` | Player sprite loaded from `config.PlayerImagePath` |
 | `common.AttributeComponent` | — | `*common.Attributes` | `Strength`, `Dexterity`, `Magic`, `Leadership`, `Armor`, `Weapon` | Values sourced from `gameconfig.json` `player.attributes` section |
 | `common.ResourceStockpileComponent` | — | `*common.ResourceStockpile` | `Gold`, `Iron`, `Wood`, `Stone` | Initial values from `gameconfig.json` `player.resources` section |
-| `squads.UnitRosterComponent` | — | `*squads.UnitRoster` | `Units map[string]*UnitRosterEntry`, `MaxUnits int` | Tracks all unit entities owned by the player; `MaxUnits` from config |
+| `roster.UnitRosterComponent` | — | `*roster.UnitRoster` | `Units map[string]*UnitRosterEntry`, `MaxUnits int` | Tracks all unit entities owned by the player; `MaxUnits` from `gameconfig.json` `player.limits.maxUnits` |
 | `commander.CommanderRosterComponent` | — | `*commander.CommanderRosterData` | `CommanderIDs []ecs.EntityID`, `MaxCommanders int` | Tracks all commander entity IDs; `MaxCommanders` from config |
-| `gear.ArtifactInventoryComponent` | — | `*gear.ArtifactInventoryData` | `OwnedArtifacts map[string][]*ArtifactInstance`, `MaxArtifacts int` | Artifact collection; `MaxArtifacts` from config |
+| `artifacts.ArtifactInventoryComponent` | — | `*artifacts.ArtifactInventoryData` | `OwnedArtifacts map[string][]*ArtifactInstance`, `MaxArtifacts int` | Artifact collection; `MaxArtifacts` from config |
+| `progression.ProgressionComponent` | `progression.ProgressionTag` | `*progression.ProgressionData` | `ArcanaPoints`, `SkillPoints`, `UnlockedSpellIDs []string`, `UnlockedPerkIDs []string` | Permanent player progression: currencies and unlocked-library state. Seeded via `progression.NewProgressionData()` with a starter perk/spell set. |
 | `common.PositionComponent` | `players` WorldTag | `*coords.LogicalPosition` | `X`, `Y` | Added via `RegisterEntityPosition` using `gm.StartingPosition()`; also stored in `PlayerData.Pos` for direct access |
 
-**`squads.UnitRosterData` detail:**
+**`roster.UnitRoster` detail:**
 ```go
 type UnitRoster struct {
     Units    map[string]*UnitRosterEntry // template name -> entry
@@ -204,7 +225,7 @@ type CommanderRosterData struct {
 }
 ```
 
-**`gear.ArtifactInventoryData` detail:**
+**`artifacts.ArtifactInventoryData` detail:**
 ```go
 type ArtifactInventoryData struct {
     OwnedArtifacts map[string][]*ArtifactInstance // artifactID -> instances
@@ -215,11 +236,21 @@ type ArtifactInstance struct {
 }
 ```
 
+**`progression.ProgressionData` detail:**
+```go
+type ProgressionData struct {
+    ArcanaPoints     int
+    SkillPoints      int
+    UnlockedSpellIDs []string // spell IDs the player has unlocked
+    UnlockedPerkIDs  []string // perk IDs the player has unlocked
+}
+```
+
 ---
 
 ### Commander Entity
 
-A field commander that moves on the overworld map, leads squads, and casts spells. Multiple commanders can exist simultaneously (limited by `CommanderRosterData.MaxCommanders`).
+A field commander that moves on the overworld map and leads squads. Multiple commanders can exist simultaneously (limited by `CommanderRosterData.MaxCommanders`).
 
 **Created by:** `CreateCommander()` in `tactical/commander/system.go`
 
@@ -227,12 +258,12 @@ A field commander that moves on the overworld map, leads squads, and casts spell
 |---|---|---|---|---|
 | `commander.CommanderComponent` | `commander.CommanderTag` | `*commander.CommanderData` | `CommanderID`, `Name`, `IsActive bool` | Core identity; `CommanderID` is the entity's own ID |
 | `commander.CommanderActionStateComponent` | `commander.CommanderActionTag` | `*commander.CommanderActionStateData` | `CommanderID`, `HasMoved`, `HasActed`, `MovementRemaining` | Per-turn action tracking; reset by `StartNewTurn()` at overworld turn start |
-| `rendering.RenderableComponent` | `rendering.RenderablesTag` | `*rendering.Renderable` | `Image`, `Visible: true` | Sprite passed as parameter to `CreateCommander` |
+| `common.RenderableComponent` | `common.RenderablesTag` | `*common.Renderable` | `Image`, `Visible: true` | Sprite passed as parameter to `CreateCommander` |
 | `common.AttributeComponent` | — | `*common.Attributes` | `MovementSpeed` | Only `MovementSpeed` is set at creation; other stats default to zero |
-| `squads.SquadRosterComponent` | — | `*squads.SquadRoster` | `OwnedSquads []ecs.EntityID`, `MaxSquads int` | Squads commanded by this commander; `maxSquads` parameter |
-| `spells.ManaComponent` | `spells.ManaTag` | `*spells.ManaData` | `CurrentMana`, `MaxMana` | Mana persists across battles (strategic resource) |
-| `spells.SpellBookComponent` | `spells.SpellBookTag` | `*spells.SpellBookData` | `SpellIDs []string` | Keys into the global `SpellRegistry` |
+| `roster.SquadRosterComponent` | — | `*roster.SquadRoster` | `OwnedSquads []ecs.EntityID`, `MaxSquads int` | Squads commanded by this commander; `maxSquads` parameter |
 | `common.PositionComponent` | — | `*coords.LogicalPosition` | `X`, `Y` | Added via `RegisterEntityPosition` using the `startPos` parameter |
+
+**Note:** Spell casting state (`spells.ManaComponent`, `spells.SpellBookComponent`) is **no longer** attached to the commander entity. It is attached to the **squad** that the commander leads, by `spells.InitSquadSpellsFromLeader()` — the spell list is derived from the squad leader's unit type and filtered against the player's unlocked-spell library. See [Squad Entity](#squad-entity).
 
 **`commander.CommanderData` detail:**
 ```go
@@ -253,26 +284,11 @@ type CommanderActionStateData struct {
 }
 ```
 
-**`squads.SquadRoster` detail:**
+**`roster.SquadRoster` detail:**
 ```go
 type SquadRoster struct {
     OwnedSquads []ecs.EntityID
     MaxSquads   int
-}
-```
-
-**`spells.ManaData` detail:**
-```go
-type ManaData struct {
-    CurrentMana int
-    MaxMana     int
-}
-```
-
-**`spells.SpellBookData` detail:**
-```go
-type SpellBookData struct {
-    SpellIDs []string // Keys into the global SpellRegistry
 }
 ```
 
@@ -282,18 +298,23 @@ type SpellBookData struct {
 
 ### Squad Entity
 
-A group of units that acts as a single tactical unit on the overworld and battle map. The squad entity is what moves, is positioned, and participates in faction/combat systems. Individual units are invisible sub-entities linked to the squad via `SquadMemberComponent`.
+A group of units that acts as a single tactical unit on the overworld and battle map. The squad entity is what moves, is positioned, participates in faction/combat systems, and holds the power layer state (mana, spellbook, perks, artifacts). Individual units are invisible sub-entities linked to the squad via `SquadMemberComponent`.
 
-**Created by:** `CreateEmptySquad()` or `CreateSquadFromTemplate()` in `tactical/squads/squadcreation.go`
+**Created by:** `CreateEmptySquad()` or `CreateSquadFromTemplate()` in `tactical/squads/squadcore/squadcreation.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `squads.SquadComponent` | `squads.SquadTag` | `*squads.SquadData` | `SquadID`, `Name`, `Formation`, `Morale`, `MaxUnits`, `IsDeployed`, `GarrisonedAtNodeID` | Core squad data; `Formation` only set by `CreateSquadFromTemplate` |
-| `common.PositionComponent` | `squads.SquadTag` (combined) | `*coords.LogicalPosition` | `X`, `Y` | Added directly (not via `RegisterEntityPosition`) on creation; upgraded to tracked position when assigned to a faction via `AddSquadToFaction` |
-| `rendering.RenderableComponent` | `rendering.RenderablesTag` | `*rendering.Renderable` | `Image` (leader's sprite), `Visible: true` | **Optional.** Only added by `SetSquadRenderableFromLeader()` after the first unit is promoted to leader. Not present on `CreateEmptySquad` squads until a leader is assigned |
-| `combat.FactionMembershipComponent` | `combat.CombatFactionTag` | `*combat.CombatFactionData` | `FactionID ecs.EntityID` | **Dynamic/Combat only.** Added when squad enters combat via `AddSquadToFaction()`; removed when squad exits combat |
+| `squadcore.SquadComponent` | `squadcore.SquadTag` | `*squadcore.SquadData` | `SquadID`, `Name`, `Formation`, `Morale`, `MaxUnits`, `IsDeployed`, `GarrisonedAtNodeID` | Core squad data; `Formation` only set by `CreateSquadFromTemplate` |
+| `common.PositionComponent` | `squadcore.SquadTag` (combined) | `*coords.LogicalPosition` | `X`, `Y` | Added directly on creation; upgraded to tracked position when assigned to a faction via `AddSquadToFaction` |
+| `common.RenderableComponent` | `common.RenderablesTag` | `*common.Renderable` | `Image` (leader's sprite), `Visible: true` | **Optional.** Only added by `SetSquadRenderableFromLeader()` after a leader exists. Not present on `CreateEmptySquad` squads until a leader is assigned |
+| `spells.ManaComponent` | `spells.ManaTag` | `*spells.ManaData` | `CurrentMana`, `MaxMana` | **Optional.** Added by `spells.AddSpellCapabilityToSquad` / `InitSquadSpellsFromLeader` only when the leader's unit type has unlocked spells. Mana is a squad-scoped resource. |
+| `spells.SpellBookComponent` | `spells.SpellBookTag` | `*spells.SpellBookData` | `SpellIDs []templates.SpellID` | **Optional.** Added alongside `ManaComponent`. Contains the intersection of the leader's unit-type spell list and the player's unlocked-spell library. |
+| `perks.PerkSlotComponent` | `perks.PerkSlotTag` | `*perks.PerkSlotData` | `PerkIDs []perks.PerkID` | **Optional / Dynamic.** Added by `perks.EquipPerk` the first time a perk is equipped; tracks squad-equipped perks. Slot cap depends on squad progression. |
+| `perks.PerkRoundStateComponent` | — | `*perks.PerkRoundState` | Shared tracking fields + `PerkState`, `PerkBattleState` maps | **Dynamic / Combat only.** Added at combat start by the perks system and removed by `mind/combatlifecycle/cleanup.go` when combat ends. |
+| `artifacts.EquipmentComponent` | — | `*artifacts.EquipmentData` | `EquippedArtifacts []string` | **Optional / Dynamic.** Added the first time an artifact is equipped on this squad. |
+| `combatstate.FactionMembershipComponent` | `combatstate.CombatFactionTag` | `*combatstate.CombatFactionData` | `FactionID ecs.EntityID` | **Dynamic / Combat only.** Added when squad enters combat via `AddSquadToFaction()`; removed when squad exits combat |
 
-**`squads.SquadData` detail:**
+**`squadcore.SquadData` detail:**
 ```go
 type SquadData struct {
     SquadID            ecs.EntityID  // Own entity ID
@@ -308,7 +329,29 @@ type SquadData struct {
 }
 ```
 
-**`combat.CombatFactionData` detail:**
+**`spells.ManaData` detail:**
+```go
+type ManaData struct {
+    CurrentMana int
+    MaxMana     int
+}
+```
+
+**`spells.SpellBookData` detail:**
+```go
+type SpellBookData struct {
+    SpellIDs []templates.SpellID
+}
+```
+
+**`perks.PerkSlotData` detail:**
+```go
+type PerkSlotData struct {
+    PerkIDs []PerkID // Equipped perk IDs (max based on squad level)
+}
+```
+
+**`combatstate.CombatFactionData` detail:**
 ```go
 type CombatFactionData struct {
     FactionID ecs.EntityID // Faction that owns this squad in combat
@@ -322,33 +365,33 @@ type CombatFactionData struct {
 An individual combatant that lives inside a squad. Units are not rendered on the world map (their `Renderable.Visible` is set to `false` when added to a squad). Their sprite image is read by the squad to set the squad's own renderable.
 
 A unit entity is built from three cooperating functions:
-1. `templates.CreateUnit()` adds the three base components (`NameComponent`, `PositionComponent`, `AttributeComponent`).
-2. `ApplyUnitComponents()` in `tactical/squads/units.go` adds all squad-specific components.
-3. `AddLeaderComponents()` (optional) adds leader-only components to the first unit in a squad or when `IsLeader` is true.
+1. `templates.CreateEntityFromTemplate()` adds the three base components (`NameComponent`, `PositionComponent`, `AttributeComponent`, `RenderableComponent`).
+2. `squadcore.ApplyUnitComponents()` adds all squad-specific components (grid position, role, cover, ranges, progression).
+3. `squadcore.AddLeaderComponents()` (optional) adds leader-only components to the first unit in a squad or when `IsLeader` is true.
 
-**Created by:** `CreateUnitEntity()` in `tactical/squads/units.go`; called by `AddUnitToSquad()` and `CreateSquadFromTemplate()`
+**Created by:** `squadcore.CreateUnitEntity()` or directly inside `CreateSquadFromTemplate()`; called by `AddUnitToSquad()` and `CreateSquadFromTemplate()`.
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
 | `common.NameComponent` | — | `*common.Name` | `NameStr` | Procedurally generated display name (e.g., "Karathos the Warrior") |
 | `common.PositionComponent` | — | `*coords.LogicalPosition` | `X`, `Y` | Set to squad's world position; not tracked by `GlobalPositionSystem` until squad deploys |
-| `common.AttributeComponent` | — | `*common.Attributes` | All fields | Sourced from `UnitTemplate.Attributes` which comes from `JSONMonster` data |
-| `rendering.RenderableComponent` | — | `*rendering.Renderable` | `Image`, `Visible: false` | Image loaded from creature asset path; **always set `Visible = false` when unit is in a squad** |
-| `squads.SquadMemberComponent` | `squads.SquadMemberTag` | `*squads.SquadMemberData` | `SquadID ecs.EntityID` | Links unit back to its parent squad; **not present on roster units** (added by `AddUnitToSquad` / `PlaceUnitInSquad`) |
-| `squads.GridPositionComponent` | — | `*squads.GridPositionData` | `AnchorRow`, `AnchorCol`, `Width`, `Height` | Position in the 3x3 formation grid; supports multi-cell units |
-| `squads.UnitTypeComponent` | — | `*squads.UnitTypeData` | `UnitType string` | Template type identifier (e.g., `"Goblin"`) for roster grouping; distinct from `NameComponent` |
-| `squads.UnitRoleComponent` | — | `*squads.UnitRoleData` | `Role UnitRole` | `RoleTank`, `RoleDPS`, or `RoleSupport`; drives combat targeting |
-| `squads.TargetRowComponent` | — | `*squads.TargetRowData` | `AttackType`, `TargetCells [][2]int` | Attack targeting mode; `TargetCells` only used for `AttackTypeMagic` and `AttackTypeHeal` |
-| `squads.CoverComponent` | — | `*squads.CoverData` | `CoverValue float64`, `CoverRange int`, `RequiresActive bool` | **Optional.** Only added when `template.CoverValue > 0` |
-| `squads.AttackRangeComponent` | — | `*squads.AttackRangeData` | `Range int` | World-tile attack range: Melee=1, Ranged=3, Magic=4 |
-| `squads.MovementSpeedComponent` | — | `*squads.MovementSpeedData` | `Speed int` | Tiles per turn; squad speed = minimum of all member speeds |
-| `squads.ExperienceComponent` | — | `*squads.ExperienceData` | `Level`, `CurrentXP`, `XPToNextLevel` | XP tracking; starts at Level 1, `XPToNextLevel` = 100 |
-| `squads.StatGrowthComponent` | — | `*squads.StatGrowthData` | `Strength`, `Dexterity`, `Magic`, `Leadership`, `Armor`, `Weapon` (each `GrowthGrade`) | Per-stat level-up growth rates: S=90%, A=75%, B=60%, C=45%, D=30%, E=15%, F=5% |
-| `squads.LeaderComponent` | `squads.LeaderTag` | `*squads.LeaderData` | `Leadership int`, `Experience int` | **Optional/Leader only.** Added by `AddLeaderComponents()` for the first unit or when `IsLeader = true` |
-| `squads.AbilitySlotComponent` | — | `*squads.AbilitySlotData` | `Slots [4]AbilitySlot` | **Optional/Leader only.** Four ability slots (Rally, Heal, BattleCry, Fireball) |
-| `squads.CooldownTrackerComponent` | — | `*squads.CooldownTrackerData` | `Cooldowns [4]int`, `MaxCooldowns [4]int` | **Optional/Leader only.** Per-slot cooldown tracking |
+| `common.AttributeComponent` | — | `*common.Attributes` | All fields | Sourced from the unit template's attributes (derived from `JSONMonster` data) |
+| `common.RenderableComponent` | — | `*common.Renderable` | `Image`, `Visible: false` | Image loaded from creature asset path; **always set `Visible = false` when unit is in a squad** |
+| `squadcore.SquadMemberComponent` | `squadcore.SquadMemberTag` | `*squadcore.SquadMemberData` | `SquadID ecs.EntityID` | Links unit back to its parent squad; **not present on roster units** (added by `AddUnitToSquad` / `PlaceUnitInSquad`) |
+| `squadcore.GridPositionComponent` | — | `*squadcore.GridPositionData` | `AnchorRow`, `AnchorCol`, `Width`, `Height` | Position in the 3x3 formation grid; supports multi-cell units |
+| `squadcore.UnitTypeComponent` | — | `*squadcore.UnitTypeData` | `UnitType string` | Template type identifier (e.g., `"Goblin"`) for roster grouping; distinct from `NameComponent` |
+| `squadcore.UnitRoleComponent` | — | `*squadcore.UnitRoleData` | `Role unitdefs.UnitRole` | `RoleTank`, `RoleDPS`, or `RoleSupport`; drives combat targeting |
+| `squadcore.TargetRowComponent` | — | `*squadcore.TargetRowData` | `AttackType`, `TargetCells [][2]int` | Attack targeting mode; `TargetCells` only used for `AttackTypeMagic` and `AttackTypeHeal` |
+| `squadcore.CoverComponent` | — | `*squadcore.CoverData` | `CoverValue float64`, `CoverRange int`, `RequiresActive bool` | **Optional.** Only added when `template.CoverValue > 0` |
+| `squadcore.AttackRangeComponent` | — | `*squadcore.AttackRangeData` | `Range int` | World-tile attack range: Melee=1, Ranged=3, Magic=4 |
+| `squadcore.MovementSpeedComponent` | — | `*squadcore.MovementSpeedData` | `Speed int` | Tiles per turn; squad speed = minimum of all member speeds |
+| `unitprogression.ExperienceComponent` | — | `*unitprogression.ExperienceData` | `Level`, `CurrentXP`, `XPToNextLevel` | XP tracking; starts at Level 1 |
+| `unitprogression.StatGrowthComponent` | — | `*unitprogression.StatGrowthData` | `Strength`, `Dexterity`, `Magic`, `Leadership`, `Armor`, `Weapon` (each `GrowthGrade`) | Per-stat level-up growth rates: S=90%, A=75%, B=60%, C=45%, D=30%, E=15%, F=5% |
+| `squadcore.LeaderComponent` | `squadcore.LeaderTag` | `*squadcore.LeaderData` | `Leadership int`, `Experience int` | **Optional / Leader only.** Added by `AddLeaderComponents()` for the first unit or when `IsLeader = true` |
+| `squadcore.AbilitySlotComponent` | — | `*squadcore.AbilitySlotData` | `Slots [4]AbilitySlot` | **Optional / Leader only.** Four ability slots (Rally, Heal, BattleCry, Fireball) |
+| `squadcore.CooldownTrackerComponent` | — | `*squadcore.CooldownTrackerData` | `Cooldowns [4]int`, `MaxCooldowns [4]int` | **Optional / Leader only.** Per-slot cooldown tracking |
 
-**`squads.GridPositionData` detail:**
+**`squadcore.GridPositionData` detail:**
 ```go
 type GridPositionData struct {
     AnchorRow int // Top-left row (0-2)
@@ -358,7 +401,7 @@ type GridPositionData struct {
 }
 ```
 
-**`squads.CoverData` detail:**
+**`squadcore.CoverData` detail:**
 ```go
 type CoverData struct {
     CoverValue     float64 // Damage reduction (0.0-1.0)
@@ -367,7 +410,7 @@ type CoverData struct {
 }
 ```
 
-**`squads.AbilitySlot` detail:**
+**`squadcore.AbilitySlot` detail:**
 ```go
 type AbilitySlot struct {
     AbilityType  AbilityType  // Rally, Heal, BattleCry, Fireball
@@ -389,7 +432,7 @@ A standalone enemy or NPC entity that exists directly on the world map (not insi
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
 | `common.NameComponent` | — | `*common.Name` | `NameStr` | Set from `EntityConfig.Name` |
-| `rendering.RenderableComponent` | `rendering.RenderablesTag` | `*rendering.Renderable` | `Image`, `Visible` | Image loaded from `EntityConfig.AssetDir / EntityConfig.ImagePath` |
+| `common.RenderableComponent` | `common.RenderablesTag` | `*common.Renderable` | `Image`, `Visible` | Image loaded from `EntityConfig.AssetDir / EntityConfig.ImagePath` |
 | `common.PositionComponent` | — | `*coords.LogicalPosition` | `X`, `Y` | If `EntityConfig.Position != nil`, uses `RegisterEntityPosition` (tracked); otherwise adds default `{0,0}` (untracked) |
 | `common.AttributeComponent` | — | `*common.Attributes` | All fields | Derived from `JSONMonster.Attributes.NewAttributesFromJson()` |
 
@@ -403,19 +446,19 @@ A standalone enemy or NPC entity that exists directly on the world map (not insi
 
 Represents one side in a battle (player or enemy). Owns one or more squads. Created when combat is initialized; there are typically two factions per combat encounter.
 
-**Created by:** `CreateFactionWithPlayer()` in `tactical/combat/combatfactionmanager.go`
+**Created by:** `CreateFactionWithPlayer()` in `tactical/combat/combatstate`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `combat.CombatFactionComponent` | `combat.FactionTag` | `*combat.FactionData` | `FactionID`, `Name`, `Mana`, `MaxMana`, `IsPlayerControlled`, `PlayerID`, `PlayerName`, `EncounterID` | All fields set at creation; `Mana` starts at 100/100 |
+| `combatstate.CombatFactionComponent` | `combatstate.FactionTag` | `*combatstate.FactionData` | `FactionID`, `Name`, `Mana`, `MaxMana`, `IsPlayerControlled`, `PlayerID`, `PlayerName`, `EncounterID` | All fields set at creation |
 
-**`combat.FactionData` detail:**
+**`combatstate.FactionData` detail:**
 ```go
 type FactionData struct {
     FactionID          ecs.EntityID // Own entity ID
     Name               string       // Display name
-    Mana               int          // Current mana (starts 100)
-    MaxMana            int          // Max mana (starts 100)
+    Mana               int          // Current mana (faction-level pool, distinct from squad ManaData)
+    MaxMana            int          // Max mana
     IsPlayerControlled bool         // Derived from PlayerID > 0
     PlayerID           int          // 0 = AI, 1 = Player 1, 2 = Player 2
     PlayerName         string       // "Player 1" or custom
@@ -423,7 +466,7 @@ type FactionData struct {
 }
 ```
 
-**Note on squad membership:** Squads do not store a reference to their faction on the `CombatFactionEntity`. Instead, when a squad is added to a faction via `AddSquadToFaction()`, a `FactionMembershipComponent` (`CombatFactionData`) is added directly to the **squad entity**. This is ECS-idiomatic: query squads for their faction, not the faction for its squads.
+**Note on squad membership:** Squads do not store a reference to their faction on the `CombatFactionEntity`. Instead, when a squad is added to a faction via `AddSquadToFaction()`, a `FactionMembershipComponent` (`combatstate.CombatFactionData`) is added directly to the **squad entity**. This is ECS-idiomatic: query squads for their faction, not the faction for its squads.
 
 ---
 
@@ -431,13 +474,13 @@ type FactionData struct {
 
 Singleton that governs round and turn ordering for one combat session. Exactly one should exist per active combat.
 
-**Created by:** `InitializeCombat()` in `tactical/combat/turnmanager.go`
+**Created by:** `TurnManager.InitializeCombat()` in `tactical/combat/combatcore/turnmanager.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `combat.TurnStateComponent` | `combat.TurnStateTag` | `*combat.TurnStateData` | `CurrentRound`, `TurnOrder []ecs.EntityID`, `CurrentTurnIndex`, `CombatActive` | `TurnOrder` is faction IDs shuffled via Fisher-Yates at combat start; `TurnManager` caches the entity ID to avoid O(n) lookups |
+| `combatstate.TurnStateComponent` | `combatstate.TurnStateTag` | `*combatstate.TurnStateData` | `CurrentRound`, `TurnOrder []ecs.EntityID`, `CurrentTurnIndex`, `CombatActive` | `TurnOrder` is faction IDs shuffled via Fisher-Yates at combat start; `TurnManager` caches the entity ID to avoid O(n) lookups |
 
-**`combat.TurnStateData` detail:**
+**`combatstate.TurnStateData` detail:**
 ```go
 type TurnStateData struct {
     CurrentRound     int            // Starts at 1
@@ -453,13 +496,13 @@ type TurnStateData struct {
 
 Tracks whether a specific squad has moved and acted during the current faction's turn. One entity exists per squad for the duration of combat.
 
-**Created by:** `CreateActionStateForSquad()` in `tactical/combat/combatqueries.go`; called during `InitializeCombat()`
+**Created by:** `CreateActionStateForSquad()` in `tactical/combat/combatstate/combatqueries.go`; called during `InitializeCombat()`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `combat.ActionStateComponent` | `combat.ActionStateTag` | `*combat.ActionStateData` | `SquadID`, `HasMoved`, `HasActed`, `MovementRemaining`, `BonusAttackActive` | `MovementRemaining` initialized from squad's actual movement speed (falling back to `config.DefaultMovementSpeed` if 0); reset each time it is that faction's turn via `ResetSquadActions()` |
+| `combatstate.ActionStateComponent` | `combatstate.ActionStateTag` | `*combatstate.ActionStateData` | `SquadID`, `HasMoved`, `HasActed`, `MovementRemaining`, `BonusAttackActive` | `MovementRemaining` initialized from squad's actual movement speed (falling back to `config.DefaultMovementSpeed` if 0); reset each time it is that faction's turn via `ResetSquadActions()` |
 
-**`combat.ActionStateData` detail:**
+**`combatstate.ActionStateData` detail:**
 ```go
 type ActionStateData struct {
     SquadID           ecs.EntityID // Squad this tracks
@@ -498,7 +541,7 @@ type OverworldTurnStateData struct {
 
 Represents a point of interest on the overworld map: a threat node (enemy territory), a player-placed settlement, fortress, or other landmark. All node types share this single unified entity type; the `NodeTypeID` and `Category` fields distinguish them.
 
-**Created by:** `CreateNode()` in `overworld/node/system.go`
+**Created by:** `CreateNode()` in `campaign/overworld/node/system.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -552,7 +595,7 @@ type NodeInteraction struct {
 
 An AI-controlled strategic faction that expands territory, spawns threats, and raids player nodes. Multiple factions can exist simultaneously.
 
-**Created by:** `CreateFaction()` in `overworld/faction/system.go`
+**Created by:** `CreateFaction()` in `campaign/overworld/faction/system.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -592,7 +635,7 @@ type StrategicIntentData struct {
 
 Global tick counter for the entire overworld simulation. Exactly one per game session.
 
-**Created by:** `CreateTickStateEntity()` in `overworld/tick/tickmanager.go`
+**Created by:** `CreateTickStateEntity()` in `campaign/overworld/tick/tickmanager.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -614,7 +657,7 @@ type TickStateData struct {
 
 Tracks win/loss condition parameters and current victory state. Exactly one per game session.
 
-**Created by:** `CreateVictoryStateEntity()` in `overworld/victory/system.go`
+**Created by:** `CreateVictoryStateEntity()` in `campaign/overworld/victory/system.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -643,7 +686,7 @@ type VictoryStateData struct {
 
 The `InteractionComponent` is not a separate entity type. It is a dynamic component added to and removed from `OverworldNode` entities during each tick's influence resolution pass. See [Overworld Node Entity](#overworld-node-entity) for the full component definition.
 
-**Managed by:** `UpdateInfluenceInteractions()` in `overworld/influence/system.go`
+**Managed by:** `UpdateInfluenceInteractions()` in `campaign/overworld/influence/system.go`
 
 The component is cleared at the start of each tick (`clearStaleInteractions`) and re-added for any pair of overlapping nodes. The query tag `core.InteractionTag` enumerates all nodes that currently have active interactions.
 
@@ -687,7 +730,7 @@ type OverworldEncounterData struct {
 
 Singleton within a raid session. Tracks global progress across all floors of a garrison defense.
 
-**Created by:** `GenerateGarrison()` in `mind/raid/garrison.go`
+**Created by:** `GenerateGarrison()` in `campaign/raid/garrison.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -711,7 +754,7 @@ type RaidStateData struct {
 
 Tracks the clear state of a single floor within a garrison raid. One entity per floor.
 
-**Created by:** `generateFloor()` in `mind/raid/garrison.go`
+**Created by:** `generateFloor()` in `campaign/raid/garrison.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -735,7 +778,7 @@ type FloorStateData struct {
 
 Tracks the alert level for a single garrison floor. Alert level rises as the player engages rooms. One entity per floor.
 
-**Created by:** `generateFloor()` in `mind/raid/garrison.go`
+**Created by:** `generateFloor()` in `campaign/raid/garrison.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -756,7 +799,7 @@ type AlertData struct {
 
 Represents one room within a floor's directed acyclic graph (DAG). Rooms unlock in dependency order: a room becomes accessible once all parent rooms are cleared.
 
-**Created by:** `buildFloorGraph()` in `mind/raid/floorgraph.go`; called by `generateFloor()`
+**Created by:** `buildFloorGraph()` in `campaign/raid/floorgraph.go`; called by `generateFloor()`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -781,9 +824,9 @@ type RoomData struct {
 
 ### Garrison Squad Entity
 
-A Squad Entity (standard `squads.SquadComponent`) with an additional `GarrisonSquadComponent` marking it as part of the garrison defense system. See [Squad Entity](#squad-entity) for the base squad components.
+A Squad Entity (standard `squadcore.SquadComponent`) with an additional `GarrisonSquadComponent` marking it as part of the garrison defense system. See [Squad Entity](#squad-entity) for the base squad components.
 
-**Created by:** `InstantiateGarrisonSquad()` in `mind/raid/garrison.go`; builds via `squads.CreateSquadFromTemplate()`
+**Created by:** `InstantiateGarrisonSquad()` in `campaign/raid/garrison.go`; builds via `squadcore.CreateSquadFromTemplate()`
 
 All standard Squad Entity components apply. The additional component is:
 
@@ -810,7 +853,7 @@ type GarrisonSquadData struct {
 
 Singleton that records which player squads are deployed (active in the upcoming encounter) versus held in reserve. Exactly one entity should exist during encounter setup; it is created or reused by `SetDeployment()`.
 
-**Created by:** `SetDeployment()` in `mind/raid/deployment.go`
+**Created by:** `SetDeployment()` in `campaign/raid/deployment.go`
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
@@ -834,54 +877,57 @@ Alphabetical listing of every component variable with the entity types that use 
 
 | Component Variable | Package | Entity Types |
 |---|---|---|
-| `combat.ActionStateComponent` | `tactical/combat` | Action State Entity |
-| `combat.CombatFactionComponent` | `tactical/combat` | Combat Faction Entity |
-| `combat.FactionMembershipComponent` | `tactical/combat` | Squad Entity (dynamic, combat only) |
-| `combat.TurnStateComponent` | `tactical/combat` | Turn State Entity |
+| `artifacts.ArtifactInventoryComponent` | `tactical/powers/artifacts` | Player Entity |
+| `artifacts.EquipmentComponent` | `tactical/powers/artifacts` | Squad Entity (when artifacts are equipped) |
+| `combatstate.ActionStateComponent` | `tactical/combat/combatstate` | Action State Entity |
+| `combatstate.CombatFactionComponent` | `tactical/combat/combatstate` | Combat Faction Entity |
+| `combatstate.FactionMembershipComponent` | `tactical/combat/combatstate` | Squad Entity (dynamic, combat only) |
+| `combatstate.TurnStateComponent` | `tactical/combat/combatstate` | Turn State Entity |
 | `commander.CommanderActionStateComponent` | `tactical/commander` | Commander Entity |
 | `commander.CommanderComponent` | `tactical/commander` | Commander Entity |
 | `commander.CommanderRosterComponent` | `tactical/commander` | Player Entity |
 | `commander.OverworldTurnStateComponent` | `tactical/commander` | Overworld Turn State Entity |
-| `common.AttributeComponent` | `common` | Player Entity, Commander Entity, Unit Entity, Creature Entity |
-| `common.NameComponent` | `common` | Unit Entity, Creature Entity |
-| `common.PlayerComponent` | `common` | Player Entity |
-| `common.PositionComponent` | `common` | Player Entity, Commander Entity, Squad Entity, Unit Entity, Creature Entity, Overworld Node Entity |
-| `common.ResourceStockpileComponent` | `common` | Player Entity, Overworld Faction Entity |
-| `core.GarrisonComponent` | `overworld/core` | Overworld Node Entity (optional) |
-| `core.InfluenceComponent` | `overworld/core` | Overworld Node Entity |
-| `core.InteractionComponent` | `overworld/core` | Overworld Node Entity (dynamic) |
-| `core.OverworldEncounterComponent` | `overworld/core` | Encounter Entity |
-| `core.OverworldFactionComponent` | `overworld/core` | Overworld Faction Entity |
-| `core.OverworldNodeComponent` | `overworld/core` | Overworld Node Entity |
-| `core.StrategicIntentComponent` | `overworld/core` | Overworld Faction Entity |
-| `core.TerritoryComponent` | `overworld/core` | Overworld Faction Entity |
-| `core.TickStateComponent` | `overworld/core` | Tick State Entity |
-| `core.TravelStateComponent` | `overworld/core` | (TravelState entity — see overworld travel system) |
-| `core.VictoryStateComponent` | `overworld/core` | Victory State Entity |
-| `gear.ArtifactInventoryComponent` | `gear` | Player Entity |
-| `gear.EquipmentComponent` | `gear` | Squad Entity (when artifacts are equipped) |
-| `raid.AlertDataComponent` | `mind/raid` | Alert Data Entity |
-| `raid.DeploymentComponent` | `mind/raid` | Deployment Entity |
-| `raid.FloorStateComponent` | `mind/raid` | Floor State Entity |
-| `raid.GarrisonSquadComponent` | `mind/raid` | Garrison Squad Entity |
-| `raid.RaidStateComponent` | `mind/raid` | Raid State Entity |
-| `raid.RoomDataComponent` | `mind/raid` | Room Data Entity |
-| `rendering.RenderableComponent` | `visual/rendering` | Player Entity, Commander Entity, Squad Entity, Unit Entity, Creature Entity |
-| `spells.ManaComponent` | `tactical/spells` | Commander Entity |
-| `spells.SpellBookComponent` | `tactical/spells` | Commander Entity |
-| `squads.AbilitySlotComponent` | `tactical/squads` | Unit Entity (leader only) |
-| `squads.AttackRangeComponent` | `tactical/squads` | Unit Entity |
-| `squads.CooldownTrackerComponent` | `tactical/squads` | Unit Entity (leader only) |
-| `squads.CoverComponent` | `tactical/squads` | Unit Entity (optional, when `CoverValue > 0`) |
-| `squads.ExperienceComponent` | `tactical/squads` | Unit Entity |
-| `squads.GridPositionComponent` | `tactical/squads` | Unit Entity |
-| `squads.LeaderComponent` | `tactical/squads` | Unit Entity (leader only) |
-| `squads.MovementSpeedComponent` | `tactical/squads` | Unit Entity |
-| `squads.SquadComponent` | `tactical/squads` | Squad Entity, Garrison Squad Entity |
-| `squads.SquadMemberComponent` | `tactical/squads` | Unit Entity (when in a squad) |
-| `squads.SquadRosterComponent` | `tactical/squads` | Commander Entity |
-| `squads.StatGrowthComponent` | `tactical/squads` | Unit Entity |
-| `squads.TargetRowComponent` | `tactical/squads` | Unit Entity |
-| `squads.UnitRoleComponent` | `tactical/squads` | Unit Entity |
-| `squads.UnitRosterComponent` | `tactical/squads` | Player Entity |
-| `squads.UnitTypeComponent` | `tactical/squads` | Unit Entity |
+| `common.AttributeComponent` | `core/common` | Player Entity, Commander Entity, Unit Entity, Creature Entity |
+| `common.NameComponent` | `core/common` | Unit Entity, Creature Entity |
+| `common.PlayerComponent` | `core/common` | Player Entity |
+| `common.PositionComponent` | `core/common` | Player Entity, Commander Entity, Squad Entity, Unit Entity, Creature Entity, Overworld Node Entity |
+| `common.RenderableComponent` | `core/common` | Player Entity, Commander Entity, Squad Entity (optional), Unit Entity, Creature Entity |
+| `common.ResourceStockpileComponent` | `core/common` | Player Entity, Overworld Faction Entity |
+| `core.GarrisonComponent` | `campaign/overworld/core` | Overworld Node Entity (optional) |
+| `core.InfluenceComponent` | `campaign/overworld/core` | Overworld Node Entity |
+| `core.InteractionComponent` | `campaign/overworld/core` | Overworld Node Entity (dynamic) |
+| `core.OverworldEncounterComponent` | `campaign/overworld/core` | Encounter Entity |
+| `core.OverworldFactionComponent` | `campaign/overworld/core` | Overworld Faction Entity |
+| `core.OverworldNodeComponent` | `campaign/overworld/core` | Overworld Node Entity |
+| `core.StrategicIntentComponent` | `campaign/overworld/core` | Overworld Faction Entity |
+| `core.TerritoryComponent` | `campaign/overworld/core` | Overworld Faction Entity |
+| `core.TickStateComponent` | `campaign/overworld/core` | Tick State Entity |
+| `core.TravelStateComponent` | `campaign/overworld/core` | (TravelState entity — see overworld travel system) |
+| `core.VictoryStateComponent` | `campaign/overworld/core` | Victory State Entity |
+| `perks.PerkRoundStateComponent` | `tactical/powers/perks` | Squad Entity (dynamic, combat only) |
+| `perks.PerkSlotComponent` | `tactical/powers/perks` | Squad Entity (when perks are equipped) |
+| `progression.ProgressionComponent` | `tactical/powers/progression` | Player Entity |
+| `raid.AlertDataComponent` | `campaign/raid` | Alert Data Entity |
+| `raid.DeploymentComponent` | `campaign/raid` | Deployment Entity |
+| `raid.FloorStateComponent` | `campaign/raid` | Floor State Entity |
+| `raid.GarrisonSquadComponent` | `campaign/raid` | Garrison Squad Entity |
+| `raid.RaidStateComponent` | `campaign/raid` | Raid State Entity |
+| `raid.RoomDataComponent` | `campaign/raid` | Room Data Entity |
+| `roster.SquadRosterComponent` | `tactical/squads/roster` | Commander Entity |
+| `roster.UnitRosterComponent` | `tactical/squads/roster` | Player Entity |
+| `spells.ManaComponent` | `tactical/powers/spells` | Squad Entity (optional, when leader has spells) |
+| `spells.SpellBookComponent` | `tactical/powers/spells` | Squad Entity (optional, when leader has spells) |
+| `squadcore.AbilitySlotComponent` | `tactical/squads/squadcore` | Unit Entity (leader only) |
+| `squadcore.AttackRangeComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `squadcore.CooldownTrackerComponent` | `tactical/squads/squadcore` | Unit Entity (leader only) |
+| `squadcore.CoverComponent` | `tactical/squads/squadcore` | Unit Entity (optional, when `CoverValue > 0`) |
+| `squadcore.GridPositionComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `squadcore.LeaderComponent` | `tactical/squads/squadcore` | Unit Entity (leader only) |
+| `squadcore.MovementSpeedComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `squadcore.SquadComponent` | `tactical/squads/squadcore` | Squad Entity, Garrison Squad Entity |
+| `squadcore.SquadMemberComponent` | `tactical/squads/squadcore` | Unit Entity (when in a squad) |
+| `squadcore.TargetRowComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `squadcore.UnitRoleComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `squadcore.UnitTypeComponent` | `tactical/squads/squadcore` | Unit Entity |
+| `unitprogression.ExperienceComponent` | `tactical/squads/unitprogression` | Unit Entity |
+| `unitprogression.StatGrowthComponent` | `tactical/squads/unitprogression` | Unit Entity |

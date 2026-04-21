@@ -50,7 +50,7 @@ golangci-lint run
 Run from the TinkerRogue root directory:
 
 ```bash
-go build -o combatsim.exe ./tools/combatsim/cmd
+go build -o combatsim.exe ./tools/combat_simulator/cmd
 ```
 
 ### Running the Simulator Directly
@@ -75,6 +75,8 @@ Then run the visualizer against a battle log:
 
 ```bash
 tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\<battle_log>.json >> all_battles.txt
+
+tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\battle_20260421_155214.624.json >> all_battles.txt
 ```
 
 ### Combat Balance Report

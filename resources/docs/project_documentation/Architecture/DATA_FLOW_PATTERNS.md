@@ -1,6 +1,6 @@
 # Data Flow Patterns
 
-**Last Updated:** 2026-04-10
+**Last Updated:** 2026-04-21
 
 Understanding how data flows through the system is critical for debugging and extending functionality.
 
@@ -67,7 +67,7 @@ CombatActionHandler.ExecuteAttack()
     ↓
 CombatService.CombatActSystem.ExecuteAttackAction(attacker, defender)
     ↓
-combat.CombatActionSystem.ExecuteAttackAction()
+combatcore.CombatActionSystem.ExecuteAttackAction()
     ├─ Query attacker units
     ├─ Query defender units
     ├─ Calculate damage per unit
@@ -86,7 +86,7 @@ Turn advancement check
 ```
 
 Key files: `gui/guicombat/combat_action_handler.go`, `gui/guicombat/combatmode.go`,
-`tactical/combat/combatactionsystem.go`, `tactical/combatservices/combat_service.go`
+`tactical/combat/combatcore/combatactionsystem.go`, `tactical/combat/combatservices/combat_service.go`
 
 ---
 
@@ -119,8 +119,9 @@ Player opens artifact UI (overworld: ArtifactMode, combat: ArtifactActivationHan
 │       squadIDs, manager)                │
 │   (applies passive stat bonuses as      │
 │    permanent effects via effects pkg)   │
-│   → ArtifactDispatcher created          │
-│     with NewArtifactChargeTracker()     │
+│   → ArtifactDispatcher already created  │
+│     in NewCombatService; its            │
+│     ChargeTracker is reset here         │
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
@@ -132,7 +133,8 @@ Player opens artifact UI (overworld: ArtifactMode, combat: ArtifactActivationHan
 │   → Dispatches to registered behavior's │
 │     Activate() method                   │
 │                                         │
-│ ArtifactDispatcher lifecycle hooks:     │
+│ ArtifactDispatcher lifecycle hooks      │
+│ (wired on the shared PowerPipeline):    │
 │   → DispatchPostReset(factionID, squads)│
 │     (fires OnPostReset for all behaviors│
 │      e.g. Deadlock Shackles lock,       │
@@ -156,14 +158,15 @@ Player opens artifact UI (overworld: ArtifactMode, combat: ArtifactActivationHan
 
 ### Balance Configuration
 
-Artifact tuning values loaded from `gamedata/artifactbalanceconfig.json` into `artifacts.ArtifactBalance`.
+Artifact tuning values loaded from `resources/assets/gamedata/artifactbalanceconfig.json` into `artifacts.ArtifactBalance`.
 
 Key files: `tactical/powers/artifacts/system.go`, `tactical/powers/artifacts/queries.go`,
 `tactical/powers/artifacts/artifactinventory.go`, `tactical/powers/artifacts/components.go`,
-`tactical/powers/artifacts/artifactbehavior.go`, `tactical/powers/artifacts/dispatcher.go`,
-`tactical/powers/artifacts/artifactbehaviors_activated.go`,
-`tactical/powers/artifacts/artifactbehaviors_passive.go`,
-`tactical/powers/artifacts/artifactcharges.go`, `tactical/powers/artifacts/balanceconfig.go`,
+`tactical/powers/artifacts/behavior.go` (interface + constants),
+`tactical/powers/artifacts/behaviors.go` (concrete behaviors),
+`tactical/powers/artifacts/dispatcher.go`, `tactical/powers/artifacts/artifactcharges.go`,
+`tactical/powers/artifacts/pending_effects.go`, `tactical/powers/artifacts/balanceconfig.go`,
+`tactical/powers/artifacts/registry.go`, `tactical/powers/artifacts/context.go`,
 `gui/guiartifacts/`, `gui/guisquads/artifactmode.go`
 
 ---
@@ -180,7 +183,7 @@ Key files: `tactical/powers/artifacts/system.go`, `tactical/powers/artifacts/que
 │     manager)                            │
 │                                         │
 │ Storage: PerkSlotData on squad entity   │
-│   → PerkIDs []PerkID (max 3 slots)     │
+│   → PerkIDs []PerkID (max 3 slots)      │
 │                                         │
 │ Validation:                             │
 │   → Slot capacity check                 │
@@ -204,34 +207,39 @@ Key files: `tactical/powers/artifacts/system.go`, `tactical/powers/artifacts/que
 │ SquadPerkDispatcher (implements         │
 │   combattypes.PerkDispatcher interface) │
 │                                         │
-│ For each equipped perk behavior:        │
-│   → AttackerDamageMod(ctx, modifiers)   │
-│   → DefenderDamageMod(ctx, modifiers)   │
-│   → DefenderCoverMod(ctx, coverBrkdn)   │
-│   → TargetOverride(ctx, targets)        │
-│   → CounterMod(ctx, modifiers)          │
-│   → AttackerPostDamage(ctx, dmg, kill)  │
-│   → DefenderPostDamage(ctx, dmg, kill)  │
-│   → DamageRedirect(ctx)                 │
-│   → DeathOverride(ctx)                  │
+│ Per-attack hook methods (called by      │
+│ CombatActionSystem via the injected     │
+│ PerkDispatcher interface):              │
+│   → AttackerDamageMod(...modifiers)     │
+│   → DefenderDamageMod(...modifiers)     │
+│   → CoverMod(...coverBreakdown)         │
+│   → TargetOverride(...targets)          │
+│   → CounterMod(...modifiers) bool       │
+│   → AttackerPostDamage(...dmg, kill)    │
+│   → DefenderPostDamage(...dmg, kill)    │
+│   → DeathOverride(unitID, squadID)      │
+│   → DamageRedirect(...dmgAmount)        │
 │                                         │
-│ Called by combat system during damage    │
-│ calculation, targeting, and resolution  │
+│ Each method iterates active perks on    │
+│ the relevant squad and calls the        │
+│ matching PerkBehavior hook.             │
 └─────────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────────┐
 │ COMBAT — LIFECYCLE DISPATCH             │
 │                                         │
-│ SquadPerkDispatcher:                    │
+│ SquadPerkDispatcher lifecycle methods   │
+│ (wired as subscribers on the shared     │
+│ powercore.PowerPipeline):               │
+│                                         │
 │   → DispatchTurnStart(squadIDs, round)  │
 │     1. ResetPerkRoundStateTurn()        │
 │        (snapshot previous turn state:   │
 │         WasAttackedLastTurn,            │
 │         DidNotAttackLastTurn,           │
-│         WasIdleLastTurn)               │
-│     2. RunTurnStartHooks() per squad    │
-│        (Field Medic heal, Fortify       │
-│         accumulate, Counterpunch arm)   │
+│         WasIdleLastTurn)                │
+│     2. Iterate perks, calling each      │
+│        behavior's TurnStart hook        │
 │                                         │
 │   → DispatchRoundEnd(manager)           │
 │     Clears per-round PerkState map      │
@@ -259,22 +267,24 @@ Key files: `tactical/powers/artifacts/system.go`, `tactical/powers/artifacts/que
 Perks use a two-level state system on `PerkRoundState`:
 
 - **Shared tracking fields** (e.g., `MovedThisTurn`, `WasAttackedLastTurn`): Set by the dispatch layer, read by multiple perks. Reset each turn by `ResetPerkRoundStateTurn`.
-- **Per-perk round state** (`PerkState map[PerkID]any`): Isolated state per perk (e.g., `RecklessAssaultState`, `BloodlustState`). Cleared each round by `ResetPerkRoundStateRound`.
-- **Per-perk battle state** (`PerkBattleState map[PerkID]any`): Persists the entire combat (e.g., `OpeningSalvoState`, `ResoluteState`, `GrudgeBearerState`). Only cleaned up at combat end.
+- **Per-perk round state** (`PerkState map[PerkID]any`): Isolated state per perk (e.g., `RecklessAssaultState`, `BloodlustState`). Cleared each round by `ResetPerkRoundStateRound`. Accessed via generic helpers `GetPerkState[T]` / `SetPerkState`.
+- **Per-perk battle state** (`PerkBattleState map[PerkID]any`): Persists the entire combat (e.g., `OpeningSalvoState`, `ResoluteState`, `GrudgeBearerState`). Only cleaned up at combat end. Accessed via `GetBattleState[T]` / `SetBattleState`.
 
 ### Perk Behavior Organization
 
-Behavior implementations are split by state requirements:
+All 21 perk behavior implementations live in a single file, `behaviors.go`, grouped by state requirement via section comments:
 
-- `behaviors_stateless.go` — Pure functions of `HookContext`, no state tracking (11 perks)
-- `behaviors_stateful_round.go` — Read shared tracking or use per-round `PerkState` (7 perks)
-- `behaviors_stateful_battle.go` — Use per-battle `PerkBattleState` (3 perks)
+- **Stateless** (11 perks) — pure functions of `HookContext`, no state tracking.
+- **Per-round stateful** (7 perks) — read shared tracking or use per-round `PerkState`.
+- **Per-battle stateful** (3 perks) — use per-battle `PerkBattleState`.
+
+Each section's `init()` registers its behaviors via `RegisterPerkBehavior`.
 
 ### Perk Definitions and Balance
 
-- **Definitions**: Loaded from `gamedata/perkdata.json` into `perks.PerkRegistry`. Each perk has tier, category, roles, exclusivity rules, and unlock cost.
-- **Balance values**: Loaded from `gamedata/perkbalanceconfig.json` into `perks.PerkBalance`. All numeric tuning values are data-driven.
-- **Behavior registration**: Each behavior file registers via `init()` → `RegisterPerkBehavior()`. Startup validation (`validateHookCoverage`) ensures JSON definitions and behavior registrations are in sync.
+- **Definitions**: Loaded from `resources/assets/gamedata/perkdata.json` into `perks.PerkRegistry`. Each perk has tier, category, roles, exclusivity rules, and unlock cost.
+- **Balance values**: Loaded from `resources/assets/gamedata/perkbalanceconfig.json` into `perks.PerkBalance`. All numeric tuning values are data-driven.
+- **Behavior registration**: Behaviors register via `init()` → `RegisterPerkBehavior()`. Startup validation (`validateHookCoverage`) ensures JSON definitions and behavior registrations are in sync.
 
 ### Perk Hook Ordering in Damage Pipeline
 
@@ -290,7 +300,7 @@ AttackerDamageMod (all attacker perks)
 DefenderDamageMod (all defender perks)
     → Modify incoming damage multiplier, skip crit
     ↓
-DefenderCoverMod (Brace for Impact, Fortify)
+CoverMod (Brace for Impact, Fortify)
     → Modify cover reduction
     ↓
 DamageRedirect (Guardian Protocol)
@@ -311,10 +321,45 @@ CounterMod (Riposte, Stalwart)
 Key files: `tactical/powers/perks/system.go`, `tactical/powers/perks/dispatcher.go`,
 `tactical/powers/perks/hooks.go`, `tactical/powers/perks/components.go`,
 `tactical/powers/perks/perkids.go`, `tactical/powers/perks/registry.go`,
-`tactical/powers/perks/behaviors_stateless.go`,
-`tactical/powers/perks/behaviors_stateful_round.go`,
-`tactical/powers/perks/behaviors_stateful_battle.go`,
-`tactical/powers/perks/balanceconfig.go`
+`tactical/powers/perks/queries.go`, `tactical/powers/perks/behaviors.go`,
+`tactical/powers/perks/balanceconfig.go`, `tactical/powers/perks/init.go`,
+`tactical/combat/combattypes/perk_callbacks.go` (PerkDispatcher interface)
+
+---
+
+## Power Pipeline Flow (Artifacts + Perks Lifecycle)
+
+```
+CombatService holds powerPipeline *powercore.PowerPipeline
+    ↓
+NewCombatService registers subscribers in declared order:
+    ├─ PostReset        : ArtifactDispatcher → PerkDispatcher TurnStart
+    ├─ AttackComplete   : ArtifactDispatcher → perk attack tracking → GUI
+    ├─ TurnEnd          : ArtifactDispatcher (refresh charges + OnTurnEnd)
+    │                     → PerkDispatcher round reset → GUI
+    └─ MoveComplete     : perk movement tracking → GUI
+    ↓
+Combat internals (CombatActionSystem, CombatMovementSystem, TurnManager)
+  hold a single-subscriber callback each. Those callbacks are wired to the
+  pipeline's Fire* methods in NewCombatService:
+    ├─ combatActSystem.SetOnAttackComplete(pipeline.FireAttackComplete)
+    ├─ movementSystem.SetOnMoveComplete(pipeline.FireMoveComplete)
+    ├─ turnManager.SetOnTurnEnd(pipeline.FireTurnEnd)
+    └─ turnManager.SetPostResetHook(pipeline.FirePostReset)
+    ↓
+When combat fires one of these events, the single-subscriber hook
+  invokes the pipeline's Fire*, which invokes every registered
+  handler in registration order.
+```
+
+Both `artifacts.BehaviorContext` and `perks.HookContext` embed `powercore.PowerContext`,
+sharing the entity manager, query cache, round number, and a single `PowerLogger`.
+The logger writes `[GEAR] <source>` for artifact messages and `[PERK] <source>` for perk
+messages, distinguishing via `artifacts.IsRegisteredBehavior(source)`.
+
+Key files: `tactical/powers/powercore/pipeline.go`, `tactical/powers/powercore/context.go`,
+`tactical/powers/powercore/logger.go`, `tactical/combat/combatservices/combat_service.go`,
+`tactical/combat/combatservices/combat_power_dispatch.go`
 
 ---
 
@@ -323,17 +368,17 @@ Key files: `tactical/powers/perks/system.go`, `tactical/powers/perks/dispatcher.
 ```
 Game initialization or encounter setup
     ↓
-worldmap.NewGameMap(generatorName)
+worldmapcore.NewGameMap(generatorName)
     ↓
-worldmap.GetGeneratorOrDefault(name)
+worldgen.GetGeneratorOrDefault(name)
     ├─ Check ConfigOverride (if set)
     └─ Fall back to generator registry
     ↓
 Generator.Generate(width, height, images)
     ├─ Initialize tile array
     ├─ Algorithm-specific generation
-    │   (rooms_corridors, cavern, overworld,
-    │    garrison, military_base, etc.)
+    │   (rooms_corridors, cavern,
+    │    strategic_overworld, garrison_raid)
     ├─ Place doors/features
     ├─ Collect valid positions
     └─ Populate GenerationResult:
@@ -357,11 +402,17 @@ Spawn entities (squads, threats, resources)
 Rendering displays map
 ```
 
-Available generators (in `world/worldgen/`): `gen_rooms_corridors.go`, `gen_cavern.go`,
-`gen_overworld.go`
+Registered generators:
+- `rooms_corridors` (`world/worldgen/gen_rooms_corridors.go`)
+- `cavern` (`world/worldgen/gen_cavern.go`)
+- `strategic_overworld` (`world/worldgen/gen_overworld.go`)
+- `garrison_raid` (`world/garrisongen/generator.go`)
 
-Key files: `world/worldmap/dungeongen.go`, `world/worldmap/generator.go`,
-`world/worldgen/registry.go`, `setup/gamesetup/mapgenconfig.go`, `setup/gamesetup/bootstrap.go`
+Key files: `world/worldmapcore/generator.go` (MapGenerator interface, GameMap),
+`world/worldmapcore/dungeongen.go`, `world/worldmapcore/dungeontile.go`,
+`world/worldgen/registry.go` (RegisterGenerator / GetGeneratorOrDefault / ConfigOverride),
+`world/garrisongen/generator.go`, `world/garrisongen/dag.go`,
+`setup/gamesetup/mapgenconfig.go`, `setup/gamesetup/bootstrap.go`
 
 ---
 
@@ -374,7 +425,7 @@ Request entity creation
 │ Single Entity (creature/monster):            │
 │                                              │
 │ templates.CreateEntityFromTemplate(          │
-│     manager, EntityConfig, JSONMonster)       │
+│     manager, EntityConfig, JSONMonster)      │
 │   ├─ Create entity with components:          │
 │   │   ├─ PositionComponent                   │
 │   │   ├─ AttributeComponent (from template)  │
@@ -382,14 +433,14 @@ Request entity creation
 │   │   └─ Relevant tags                       │
 │   └─ GlobalPositionSystem.AddEntity()        │
 │                                              │
-│ OR templates.CreateUnit(mgr, name, attr, pos)│
+│ OR squadcore.CreateUnit(mgr, name, attr, pos)│
 │   (bare unit entity without template)        │
 └──────────────────────────────────────────────┘
     ↓
 ┌──────────────────────────────────────────────┐
 │ Full Squad (with units in 3x3 grid):         │
 │                                              │
-│ squads.CreateSquadFromTemplate(              │
+│ squadcore.CreateSquadFromTemplate(           │
 │     manager, name, formation,                │
 │     worldPos, unitTemplates)                 │
 │   ├─ Create squad entity (SquadComponent)    │
@@ -403,18 +454,22 @@ Request entity creation
 ┌──────────────────────────────────────────────┐
 │ Enemy Squads (encounter generation):         │
 │                                              │
-│ encounter_setup.go                           │
+│ mind/spawning/squadscreation.go              │
 │   → createSquadForPowerBudget()              │
-│   → Uses squads.Units (from JSON templates)  │
-│   → squads.CreateSquadFromTemplate()         │
+│   → Uses squadcore.Units (from JSON          │
+│     templates) + spawning.Composition        │
+│   → squadcore.CreateSquadFromTemplate()      │
 └──────────────────────────────────────────────┘
 ```
 
 Templates loaded by `templates.ReadGameData()` from JSON files. Unit templates
-initialized via `squads.InitUnitTemplatesFromJSON()`.
+initialized via `squadcore.InitUnitTemplatesFromJSON()`.
 
 Key files: `templates/entity_factory.go`, `templates/registry.go`, `templates/readdata.go`,
-`tactical/squads/squadcreation.go`, `mind/encounter/encounter_setup.go`
+`tactical/squads/squadcore/squadcreation.go`, `tactical/squads/squadcore/units.go`,
+`mind/spawning/squadscreation.go`, `mind/spawning/composition.go`,
+`mind/spawning/types.go`, `mind/spawning/util.go`,
+`mind/encounter/encounter_setup.go`
 
 ---
 
@@ -423,7 +478,7 @@ Key files: `templates/entity_factory.go`, `templates/registry.go`, `templates/re
 ```
 1. main() starts
    ↓
-2. SetupSharedSystems() (setup_shared.go)
+2. SetupSharedSystems() (game_main/setup.go)
    ├─ LoadGameData() → JSON templates
    ├─ InitializeCoreECS() → ECS manager, 50+ components, GlobalPositionSystem
    └─ Configure graphics
@@ -431,8 +486,8 @@ Key files: `templates/entity_factory.go`, `templates/registry.go`, `templates/re
 3. Show StartMenu (Overworld vs Roguelike selection)
    ↓
 4. Mode-specific setup
-   ├─ SetupOverworldMode() (setup_overworld.go)
-   │   OR SetupRoguelikeMode() (setup_roguelike.go)
+   ├─ SetupOverworldMode()
+   │   OR SetupRoguelikeMode()
    │   OR SetupRoguelikeFromSave() (load saved game)
    │
    ├─ CreateWorld() → Generate map (overworld or cavern)
@@ -466,10 +521,10 @@ Key files: `templates/entity_factory.go`, `templates/registry.go`, `templates/re
 ### Registered UI Modes
 
 - **Tactical (shared):** `exploration`, `combat`, `combat_animation`, `squad_deployment`
-- **Overworld-only:** `overworld`, `node_placement`, `unit_purchase`, `squad_editor`, `artifact`, `unit_view`
-- **Roguelike-only:** `raid`
+- **Overworld-only:** `overworld`, `node_placement`, `unit_purchase`, `squad_editor`, `artifact`, `progression`, `unit_view`
+- **Roguelike-only:** `raid` (plus the shared tactical modes and `progression`)
 
-Key files: `game_main/setup.go`, `gamesetup/bootstrap.go`, `gamesetup/moderegistry.go`
+Key files: `game_main/setup.go`, `setup/gamesetup/bootstrap.go`, `setup/gamesetup/moderegistry.go`
 
 ---
 
@@ -506,15 +561,16 @@ Key files: `game_main/setup.go`, `gamesetup/bootstrap.go`, `gamesetup/moderegist
         │                           │
 ┌───────▼────────┐          ┌──────▼─────────┐
 │ Map Rendering  │          │ Entity         │
-│ (Tiles)        │          │ Rendering      │
-│ [Tactical only]│          │ [Tactical only]│
+│ (maprender)    │          │ Rendering      │
+│ [Tactical only]│          │ (combatrender) │
+│                │          │ [Tactical only]│
 └───────┬────────┘          └──────┬─────────┘
         │                          │
         └──────────┬───────────────┘
                    │
            ┌───────▼────────┐
            │ Visual Effects │
-           │ Rendering      │
+           │ Rendering (vfx)│
            └────────┬───────┘
                     │
            ┌────────▼─────────────┐
@@ -524,7 +580,8 @@ Key files: `game_main/setup.go`, `gamesetup/bootstrap.go`, `gamesetup/moderegist
            └──────────────────────┘
 ```
 
-Key files: `game_main/main.go`
+Key files: `game_main/main.go`, `visual/graphics/`, `visual/rendering/`,
+`visual/maprender/`, `visual/combatrender/`, `visual/vfx/`
 
 ---
 
@@ -554,7 +611,9 @@ GUI refreshes overworld panels
 If pending raid → trigger garrison defense encounter
 ```
 
-Key files: `overworld/tick/tickmanager.go`, `gui/guioverworld/overworld_action_handler.go`
+Key files: `campaign/overworld/tick/tickmanager.go`, `campaign/overworld/influence/`,
+`campaign/overworld/threat/`, `campaign/overworld/faction/`,
+`gui/guioverworld/overworld_action_handler.go`
 
 ---
 
@@ -569,16 +628,18 @@ encounter.TriggerCombatFromThreat(manager, threatEntity)
     → Creates encounter entity with OverworldEncounterData
     → Returns encounterID
     ↓
-combatpipeline.ExecuteCombatStart(encounterService, manager, &OverworldCombatStarter{})
+combatlifecycle.ExecuteCombatStart(encounterService, manager, &OverworldCombatStarter{})
     ↓
 OverworldCombatStarter.Prepare(manager)
     → encounter.SpawnCombatEntities(...)
         ├─ Generate enemy squads from power budget
+        │   (via mind/spawning/squadscreation.go)
         ├─ Create faction entities
         └─ Assign squads to factions
     ↓
 EncounterService.TransitionToCombat(setup)
-    → beginCombatTransition()
+    → Save OriginalPlayerPosition
+    → Move camera to CombatPosition
     → modeCoordinator.EnterCombatMode()
     (enters "combat" mode directly)
     ↓
@@ -587,15 +648,15 @@ CombatMode (turn-based tactical combat)
 Combat ends (victory/defeat/retreat)
     ↓
 CombatMode.Exit()
-    → encounterService.ExitCombat(reason, result, combatCleaner)
+    → encounterService.ExitCombat(reason, result, combatService)
     ↓
-EndEncounter()
-    → combatpipeline.ExecuteResolution(manager, &OverworldCombatResolver{})
+Inside ExitCombat:
+    → combatlifecycle.ExecuteResolution(manager, &OverworldCombatResolver{})
         ├─ Grant rewards (XP, artifacts)
         └─ Mark threat node as defeated (or retreat)
     → RecordEncounterCompletion()
         (restores player position)
-    → combatCleaner.CleanupCombat(enemySquadIDs)
+    → combatService.CleanupCombat(enemySquadIDs) → returns player squad IDs
     → PostCombatCallback (if set, e.g., RaidRunner)
     ↓
 Returns to "exploration" mode (or PostCombatReturnMode)
@@ -603,7 +664,9 @@ Returns to "exploration" mode (or PostCombatReturnMode)
 
 Key files: `gui/guioverworld/overworld_action_handler.go`, `mind/encounter/encounter_trigger.go`,
 `mind/encounter/encounter_setup.go`, `mind/encounter/encounter_service.go`,
-`mind/combatpipeline/pipeline.go`, `mind/combatpipeline/starter.go`
+`mind/encounter/resolvers.go`,
+`mind/combatlifecycle/starter.go`, `mind/combatlifecycle/pipeline.go`,
+`mind/combatlifecycle/contracts.go`, `mind/combatlifecycle/cleanup.go`
 
 ---
 
@@ -643,8 +706,12 @@ CombatMode.Exit()
         │   (restore player position, clear ActiveEncounter)
         ├─ CombatService.CleanupCombat(enemySquadIDs)
         │   ├─ Clear callbacks + effects
-        │   ├─ Strip player squads (return to roster)
-        │   └─ Dispose enemy squads, factions, turn state
+        │   ├─ Collect player squad IDs (returned to caller)
+        │   └─ Dispose enemy squads, factions, action state,
+        │     turn state entities
+        ├─ StripCombatComponents(playerSquadIDs)
+        │   (strip player squads: position, faction membership,
+        │    IsDeployed=false — squads NOT disposed)
         └─ postCombatCallback (e.g. RaidRunner)
             ↓
 Return to previous mode (exploration / raid / overworld)
@@ -675,10 +742,13 @@ Three exit reasons all funnel into `ExitCombat`:
 *For the full combat lifecycle including all 5 entry pathways, type-specific resolution, cleanup ordering, and edge cases, see [COMBAT_PIPELINES.md](COMBAT_PIPELINES.md).*
 
 Key files: `mind/combatlifecycle/starter.go`, `mind/combatlifecycle/pipeline.go`,
-`mind/combatlifecycle/enrollment.go`, `mind/combatlifecycle/cleanup.go`,
+`mind/combatlifecycle/contracts.go`, `mind/combatlifecycle/enrollment.go`,
+`mind/combatlifecycle/cleanup.go`, `mind/combatlifecycle/casualties.go`,
+`mind/combatlifecycle/reward.go`,
 `mind/encounter/encounter_service.go`, `mind/encounter/resolvers.go`,
-`tactical/combatservices/combat_service.go`, `gui/guicombat/combatmode.go`,
-`tactical/combat/combat_contracts.go`
+`tactical/combat/combatservices/combat_service.go`,
+`tactical/combat/combatstate/combatfactionmanager.go`,
+`gui/guicombat/combatmode.go`
 
 ---
 
@@ -700,7 +770,7 @@ spells.ExecuteSpellCast(casterEntityID, spellID, targetSquadIDs, manager)
     └─ Switch on spell.EffectType:
         │
         ├─ EffectDamage → applyDamageSpell()
-        │   ├─ squads.GetUnitIDsInSquad() per target
+        │   ├─ squadcore.GetUnitIDsInSquad() per target
         │   ├─ attr.CurrentHealth -= damage per unit
         │   └─ if squad destroyed: combat.RemoveSquadFromMap()
         │
@@ -715,6 +785,11 @@ Returns SpellCastResult
     ↓
 GUI updates (mana bar, health bars, combat log)
 ```
+
+Note: `ExecuteSpellCast` is the direct entry point for casting. `tactical/powers/powercore/pipeline.go`
+is **not** used for spell casting — it orchestrates combat *lifecycle* events (post-reset,
+attack-complete, turn-end, move-complete) for artifacts and perks. Spells bypass the pipeline
+and mutate state directly.
 
 ### Effect Lifecycle
 
@@ -732,8 +807,9 @@ Combat end: CombatService.cleanupEffects()
     → effects.RemoveAllEffects() (clean slate)
 ```
 
-Key files: `tactical/spells/system.go`, `tactical/effects/system.go`,
-`tactical/effects/components.go`, `gui/guispells/`
+Key files: `tactical/powers/spells/system.go`, `tactical/powers/spells/components.go`,
+`tactical/powers/effects/system.go`, `tactical/powers/effects/components.go`,
+`gui/guispells/`
 
 ---
 
@@ -796,10 +872,10 @@ Key files: `mind/ai/ai_controller.go`, `mind/ai/action_evaluator.go`,
 │   ├─ View squads: 3x3 grid with unit placements │
 │   ├─ Add unit from roster:                      │
 │   │   → squadcommands.AddUnitCommand            │
-│   │   → squads.PlaceUnitInSquad()               │
+│   │   → squadcore.PlaceUnitInSquad()            │
 │   ├─ Remove unit:                               │
 │   │   → squadcommands.RemoveUnitCommand         │
-│   │   → squads.UnassignUnitFromSquad()          │
+│   │   → squadcore.UnassignUnitFromSquad()       │
 │   ├─ Change leader:                             │
 │   │   → squadcommands.ChangeLeaderCommand       │
 │   └─ All via CommandExecutor (undo/redo)        │
@@ -817,7 +893,6 @@ Key files: `mind/ai/ai_controller.go`, `mind/ai/action_evaluator.go`,
 │ SQUAD DEPLOYMENT (pre-combat: "squad_deployment")│
 │                                                 │
 │ gui/guisquads/squaddeploymentmode.go            │
-│   → Player clicks tiles to place squads         │
 │   → squadservices.SquadDeploymentService        │
 │   → Sets SquadData.IsDeployed = true            │
 └─────────────────────────────────────────────────┘
@@ -825,22 +900,55 @@ Key files: `mind/ai/ai_controller.go`, `mind/ai/action_evaluator.go`,
 ┌─────────────────────────────────────────────────┐
 │ SQUAD CREATION (code-level)                     │
 │                                                 │
-│ squads.CreateEmptySquad(manager, name)          │
+│ squadcore.CreateEmptySquad(manager, name)       │
 │   → Squad entity with SquadComponent            │
 │                                                 │
-│ squads.AddUnitToSquad(squadID, manager,          │
+│ squadcore.AddUnitToSquad(squadID, manager,      │
 │     unit, row, col)                             │
 │   → Unit entity with SquadMemberComponent       │
 │                                                 │
-│ squads.CreateSquadFromTemplate(manager, name,    │
+│ squadcore.CreateSquadFromTemplate(manager, name,│
 │     formation, pos, unitTemplates)              │
 │   → Full squad with units in 3x3 grid           │
 │                                                 │
-│ Roster: squads.GetPlayerSquadRoster(ownerID, mgr)│
+│ Roster: roster.GetPlayerSquadRoster(ownerID,    │
+│     manager)                                    │
 │   → Tracked on commander entities               │
 └─────────────────────────────────────────────────┘
 ```
 
-Key files: `tactical/squads/squadcreation.go`, `tactical/squadcommands/`,
-`tactical/squadservices/`, `gui/guisquads/squadeditormode.go`,
-`gui/guisquads/squaddeploymentmode.go`
+Key files: `tactical/squads/squadcore/squadcreation.go`, `tactical/squads/squadcore/squadmanager.go`,
+`tactical/squads/squadcore/units.go`, `tactical/squads/squadcommands/`,
+`tactical/squads/squadservices/squad_deployment_service.go`,
+`tactical/squads/squadservices/unit_purchase_service.go`,
+`tactical/squads/roster/squadroster.go`, `tactical/squads/roster/unitroster.go`,
+`gui/guisquads/squadeditormode.go`, `gui/guisquads/squaddeploymentmode.go`
+
+---
+
+## Progression Flow
+
+```
+Commander earns XP from combat victories
+    ↓
+Progression Library tracks available unlocks:
+    ├─ Perk unlocks (by tier + category)
+    ├─ Spell unlocks
+    └─ Artifact unlocks
+    ↓
+Player opens ProgressionMode (overworld or roguelike)
+    ↓
+guiprogression.ProgressionMode
+    → Shows currency balances (commander XP, battle honors)
+    → Lists available unlocks with costs
+    → Player spends currency to unlock
+    ↓
+Unlocked perks/spells/artifacts become equippable
+via SquadEditor / ArtifactMode / SpellMode
+```
+
+Key files: `tactical/powers/progression/components.go`, `tactical/powers/progression/defaults.go`,
+`tactical/powers/progression/library.go`, `tactical/powers/progression/init.go`,
+`gui/guiprogression/progressionmode.go`, `gui/guiprogression/progression_controller.go`,
+`gui/guiprogression/progression_panels_registry.go`,
+`gui/guiprogression/progression_refresh.go`
