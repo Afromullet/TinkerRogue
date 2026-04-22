@@ -173,7 +173,9 @@ list yourpkg.SomeFunction            # Annotated source for a function
 
 ## Complexity Hotspots Report
 
-Script: `tools/scripts/complexity_report.sh`
+Scripts:
+- `tools/scripts/complexity_report.sh` — main script (bash)
+- `tools/scripts/complexity_report.bat` — Windows wrapper that invokes git-bash
 
 Runs `gocyclo`, `gocognit`, and `golangci-lint` (with `funlen`, `nestif`, `dupl`,
 `maintidx`) against the project root and writes a sectioned text report to
@@ -195,7 +197,21 @@ go install github.com/uudashr/gocognit/cmd/gocognit@latest
 
 ### Usage
 
-Run from anywhere in the repo — the script resolves the project root from its own location:
+Run from anywhere in the repo — both entry points resolve the project root from their own location.
+
+**Windows (cmd.exe / PowerShell)** — use the `.bat` wrapper, which invokes git-bash:
+
+```bat
+tools\scripts\complexity_report.bat                               :: default → resources/docs/complexity_report.txt
+tools\scripts\complexity_report.bat --top 20 --over 10            :: tighter thresholds
+tools\scripts\complexity_report.bat --include-tests               :: include _test.go files
+tools\scripts\complexity_report.bat --skip-lint                   :: gocyclo + gocognit only (much faster)
+tools\scripts\complexity_report.bat --output report.txt           :: custom output path
+```
+
+> The wrapper uses git-bash from `C:\Program Files\Git\bin\bash.exe`. Plain `bash tools/scripts/complexity_report.sh` from cmd.exe can fail because Windows resolves `bash` to the WSL launcher (`C:\Windows\System32\bash.exe`).
+
+**git-bash / Linux / macOS** — invoke the `.sh` directly:
 
 ```bash
 bash tools/scripts/complexity_report.sh                           # default report → resources/docs/complexity_report.txt
