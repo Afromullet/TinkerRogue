@@ -2,10 +2,10 @@ package behavior
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -23,10 +23,6 @@ type CompositeThreatEvaluator struct {
 	combatThreat   *CombatThreatLayer // Unified melee + ranged layer
 	supportValue   *SupportValueLayer
 	positionalRisk *PositionalRiskLayer
-
-	// Cache invalidation
-	lastUpdateRound int
-	isDirty         bool
 }
 
 // NewCompositeThreatEvaluator creates a new composite threat evaluator
@@ -40,44 +36,24 @@ func NewCompositeThreatEvaluator(
 	combatLayer := NewCombatThreatLayer(factionID, manager, cache, baseThreatMgr)
 
 	return &CompositeThreatEvaluator{
-		manager:         manager,
-		cache:           cache,
-		factionID:       factionID,
-		combatThreat:    combatLayer,
-		supportValue:    NewSupportValueLayer(factionID, manager, cache),
-		positionalRisk:  NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer),
-		lastUpdateRound: -1,
-		isDirty:         true,
+		manager:        manager,
+		cache:          cache,
+		factionID:      factionID,
+		combatThreat:   combatLayer,
+		supportValue:   NewSupportValueLayer(factionID, manager, cache),
+		positionalRisk: NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer),
 	}
 }
 
-// Update recomputes all layers if needed
-// Should be called at the start of each AI turn
-func (cte *CompositeThreatEvaluator) Update(currentRound int) {
-	// Skip if already up-to-date
-	if !cte.isDirty && cte.lastUpdateRound == currentRound {
-		return
-	}
-
+// Update recomputes all layers.
+// Called at the start of each AI turn and at turn-end for visualization.
+func (cte *CompositeThreatEvaluator) Update() {
 	// Compute unified combat threat layer first (provides melee + ranged)
-	cte.combatThreat.Compute(currentRound)
+	cte.combatThreat.Compute()
 
 	// Then compute derived layers (support/positional depend on combat layer)
-	cte.supportValue.Compute(currentRound)
-	cte.positionalRisk.Compute(currentRound)
-
-	// Mark as clean
-	cte.lastUpdateRound = currentRound
-	cte.isDirty = false
-}
-
-// MarkDirty forces recomputation on next Update()
-// Call when squad moves, is destroyed, or combat state changes
-func (cte *CompositeThreatEvaluator) MarkDirty() {
-	cte.isDirty = true
-	cte.combatThreat.MarkDirty()
-	cte.supportValue.MarkDirty()
-	cte.positionalRisk.MarkDirty()
+	cte.supportValue.Compute()
+	cte.positionalRisk.Compute()
 }
 
 // GetRoleWeightedThreat returns combined threat score for a position

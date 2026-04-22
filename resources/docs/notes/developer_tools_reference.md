@@ -171,6 +171,35 @@ list yourpkg.SomeFunction            # Annotated source for a function
 
 ---
 
+# Measuring Cyclomatic Complexity
+
+Calculate cyclomatic complexities of Go functions.
+Usage:
+    gocyclo [flags] <Go file or directory> ...
+
+Flags:
+    -over N               show functions with complexity > N only and
+                          return exit code 1 if the set is non-empty
+    -top N                show the top N most complex functions only
+    -avg, -avg-short      show the average complexity over all functions;
+                          the short option prints the value without a label
+    -ignore REGEX         exclude files matching the given regular expression
+
+The output fields for each line are:
+<complexity> <package> <function> <file:line:column
+
+## Examples
+
+$ gocyclo .
+$ gocyclo main.go
+$ gocyclo -top 10 mind/
+$ gocyclo -over 25 docker
+$ gocyclo -avg .
+$ gocyclo -top 20 -ignore "_test|Godeps|vendor/" .
+$ gocyclo -over 3 -avg gocyclo/
+
+---
+
 ## Asset Preparation (GIMP)
 
 Two selection techniques cover most UI asset extraction scenarios. The choice depends on how uniform the background is.

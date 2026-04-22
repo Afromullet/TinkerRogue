@@ -104,7 +104,8 @@ type ThreatVisualizer struct {
 	viewFactionIndex int            // Index into factionIDs for viewed faction
 
 	// State
-	*common.DirtyCache
+	lastRound        int
+	dirty            bool
 	isActive         bool
 	mode             VisualizerMode
 	layerMode        LayerMode // For layer mode: which layer
@@ -122,7 +123,8 @@ func NewThreatVisualizer(
 		gameMap:          gameMap,
 		threatProvider:   threatProvider,
 		evaluators:       make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator),
-		DirtyCache:       common.NewDirtyCache(),
+		lastRound:        -1,
+		dirty:            true,
 		isActive:         false,
 		mode:             VisualizerModeThreat,
 		viewFactionIndex: 0,
@@ -138,7 +140,7 @@ func NewThreatVisualizer(
 func (tv *ThreatVisualizer) Toggle() {
 	tv.isActive = !tv.isActive
 	if tv.isActive {
-		tv.MarkDirty() // Force redraw when activating
+		tv.dirty = true // Force redraw when activating
 	} else {
 		tv.ClearVisualization()
 	}
@@ -169,7 +171,7 @@ func (tv *ThreatVisualizer) CycleFaction() {
 		return
 	}
 	tv.viewFactionIndex = (tv.viewFactionIndex + 1) % len(tv.factionIDs)
-	tv.MarkDirty()
+	tv.dirty = true
 	if tv.isActive {
 		tv.ClearVisualization()
 	}
@@ -188,16 +190,10 @@ func (tv *ThreatVisualizer) GetViewFactionID() ecs.EntityID {
 func (tv *ThreatVisualizer) SetMode(mode VisualizerMode) {
 	if tv.mode != mode {
 		tv.mode = mode
-		// Force re-render by marking dirty AND resetting the round
-		tv.MarkDirty()
-		tv.DirtyCache = common.NewDirtyCache() // Reset cache completely
-		// Also mark evaluator dirty when switching to layer mode
-		if mode == VisualizerModeLayer {
-			factionID := tv.GetViewFactionID()
-			if eval, ok := tv.evaluators[factionID]; ok && eval != nil {
-				eval.MarkDirty()
-			}
-		}
+		// Force re-render by marking dirty and resetting the round so the
+		// round-matching guard in Update() cannot short-circuit.
+		tv.dirty = true
+		tv.lastRound = -1
 		if tv.isActive {
 			tv.ClearVisualization()
 		}
@@ -214,7 +210,7 @@ func (tv *ThreatVisualizer) ClearVisualization() {
 	for i := 0; i < tv.gameMap.NumTiles; i++ {
 		tv.gameMap.ApplyColorMatrixToIndex(i, graphics.NewEmptyMatrix())
 	}
-	tv.MarkDirty()
+	tv.dirty = true
 }
 
 // Update recalculates and applies visualization
@@ -228,8 +224,8 @@ func (tv *ThreatVisualizer) Update(
 		return
 	}
 
-	// Only recalculate if round changed
-	if tv.IsValid(currentRound) {
+	// Only recalculate if round changed or state was marked dirty
+	if !tv.dirty && tv.lastRound == currentRound {
 		return
 	}
 
@@ -241,7 +237,7 @@ func (tv *ThreatVisualizer) Update(
 	// Ensure threat evaluator is up-to-date (for layer mode)
 	if tv.mode == VisualizerModeLayer {
 		if eval, ok := tv.evaluators[viewFactionID]; ok && eval != nil {
-			eval.Update(currentRound)
+			eval.Update()
 		}
 	}
 
@@ -273,7 +269,8 @@ func (tv *ThreatVisualizer) Update(
 		tv.gameMap.ApplyColorMatrixToIndex(tileIdx, colorMatrix)
 	})
 
-	tv.MarkClean(currentRound)
+	tv.lastRound = currentRound
+	tv.dirty = false
 }
 
 // =========================================
@@ -331,7 +328,7 @@ func (tv *ThreatVisualizer) threatValueToColorMatrix(value float64) graphics.Col
 // CycleLayerMode advances to next layer mode
 func (tv *ThreatVisualizer) CycleLayerMode() {
 	tv.layerMode = (tv.layerMode + 1) % LayerModeCount
-	tv.MarkDirty()
+	tv.dirty = true
 	if tv.isActive {
 		tv.ClearVisualization()
 	}

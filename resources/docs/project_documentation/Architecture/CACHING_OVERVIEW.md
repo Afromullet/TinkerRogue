@@ -573,52 +573,19 @@ screen.DrawImage(vr.overlayCache, &vr.overlayDrawOpts)
 
 ---
 
-## 5. AI Threat Evaluation Caches
+## 5. AI Threat Evaluation
 
-AI threat layers use round-based caching to avoid recomputing expensive threat maps every decision.
+AI threat layers are recomputed each time `Update()` is called. An earlier
+`DirtyCache` abstraction was removed once analysis showed that its round-based
+skip almost never fired in practice — `Update()` is called at well-defined
+lifecycle points (AI turn start, turn-end visualization refresh) rather than
+opportunistically, so there is no read-heavy hot path to protect.
 
-### 5.1 DirtyCache (Generic Cache Invalidation)
-
-**File:** `mind/evaluation/cache.go`
-
-**Purpose:** Generic dirty flag system for round-based lazy evaluation.
-
-**Structure:**
-```go
-type DirtyCache struct {
-    lastUpdateRound int
-    isDirty         bool
-    isInitialized   bool
-}
-```
-
-**Usage Pattern:**
-```go
-// Check validity
-if cache.IsValid(currentRound) {
-    return cachedValue
-}
-
-// Recompute
-value = computeExpensiveValue()
-cache.MarkClean(currentRound)
-
-// Invalidate on game event
-cache.MarkDirty()
-```
-
-**Embedded in Threat Layers:**
-- `ThreatLayerBase` embeds `DirtyCache`
-- All threat layers (Combat, Support, Positional) inherit dirty tracking
-- Round-based invalidation ensures cache validity per turn
-
----
-
-### 5.2 CompositeThreatEvaluator
+### 5.1 CompositeThreatEvaluator
 
 **File:** `mind/behavior/threat_composite.go`
 
-**Purpose:** Combines multiple threat layers with coordinated cache invalidation.
+**Purpose:** Combines multiple threat layers under a single update entry point.
 
 **Structure:**
 ```go
@@ -627,76 +594,51 @@ type CompositeThreatEvaluator struct {
     cache     *combat.CombatQueryCache
     factionID ecs.EntityID
 
-    // Individual layers (each has embedded DirtyCache)
+    // Individual layers (stateless across calls — Compute() clears and refills maps)
     combatThreat   *CombatThreatLayer
     supportValue   *SupportValueLayer
     positionalRisk *PositionalRiskLayer
-
-    // Composite cache state
-    lastUpdateRound int
-    isDirty         bool
 }
 ```
-
-**Cache Strategy:** Coordinated round-based updates
-- All layers update together when round changes
-- Layers can be individually marked dirty on game events
-- Skip recomputation if already up-to-date for current round
 
 **Update Pattern:**
 ```go
-func (cte *CompositeThreatEvaluator) Update(currentRound int) {
-    // Skip if already up-to-date
-    if !cte.isDirty && cte.lastUpdateRound == currentRound {
-        return
-    }
-
+func (cte *CompositeThreatEvaluator) Update() {
     // Compute layers in dependency order
     cte.combatThreat.Compute()      // First (provides base data)
-    cte.supportValue.Compute()       // Depends on combat
-    cte.positionalRisk.Compute()     // Depends on combat
-
-    // Mark clean
-    cte.lastUpdateRound = currentRound
-    cte.isDirty = false
+    cte.supportValue.Compute()      // Depends on combat
+    cte.positionalRisk.Compute()    // Depends on combat
 }
 ```
 
-**Invalidation:**
-```go
-MarkDirty() // Propagates to all layers
-```
+**When Update() is called:**
+- Start of each AI faction turn (`AIController.DecideFactionTurn`)
+- Turn-end visualization refresh (`CombatVisualizationManager.UpdateThreatEvaluator`)
 
-**When to Invalidate:**
-- Squad moves
-- Squad destroyed
-- Combat state changes
-- Unit dies
-
-**Performance:** Avoids recomputing threat maps for every AI action evaluation (hundreds of positions per turn).
+**Performance:** Update runs at well-defined lifecycle points, not inside AI
+per-position scoring, so recomputing unconditionally is cheap in practice. The
+earlier round-based skip was removed because it rarely fired.
 
 ---
 
-### 5.3 ThreatLayerBase
+### 5.2 ThreatLayerBase
 
 **File:** `mind/behavior/threat_layers.go`
 
-**Purpose:** Base class for all threat layers providing common cache functionality.
+**Purpose:** Base type shared by all threat layers, holding common dependencies.
 
 **Structure:**
 ```go
 type ThreatLayerBase struct {
-    *evaluation.DirtyCache  // Embedded cache
-    manager                *common.EntityManager
-    cache                  *combat.CombatQueryCache
-    factionID              ecs.EntityID
+    manager   *common.EntityManager
+    cache     *combat.CombatQueryCache
+    factionID ecs.EntityID
 }
 ```
 
 **Pattern:** Composition-based inheritance
-- Concrete layers embed `ThreatLayerBase`
-- Common cache management inherited
-- Each layer implements its own `Compute()` method that calls `markClean(currentRound)` after computation
+- Concrete layers embed `ThreatLayerBase` for shared dependencies (manager, cache, faction)
+- Each layer implements its own `Compute()` that fully clears and repopulates its maps
 
 **Concrete Layers:**
 - `CombatThreatLayer` - Melee and ranged threat
@@ -839,12 +781,13 @@ Threat Evaluation:
   CompositeThreatEvaluator
     ↓ Contains
     CombatThreatLayer, SupportValueLayer, PositionalRiskLayer
-    ↓ Each embeds
-    DirtyCache (round-based invalidation)
+    ↓ Each layer embeds
+    ThreatLayerBase (manager + CombatQueryCache + factionID)
     ↓ Depends on
     CombatQueryCache (for squad positions, action states)
-    ↓ Invalidated by
-    OnTurnEnd hook (round-based updates)
+    ↓ Recomputed by
+    AIController.updateThreatLayers (AI turn start) +
+    CombatVisualizationManager.UpdateThreatEvaluator (OnTurnEnd hook)
 
 Rendering:
   TileRenderer (viewport position cache)
@@ -1128,7 +1071,7 @@ turnManager.SetOnTurnEnd(func(round int) {
 cm.combatService.RegisterOnTurnEnd(func(round int) {
     cm.Queries.MarkAllSquadsDirty()            // All action states reset
     cm.visualization.UpdateThreatManagers()     // Recalculate threat layers
-    cm.visualization.UpdateThreatEvaluator(round)  // Update AI evaluation
+    cm.visualization.UpdateThreatEvaluator()    // Update AI evaluation
 })
 ```
 
@@ -1201,7 +1144,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
     cm.combatService.RegisterOnTurnEnd(func(round int) {
         cm.Queries.MarkAllSquadsDirty()
         cm.visualization.UpdateThreatManagers()
-        cm.visualization.UpdateThreatEvaluator(round)
+        cm.visualization.UpdateThreatEvaluator()
     })
 
     return nil
@@ -1589,16 +1532,16 @@ renderingCache.RefreshRenderablesView(manager)
 cachedList.MarkDirty()
 ```
 
-**Threat Layers:** Invalidate on game state changes (via hook callbacks)
+**Threat Layers:** Recomputed at lifecycle points (no dirty flag)
 ```go
 // Via OnTurnEnd hook (automatic)
 cm.combatService.RegisterOnTurnEnd(func(round int) {
     cm.visualization.UpdateThreatManagers()
-    cm.visualization.UpdateThreatEvaluator(round)
+    cm.visualization.UpdateThreatEvaluator()
 })
 
-// Manual update at AI turn start
-threatEvaluator.Update(currentRound)
+// At AI turn start
+threatEvaluator.Update()
 ```
 
 ---

@@ -172,11 +172,11 @@ func (cvm *CombatVisualizationManager) UpdateThreatManagers() {
 	}
 }
 
-// UpdateThreatEvaluator updates all per-faction threat evaluators for a given round
-func (cvm *CombatVisualizationManager) UpdateThreatEvaluator(round int) {
+// UpdateThreatEvaluator updates all per-faction threat evaluators
+func (cvm *CombatVisualizationManager) UpdateThreatEvaluator() {
 	for _, eval := range cvm.layerEvaluators {
 		if eval != nil {
-			eval.Update(round)
+			eval.Update()
 		}
 	}
 }

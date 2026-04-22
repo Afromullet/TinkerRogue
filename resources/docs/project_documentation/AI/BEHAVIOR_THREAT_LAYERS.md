@@ -94,27 +94,20 @@ GetRoleWeightedThreat(squadID, pos):
 **Layer Update Cycle:**
 
 ```go
-Update(currentRound):
-  if !isDirty && lastUpdateRound == currentRound:
-    return  // Skip if already up-to-date
-
+Update():
   // 1. Compute combat layer (provides melee + ranged data)
-  CombatLayer.Compute(currentRound)
+  CombatLayer.Compute()
 
   // 2. Compute derived layers (depend on combat data)
-  SupportLayer.Compute(currentRound)
-  PositionalLayer.Compute(currentRound)
-
-  // 3. Mark clean
-  isDirty = false
-  lastUpdateRound = currentRound
+  SupportLayer.Compute()
+  PositionalLayer.Compute()
 ```
 
-**Dirty Flag Management:**
-- Marked dirty after each AI action (positions change)
-- `MarkDirty()` cascades to all child layers
-- Prevents redundant recomputation within same round
-- Each layer tracks own dirty state via embedded `DirtyCache`
+**No Dirty Flag:**
+- `Update()` recomputes unconditionally — there is no round-based skip.
+- `Update()` is called at AI turn start and at the turn-end visualization hook,
+  so callers already rate-limit it. A previous `DirtyCache` abstraction was
+  removed because the skip almost never fired in practice.
 
 **Public Accessor Methods:**
 - `GetCombatLayer() *CombatThreatLayer` - Direct access to combat threat data
@@ -570,7 +563,8 @@ type ThreatVisualizer struct {
     factionIDs       []EntityID  // All factions in combat
     viewFactionIndex int         // Index into factionIDs for currently viewed faction
 
-    *DirtyCache
+    lastRound        int   // Round of last successful Update(); -1 = never computed
+    dirty            bool  // Forces redraw on next Update()
     isActive         bool
     mode             VisualizerMode
     layerMode        LayerMode
@@ -657,14 +651,12 @@ For the full AI and power configuration reference, see [AI Algorithm Architectur
 
 2. **Implement Compute()**
    ```go
-   func (ntl *NewThreatLayer) Compute(currentRound int) {
+   func (ntl *NewThreatLayer) Compute() {
      clear(ntl.customData)
 
      // Compute threat values
      // Use IterateMapGrid() from threat_gridutils.go for full-map passes
      // Use PaintThreatToMap() from threat_painting.go for painted threats
-
-     ntl.markClean(currentRound)  // ThreatLayerBase method
    }
    ```
 
@@ -748,15 +740,14 @@ For the full AI and power configuration reference, see [AI Algorithm Architectur
 **Symptoms:** AI makes decisions based on stale positions.
 
 **Possible Causes:**
-- Layers not marked dirty after actions
-- Dirty flag not checked in Update()
-- BaseThreatMgr not updating ThreatByRange
+- `CompositeThreatEvaluator.Update()` never called for the faction
+- `BaseThreatMgr` not updating `ThreatByRange`
 
 **Debug Steps:**
-1. Verify `MarkDirty()` called after each action execution (in `DecideFactionTurn`)
-2. Check dirty flag propagation - `CompositeThreatEvaluator.MarkDirty()` cascades to child layers
-3. Confirm FactionThreatLevelManager.UpdateAllFactions() called at start of turn
-4. Log ThreatByRange values (should change as squads move)
+1. Verify `AIController.updateThreatLayers()` runs at start of each AI faction turn
+2. Verify `CombatVisualizationManager.UpdateThreatEvaluator()` runs from the `OnTurnEnd` hook
+3. Confirm `FactionThreatLevelManager.UpdateAllFactions()` is called from those same entry points
+4. Log `ThreatByRange` values (should change as squads move)
 
 ---
 
@@ -764,7 +755,7 @@ For the full AI and power configuration reference, see [AI Algorithm Architectur
 
 | File | Purpose | Key Functions |
 |------|---------|---------------|
-| `mind/behavior/threat_composite.go` | Layer composition | `GetRoleWeightedThreat()`, `Update()`, `MarkDirty()`, `GetCombatLayer()`, `GetSupportLayer()`, `GetPositionalLayer()`, `GetOptimalPositionForRole()` |
+| `mind/behavior/threat_composite.go` | Layer composition | `GetRoleWeightedThreat()`, `Update()`, `GetCombatLayer()`, `GetSupportLayer()`, `GetPositionalLayer()`, `GetOptimalPositionForRole()` |
 | `mind/behavior/threat_combat.go` | Melee/ranged threat | `Compute()`, `GetMeleeThreatAt()`, `GetRangedPressureAt()` |
 | `mind/behavior/threat_support.go` | Support positioning | `Compute()`, `GetSupportValueAt()`, `GetAllyProximityAt()` |
 | `mind/behavior/threat_positional.go` | Tactical risks | `Compute()`, `GetTotalRiskAt()`, `GetFlankingRiskAt()`, `GetIsolationRiskAt()`, `GetEngagementPressureAt()`, `GetRetreatQuality()` |

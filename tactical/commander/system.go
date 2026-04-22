@@ -43,7 +43,7 @@ func CreateCommander(
 			MovementSpeed: movementSpeed,
 		}).
 		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads)).
-		AddComponent(progression.ProgressionComponent, progression.NewProgressionData())
+		AddComponent(progression.ProgressionComponent, &progression.ProgressionData{})
 
 	// Atomically add position component and register with position system
 	manager.RegisterEntityPosition(entity, startPos)

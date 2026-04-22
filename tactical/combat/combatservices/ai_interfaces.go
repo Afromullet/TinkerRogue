@@ -46,7 +46,6 @@ type ThreatSnapshot struct {
 // Implemented by behavior.CompositeThreatEvaluator; defined here so tactical/gui
 // layers can query threat layers without importing mind/behavior.
 type ThreatLayerEvaluator interface {
-	Update(currentRound int)
-	MarkDirty()
+	Update()
 	EvaluateAt(pos coords.LogicalPosition) ThreatSnapshot
 }

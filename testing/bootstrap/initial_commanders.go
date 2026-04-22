@@ -48,6 +48,8 @@ func CreateTestCommanders(em *common.EntityManager, pd *common.PlayerData, start
 			commanderImage,
 		)
 
+		commander.SeedStarters(cmdID, em)
+
 		if err := roster.AddCommander(cmdID); err != nil {
 			return fmt.Errorf("failed to add commander %s to roster: %w", tc.Name, err)
 		}

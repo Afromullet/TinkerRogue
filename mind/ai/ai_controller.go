@@ -86,8 +86,7 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 	// evaluate spell value vs saving mana, pick target, call spells.ExecuteSpellCast.
 
 	// Update threat layers at start of AI turn
-	currentRound := aic.turnManager.GetCurrentRound()
-	aic.updateThreatLayers(currentRound)
+	aic.updateThreatLayers()
 
 	// Get all alive squads in faction
 	aliveSquads := combatstate.GetActiveSquadsForFaction(factionID, aic.entityManager)
@@ -123,15 +122,6 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 			}
 
 			actionExecuted = true
-
-			// Mark threat layers dirty after each action (positions changed).
-			// NOTE: Layers are NOT recomputed here for performance reasons.
-			// Subsequent squads use slightly stale threat data from start-of-turn.
-			// This is acceptable because threat maps change gradually and
-			// recomputing after every action would be expensive (IterateMapGrid).
-			for _, evaluator := range aic.layerEvaluators {
-				evaluator.MarkDirty()
-			}
 		}
 	}
 
@@ -139,13 +129,13 @@ func (aic *AIController) DecideFactionTurn(factionID ecs.EntityID) bool {
 }
 
 // updateThreatLayers updates all threat layers
-func (aic *AIController) updateThreatLayers(currentRound int) {
+func (aic *AIController) updateThreatLayers() {
 	// Update base threat data first
 	aic.threatManager.UpdateAllFactions()
 
 	// Then update composite layers
 	for _, evaluator := range aic.layerEvaluators {
-		evaluator.Update(currentRound)
+		evaluator.Update()
 	}
 }
 

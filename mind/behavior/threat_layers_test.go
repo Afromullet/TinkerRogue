@@ -51,13 +51,7 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 	}
 
 	// Compute threats
-	currentRound := 1
-	combatLayer.Compute(currentRound)
-
-	// Verify layer marked as clean
-	if !combatLayer.IsValid(currentRound) {
-		t.Error("Layer should be valid after Compute()")
-	}
+	combatLayer.Compute()
 
 	// Verify data structures initialized
 	if combatLayer.meleeThreatByPos == nil {
@@ -68,7 +62,7 @@ func TestCombatThreatLayer_Compute(t *testing.T) {
 	}
 }
 
-// TestCompositeThreatEvaluator_Update tests layer update and caching
+// TestCompositeThreatEvaluator_Update tests layer update executes without panic
 func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	// Setup test environment
 	manager := createTestCombatManager()
@@ -82,29 +76,9 @@ func TestCompositeThreatEvaluator_Update(t *testing.T) {
 	// Create composite evaluator
 	evaluator := NewCompositeThreatEvaluator(faction1, manager, cache, baseThreatMgr)
 
-	// Initial update
-	currentRound := 0
-	evaluator.Update(currentRound)
-
-	// Verify layers were computed
-	if evaluator.lastUpdateRound != currentRound {
-		t.Errorf("Expected lastUpdateRound %d, got %d", currentRound, evaluator.lastUpdateRound)
-	}
-	if evaluator.isDirty {
-		t.Error("Evaluator should not be dirty after Update()")
-	}
-
-	// Update again with same round (should skip computation)
-	evaluator.Update(currentRound)
-	if evaluator.isDirty {
-		t.Error("Evaluator should still be clean")
-	}
-
-	// Mark dirty and verify recomputation needed
-	evaluator.MarkDirty()
-	if !evaluator.isDirty {
-		t.Error("Evaluator should be dirty after MarkDirty()")
-	}
+	// Should run cleanly multiple times in succession
+	evaluator.Update()
+	evaluator.Update()
 }
 
 // TestCompositeThreatEvaluator_RoleWeights tests role-specific threat weighting
@@ -147,7 +121,7 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 	baseThreatMgr.AddFaction(faction1)
 
 	evaluator := NewCompositeThreatEvaluator(faction1, manager, cache, baseThreatMgr)
-	evaluator.Update(0)
+	evaluator.Update()
 
 	// Test with empty candidates
 	emptyPos := evaluator.GetOptimalPositionForRole(1, []coords.LogicalPosition{})
@@ -160,43 +134,6 @@ func TestGetOptimalPositionForRole(t *testing.T) {
 	result := evaluator.GetOptimalPositionForRole(1, positions)
 	if result.X != 5 || result.Y != 5 {
 		t.Error("Should return the only candidate position")
-	}
-}
-
-// TestThreatLayerBase_Caching tests cache invalidation logic
-func TestThreatLayerBase_Caching(t *testing.T) {
-	manager := createTestCombatManager()
-	cache := combatstate.NewCombatQueryCache(manager)
-	fm := combatstate.NewCombatFactionManager(manager, cache)
-	faction1 := fm.CreateCombatFaction("Player", true)
-
-	base := NewThreatLayerBase(faction1, manager, cache)
-
-	// Initially dirty
-	if !base.IsDirty() {
-		t.Error("New layer should be dirty")
-	}
-
-	// Mark clean
-	currentRound := 0
-	base.markClean(currentRound)
-
-	if base.IsDirty() {
-		t.Error("Layer should not be dirty after markClean()")
-	}
-	if !base.IsValid(currentRound) {
-		t.Error("Layer should be valid for current round")
-	}
-
-	// Different round should invalidate
-	if base.IsValid(currentRound + 1) {
-		t.Error("Layer should not be valid for different round")
-	}
-
-	// Mark dirty should invalidate
-	base.MarkDirty()
-	if base.IsValid(currentRound) {
-		t.Error("Layer should not be valid after MarkDirty()")
 	}
 }
 

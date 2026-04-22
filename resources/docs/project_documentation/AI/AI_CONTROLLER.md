@@ -428,7 +428,7 @@ GUI Calls AIController.DecideFactionTurn(factionID)
 |  |  +- For each squad: CalculateThreatLevels()
 |  |     +- ThreatByRange = CalculateSquadPowerByRange()
 |  |
-|  +- For each faction evaluator: evaluator.Update(currentRound)
+|  +- For each faction evaluator: evaluator.Update()
 |     (see BEHAVIOR_THREAT_LAYERS.md for layer computation details)
 |
 +- 3. For each squad in faction:
@@ -465,13 +465,10 @@ GUI Calls AIController.DecideFactionTurn(factionID)
 |     +- SelectBestAction() (highest score)
 |     |
 |     +- Execute Action
-|     |  +- MoveAction: MovementSystem.MoveSquad() via MoveSquadCommand
-|     |  +- AttackAction: CombatActionSystem.ExecuteAttackAction()
-|     |  |  +- Queue attack for animation via AIController.QueueAttack()
-|     |  +- WaitAction: Mark HasMoved and HasActed via ActionState
-|     |
-|     +- Mark ALL faction evaluators dirty (for next iteration)
-|        +- evaluator.MarkDirty() for each evaluator in layerEvaluators map
+|        +- MoveAction: MovementSystem.MoveSquad() via MoveSquadCommand
+|        +- AttackAction: CombatActionSystem.ExecuteAttackAction()
+|        |  +- Queue attack for animation via AIController.QueueAttack()
+|        +- WaitAction: Mark HasMoved and HasActed via ActionState
 |
 +- 4. Return queued attacks to GUI for animation
 ```

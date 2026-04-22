@@ -371,7 +371,7 @@ func (cs *CombatService) SetThreatEvaluatorFactory(fn func(factionID ecs.EntityI
 }
 
 // UpdateThreatLayers updates all threat layers at start of AI turn
-func (cs *CombatService) UpdateThreatLayers(currentRound int) {
+func (cs *CombatService) UpdateThreatLayers() {
 	// Update base threat data first
 	if cs.threatProvider != nil {
 		cs.threatProvider.UpdateAllFactions()
@@ -379,7 +379,7 @@ func (cs *CombatService) UpdateThreatLayers(currentRound int) {
 
 	// Then update composite layers
 	for _, evaluator := range cs.layerEvaluators {
-		evaluator.Update(currentRound)
+		evaluator.Update()
 	}
 }
 

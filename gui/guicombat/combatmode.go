@@ -391,7 +391,7 @@ func (cm *CombatMode) registerCombatCallbacks() {
 	cm.combatService.SetOnTurnEndGUI(func(round int) {
 		cm.Queries.MarkAllSquadsDirty()
 		cm.visualization.UpdateThreatManagers()
-		cm.visualization.UpdateThreatEvaluator(round)
+		cm.visualization.UpdateThreatEvaluator()
 
 		// Close any open sub-menus (inspect, spell, artifact panels)
 		cm.subMenus.CloseAll()

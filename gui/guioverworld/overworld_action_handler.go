@@ -350,6 +350,8 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		commanderImage,
 	)
 
+	commander.SeedStarters(newCmdID, ah.deps.Manager)
+
 	// Add to roster
 	if err := roster.AddCommander(newCmdID); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))

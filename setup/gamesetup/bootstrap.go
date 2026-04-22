@@ -113,6 +113,10 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 		commanderImage,
 	)
 
+	// Seed starter perks/spells onto the commander's progression before any
+	// squads are created; InitSquadSpellsFromLeader filters against this list.
+	commander.SeedStarters(commanderID, em)
+
 	// Add commander to player's roster
 	roster := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
 	if roster == nil {

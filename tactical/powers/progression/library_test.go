@@ -29,39 +29,11 @@ func newTestManagerWithPerkData(t *testing.T) *common.EntityManager {
 	return manager
 }
 
-func TestNewProgressionDataSeedsDefaults(t *testing.T) {
-	data := NewProgressionData()
-	if data.ArcanaPoints != 0 || data.SkillPoints != 0 {
-		t.Errorf("expected zero points, got arcana=%d skill=%d", data.ArcanaPoints, data.SkillPoints)
-	}
-	if len(data.UnlockedPerkIDs) != len(StartingUnlockedPerks()) {
-		t.Errorf("expected %d starter perks, got %d", len(StartingUnlockedPerks()), len(data.UnlockedPerkIDs))
-	}
-	if len(data.UnlockedSpellIDs) != len(StartingUnlockedSpells()) {
-		t.Errorf("expected %d starter spells, got %d", len(StartingUnlockedSpells()), len(data.UnlockedSpellIDs))
-	}
-}
-
-func TestIsPerkUnlockedReflectsStarter(t *testing.T) {
-	manager := newTestManagerWithPerkData(t)
-	entity := manager.World.NewEntity()
-	entity.AddComponent(common.PlayerComponent, &common.Player{})
-	entity.AddComponent(ProgressionComponent, NewProgressionData())
-	pid := entity.GetID()
-
-	if !IsPerkUnlocked(pid, perks.PerkBraceForImpact, manager) {
-		t.Error("expected starter perk brace_for_impact to be unlocked")
-	}
-	if IsPerkUnlocked(pid, perks.PerkOpeningSalvo, manager) {
-		t.Error("expected non-starter perk opening_salvo to be locked")
-	}
-}
-
 func TestUnlockPerkDeductsAndIsIdempotent(t *testing.T) {
 	manager := newTestManagerWithPerkData(t)
 	entity := manager.World.NewEntity()
 	entity.AddComponent(common.PlayerComponent, &common.Player{})
-	data := NewProgressionData()
+	data := &ProgressionData{}
 	data.SkillPoints = 5
 	entity.AddComponent(ProgressionComponent, data)
 	pid := entity.GetID()
@@ -89,7 +61,7 @@ func TestUnlockPerkInsufficientPoints(t *testing.T) {
 	manager := newTestManagerWithPerkData(t)
 	entity := manager.World.NewEntity()
 	entity.AddComponent(common.PlayerComponent, &common.Player{})
-	data := NewProgressionData()
+	data := &ProgressionData{}
 	data.SkillPoints = 1
 	entity.AddComponent(ProgressionComponent, data)
 	pid := entity.GetID()
@@ -110,7 +82,7 @@ func TestUnlockSpellDeductsAndIsIdempotent(t *testing.T) {
 	manager := newTestManagerWithPerkData(t)
 	entity := manager.World.NewEntity()
 	entity.AddComponent(common.PlayerComponent, &common.Player{})
-	data := NewProgressionData()
+	data := &ProgressionData{}
 	data.ArcanaPoints = 10
 	entity.AddComponent(ProgressionComponent, data)
 	pid := entity.GetID()
@@ -137,7 +109,7 @@ func TestAddPoints(t *testing.T) {
 	manager := newTestManagerWithPerkData(t)
 	entity := manager.World.NewEntity()
 	entity.AddComponent(common.PlayerComponent, &common.Player{})
-	data := NewProgressionData()
+	data := &ProgressionData{}
 	entity.AddComponent(ProgressionComponent, data)
 	pid := entity.GetID()
 

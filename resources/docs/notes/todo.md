@@ -1,3 +1,6 @@
+- Testing package has some functions which create initial player commanders and squads. move them to another package. We need to rely less on the testing package by initializing
+the player with what they really need to start with
+
 # GUI Updates
 
 - Squad Edit Mode requires me to select a unit from the panel on the right before Removing, Making it a leader, or viewing the unit. I also want to be able to access that by selecting the unit in the grid
@@ -51,15 +54,12 @@
 
 
 
-- Determine whether you can use DirtyCache as an interface for all of the other caches. Also determine whether we really need the caches
-
 - Make sure entities are cleaned up upon destruction. Need to determine what entities have a "lifecycle" by determining what addcomponent is called on. 
 
 - combatqueries.go still has functions which search the entire ecs space
 
 
 
-- Testing package has some functions which create initial player commanders and squads. move them to another package - probably bootstrap
 
 - type EventType int in Overworld types is growing too large
 

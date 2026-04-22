@@ -24,10 +24,9 @@ Technical reference for TinkerRogue's unified combat power assessment, used by b
 4. [Squad Power Calculation](#squad-power-calculation)
 5. [Squad Power By Range](#squad-power-by-range)
 6. [Role Multipliers and Ability Values](#role-multipliers-and-ability-values)
-7. [DirtyCache](#dirtycache)
-8. [Performance Considerations](#performance-considerations)
-9. [Extension Points](#extension-points)
-10. [File Reference](#file-reference)
+7. [Performance Considerations](#performance-considerations)
+8. [Extension Points](#extension-points)
+9. [File Reference](#file-reference)
 
 ---
 
@@ -416,52 +415,6 @@ const (
 
 ---
 
-## DirtyCache
-
-**Location:** `mind/evaluation/cache.go`
-
-**Purpose:** Lazy evaluation with round-based invalidation. Embedded in all threat layers and `ThreatVisualizer`.
-
-**Data Structure:**
-
-```go
-type DirtyCache struct {
-  lastUpdateRound int
-  isDirty         bool
-  isInitialized   bool
-}
-```
-
-**API:**
-
-```go
-NewDirtyCache() *DirtyCache  // Created in dirty state; first access triggers computation
-
-IsValid(currentRound int) bool  // True if initialized, not dirty, and round matches
-MarkDirty()                     // Invalidate; forces recomputation on next access
-MarkClean(currentRound int)     // Mark as valid for given round
-IsDirty() bool                  // Whether recomputation is needed
-IsInitialized() bool            // Whether computed at least once
-GetLastUpdateRound() int        // Round number of last update
-```
-
-**Usage Pattern:**
-
-```go
-// In a layer's Compute() method:
-func (layer *SomeLayer) Compute(currentRound int) {
-    // ... compute data ...
-    layer.markClean(currentRound)  // Calls DirtyCache.MarkClean internally
-}
-
-// In CompositeThreatEvaluator.Update():
-if !cte.isDirty && cte.lastUpdateRound == currentRound {
-    return  // Use IsValid() pattern
-}
-```
-
----
-
 ## Performance Considerations
 
 **Complexity:** O(units) per squad
@@ -560,7 +513,6 @@ if !cte.isDirty && cte.lastUpdateRound == currentRound {
 | `mind/evaluation/power.go` | Power calculation | `CalculateSquadPower()`, `CalculateSquadPowerByRange()`, `CalculateOffensivePower()`, `CalculateDefensivePower()`, `CalculateUtilityPower()`, `EstimateUnitPowerFromTemplate()` |
 | `mind/evaluation/power_config.go` | Config loading | `GetPowerConfigByProfile()` |
 | `mind/evaluation/roles.go` | Role/ability config | `GetRoleMultiplierFromConfig()`, `GetAbilityPowerValue()`, `GetCompositionBonusFromConfig()` |
-| `mind/evaluation/cache.go` | Dirty flag system | `DirtyCache`, `MarkDirty()`, `MarkClean()`, `IsValid()`, `IsDirty()`, `IsInitialized()` |
 
 ---
 

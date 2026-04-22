@@ -11,7 +11,7 @@ Overview and index for TinkerRogue's AI decision-making, power evaluation, actio
 | Document | Purpose |
 |----------|---------|
 | **[AI Controller](AI_CONTROLLER.md)** | Turn orchestration, action evaluation, scoring algorithms, decision tree, edge cases |
-| **[Power Evaluation](POWER_EVALUATION.md)** | Unit/squad/range power calculations, role multipliers, ability values, DirtyCache |
+| **[Power Evaluation](POWER_EVALUATION.md)** | Unit/squad/range power calculations, role multipliers, ability values |
 | **[AI Configuration](AI_CONFIGURATION.md)** | aiconfig.json, powerconfig.json, accessor patterns, tuning guide |
 | **[Behavior & Threat Layers](BEHAVIOR_THREAT_LAYERS.md)** | Threat layer subsystems, spatial analysis, visualization, difficulty scaling |
 | **[Encounter System](ENCOUNTER_SYSTEM.md)** | Encounter generation, combat lifecycle, rewards |
