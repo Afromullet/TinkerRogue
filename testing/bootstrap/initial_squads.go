@@ -81,10 +81,15 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 		}
 		squadData.IsDeployed = false
 
-		// Add to player's squad roster
+		// Add to owner's squad roster FIRST so FindCommanderForSquad can resolve
+		// the commander inside InitSquadSpellsFromLeader below.
 		if err := roster.AddSquad(squadID); err != nil {
 			return fmt.Errorf("failed to add %s to roster: %w", config.name, err)
 		}
+
+		// Attach spell capability now that the squad→commander link exists, so
+		// spell filtering uses the commander's progression library.
+		spells.InitSquadSpellsFromLeader(squadID, manager)
 
 		// Register all units in player's unit roster
 		if err := registerSquadUnitsInRoster(squadID, unitRoster, manager); err != nil {
@@ -155,7 +160,6 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -205,7 +209,6 @@ func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.Ent
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -252,7 +255,6 @@ func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -314,7 +316,6 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }
@@ -363,7 +364,6 @@ func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.En
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-	spells.InitSquadSpellsFromLeader(squadID, manager)
 
 	return squadID, nil
 }

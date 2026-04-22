@@ -40,14 +40,16 @@ var (
 	}
 )
 
-// GetProgression returns the ProgressionData for a Player entity, or nil if absent.
-func GetProgression(playerID ecs.EntityID, manager *common.EntityManager) *ProgressionData {
-	return common.GetComponentTypeByID[*ProgressionData](manager, playerID, ProgressionComponent)
+// GetProgression returns the ProgressionData for any entity carrying a
+// ProgressionComponent, or nil if absent. In the current design that entity is
+// a Commander, but the API is entity-agnostic.
+func GetProgression(ownerID ecs.EntityID, manager *common.EntityManager) *ProgressionData {
+	return common.GetComponentTypeByID[*ProgressionData](manager, ownerID, ProgressionComponent)
 }
 
 // isUnlocked reports whether itemID is present in the slice selected by lib.
-func (lib library) isUnlocked(playerID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
-	data := GetProgression(playerID, manager)
+func (lib library) isUnlocked(ownerID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
+	data := GetProgression(ownerID, manager)
 	if data == nil {
 		return false
 	}
@@ -61,8 +63,8 @@ func (lib library) isUnlocked(playerID ecs.EntityID, itemID string, manager *com
 
 // unlock deducts unlockCost from the library's currency and appends itemID to
 // its unlocked list. Idempotent if already unlocked.
-func (lib library) unlock(playerID ecs.EntityID, itemID string, unlockCost int, manager *common.EntityManager) error {
-	data := GetProgression(playerID, manager)
+func (lib library) unlock(ownerID ecs.EntityID, itemID string, unlockCost int, manager *common.EntityManager) error {
+	data := GetProgression(ownerID, manager)
 	if data == nil {
 		return ErrNoProgressionData
 	}
@@ -81,12 +83,12 @@ func (lib library) unlock(playerID ecs.EntityID, itemID string, unlockCost int, 
 	return nil
 }
 
-// addPoints grants a positive amount to a player's currency. No-op on missing data.
-func (lib library) addPoints(playerID ecs.EntityID, amount int, manager *common.EntityManager) {
+// addPoints grants a positive amount to an owner's currency. No-op on missing data.
+func (lib library) addPoints(ownerID ecs.EntityID, amount int, manager *common.EntityManager) {
 	if amount <= 0 {
 		return
 	}
-	data := GetProgression(playerID, manager)
+	data := GetProgression(ownerID, manager)
 	if data == nil {
 		return
 	}
@@ -95,40 +97,40 @@ func (lib library) addPoints(playerID ecs.EntityID, amount int, manager *common.
 
 // === Public API — thin typed wrappers over the shared library helpers. ===
 
-// IsPerkUnlocked reports whether the player has the given perk in their library.
-func IsPerkUnlocked(playerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) bool {
-	return perkLib.isUnlocked(playerID, string(perkID), manager)
+// IsPerkUnlocked reports whether the owner has the given perk in their library.
+func IsPerkUnlocked(ownerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) bool {
+	return perkLib.isUnlocked(ownerID, string(perkID), manager)
 }
 
-// IsSpellUnlocked reports whether the player has the given spell in their library.
-func IsSpellUnlocked(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool {
-	return spellLib.isUnlocked(playerID, string(spellID), manager)
+// IsSpellUnlocked reports whether the owner has the given spell in their library.
+func IsSpellUnlocked(ownerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool {
+	return spellLib.isUnlocked(ownerID, string(spellID), manager)
 }
 
 // UnlockPerk spends SkillPoints to add a perk to the library. Idempotent.
-func UnlockPerk(playerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) error {
+func UnlockPerk(ownerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) error {
 	def := perks.GetPerkDefinition(perkID)
 	if def == nil {
 		return fmt.Errorf("%w: %s", ErrUnknownPerk, perkID)
 	}
-	return perkLib.unlock(playerID, string(perkID), def.UnlockCost, manager)
+	return perkLib.unlock(ownerID, string(perkID), def.UnlockCost, manager)
 }
 
 // UnlockSpell spends ArcanaPoints to add a spell to the library. Idempotent.
-func UnlockSpell(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) error {
+func UnlockSpell(ownerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) error {
 	def := templates.GetSpellDefinition(spellID)
 	if def == nil {
 		return fmt.Errorf("%w: %s", ErrUnknownSpell, spellID)
 	}
-	return spellLib.unlock(playerID, string(spellID), def.UnlockCost, manager)
+	return spellLib.unlock(ownerID, string(spellID), def.UnlockCost, manager)
 }
 
-// AddArcanaPoints grants Arcana Points to a player's progression.
-func AddArcanaPoints(playerID ecs.EntityID, amount int, manager *common.EntityManager) {
-	spellLib.addPoints(playerID, amount, manager)
+// AddArcanaPoints grants Arcana Points to an owner's progression.
+func AddArcanaPoints(ownerID ecs.EntityID, amount int, manager *common.EntityManager) {
+	spellLib.addPoints(ownerID, amount, manager)
 }
 
-// AddSkillPoints grants Skill Points to a player's progression.
-func AddSkillPoints(playerID ecs.EntityID, amount int, manager *common.EntityManager) {
-	perkLib.addPoints(playerID, amount, manager)
+// AddSkillPoints grants Skill Points to an owner's progression.
+func AddSkillPoints(ownerID ecs.EntityID, amount int, manager *common.EntityManager) {
+	perkLib.addPoints(ownerID, amount, manager)
 }

@@ -1,7 +1,7 @@
 // Package guiprogression provides a standalone UI mode for the permanent
 // progression library: Arcana Points for spells, Skill Points for perks.
-// The panel is player-scoped and operates on the active Player entity's
-// ProgressionData component.
+// The panel is commander-scoped and operates on a specific Commander entity's
+// ProgressionData component (set via SetCommanderID before entering this mode).
 package guiprogression
 
 import (
@@ -14,15 +14,26 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// ProgressionMode lets the player spend Arcana Points and Skill Points to
-// permanently unlock spells and perks. Opened from the squad editor.
+// ProgressionMode lets the player spend a commander's Arcana Points and Skill
+// Points to permanently unlock spells and perks for that commander. Opened
+// from the squad editor; the caller must call SetCommanderID before the
+// transition so Enter can refresh against the right commander's data.
 type ProgressionMode struct {
 	framework.BaseMode
 
 	controller *progressionController
 
+	// Commander whose progression this mode edits. Set by SetCommanderID.
+	activeCommander ecs.EntityID
+
 	// Input action map
 	actionMap *framework.ActionMap
+}
+
+// SetCommanderID selects which commander's progression is displayed. Call
+// before RequestTransition into this mode.
+func (pm *ProgressionMode) SetCommanderID(commanderID ecs.EntityID) {
+	pm.activeCommander = commanderID
 }
 
 func NewProgressionMode(modeManager *framework.UIModeManager) *ProgressionMode {
@@ -39,23 +50,21 @@ func (pm *ProgressionMode) GetActionMap() *framework.ActionMap {
 	return pm.actionMap
 }
 
-// activePlayerID returns the currently active Player entity's ID (0 if unavailable).
-func (pm *ProgressionMode) activePlayerID() ecs.EntityID {
-	if pm.Context == nil || pm.Context.PlayerData == nil {
-		return 0
-	}
-	return pm.Context.PlayerData.PlayerEntityID
+// activeCommanderID returns the commander entity ID whose progression is being
+// edited. 0 if SetCommanderID was never called.
+func (pm *ProgressionMode) activeCommanderID() ecs.EntityID {
+	return pm.activeCommander
 }
 
-// onAddSkillPoint grants 1 Skill Point and refreshes the UI (debug).
+// onAddSkillPoint grants 1 Skill Point to the active commander and refreshes the UI (debug).
 func (pm *ProgressionMode) onAddSkillPoint() {
-	progression.AddSkillPoints(pm.activePlayerID(), 1, pm.Context.ECSManager)
+	progression.AddSkillPoints(pm.activeCommanderID(), 1, pm.Context.ECSManager)
 	pm.controller.refresh()
 }
 
-// onAddArcanaPoint grants 1 Arcana Point and refreshes the UI (debug).
+// onAddArcanaPoint grants 1 Arcana Point to the active commander and refreshes the UI (debug).
 func (pm *ProgressionMode) onAddArcanaPoint() {
-	progression.AddArcanaPoints(pm.activePlayerID(), 1, pm.Context.ECSManager)
+	progression.AddArcanaPoints(pm.activeCommanderID(), 1, pm.Context.ECSManager)
 	pm.controller.refresh()
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/core/common"
 	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/commander"
 	"game_main/tactical/powers/effects"
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/squads/squadcore"
@@ -33,10 +34,12 @@ func AddSpellCapabilityToSquad(squadID ecs.EntityID, manager *common.EntityManag
 }
 
 // InitSquadSpellsFromLeader checks the squad's leader unit type and adds spell capability
-// if that unit type has spells defined in UnitSpellRegistry. Call after CreateSquadFromTemplate.
-// Spells are filtered against the owning player's progression library — spells not yet
-// unlocked do not appear in the squad's spellbook. If no player is found, all spells pass
-// through (e.g. enemy squads or pre-player-init test fixtures).
+// if that unit type has spells defined in UnitSpellRegistry. Call after CreateSquadFromTemplate
+// AND after the squad has been registered with its owning commander's SquadRoster (so the
+// commander can be resolved here). Spells are filtered against the owning commander's
+// progression library — spells not yet unlocked by that commander do not appear in the
+// squad's spellbook. If no commander owns the squad (enemy squads, untested fixtures),
+// all spells pass through.
 func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManager) {
 	leaderID := squadcore.GetLeaderID(squadID, manager)
 	if leaderID == 0 {
@@ -51,44 +54,31 @@ func InitSquadSpellsFromLeader(squadID ecs.EntityID, manager *common.EntityManag
 		return
 	}
 
-	spellIDs = filterSpellsByPlayerLibrary(spellIDs, manager)
+	spellIDs = filterSpellsByCommanderLibrary(squadID, spellIDs, manager)
 
 	cfg := templates.GameConfig.Commander
 	AddSpellCapabilityToSquad(squadID, manager, cfg.StartingMana, cfg.MaxMana, spellIDs)
 }
 
-// filterSpellsByPlayerLibrary intersects a list of spell IDs with the active player's
-// unlocked spell library. Returns the input unchanged if no player or progression data
-// is found (so enemy squads and untested fixtures keep their full spell list).
-func filterSpellsByPlayerLibrary(spellIDs []templates.SpellID, manager *common.EntityManager) []templates.SpellID {
-	playerID := findPlayerEntityID(manager)
-	if playerID == 0 {
+// filterSpellsByCommanderLibrary intersects a list of spell IDs with the owning
+// commander's unlocked spell library. Returns the input unchanged if the squad
+// has no owning commander or the commander has no progression data.
+func filterSpellsByCommanderLibrary(squadID ecs.EntityID, spellIDs []templates.SpellID, manager *common.EntityManager) []templates.SpellID {
+	commanderID := commander.FindCommanderForSquad(squadID, manager)
+	if commanderID == 0 {
 		return spellIDs
 	}
-	data := progression.GetProgression(playerID, manager)
+	data := progression.GetProgression(commanderID, manager)
 	if data == nil {
 		return spellIDs
 	}
 	filtered := make([]templates.SpellID, 0, len(spellIDs))
 	for _, id := range spellIDs {
-		if progression.IsSpellUnlocked(playerID, id, manager) {
+		if progression.IsSpellUnlocked(commanderID, id, manager) {
 			filtered = append(filtered, id)
 		}
 	}
 	return filtered
-}
-
-// findPlayerEntityID returns the first Player-tagged entity's ID, or 0 if none exists.
-func findPlayerEntityID(manager *common.EntityManager) ecs.EntityID {
-	tag, ok := manager.WorldTags["players"]
-	if !ok {
-		return 0
-	}
-	results := manager.World.Query(tag)
-	if len(results) == 0 {
-		return 0
-	}
-	return results[0].Entity.GetID()
 }
 
 // ExecuteSpellCast performs a spell cast from a squad against target squads.

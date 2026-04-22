@@ -33,9 +33,9 @@ type librarySource struct {
 	detailPrompt  string // e.g. "Select a perk to view details."
 
 	allItems      func() []libraryItem
-	isUnlocked    func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) bool
+	isUnlocked    func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) bool
 	currentPoints func(data *progression.ProgressionData) int
-	unlock        func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) error
+	unlock        func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) error
 }
 
 // libraryEntry wraps a libraryItem for placement in the widget.List. Pointers
@@ -66,7 +66,7 @@ func (pc *libraryPanelController) onUnlockedSelected(entry *libraryEntry) {
 
 func (pc *libraryPanelController) onLockedSelected(entry *libraryEntry) {
 	pc.selected = entry
-	data := progression.GetProgression(pc.mode.activePlayerID(), pc.mode.Context.ECSManager)
+	data := progression.GetProgression(pc.mode.activeCommanderID(), pc.mode.Context.ECSManager)
 	canAfford := data != nil && pc.source.currentPoints(data) >= entry.item.unlockCost
 	pc.unlockBtn.GetWidget().Disabled = !canAfford
 	pc.detail.SetText(formatDetail(entry.item, pc.source.currencyName, true))
@@ -76,7 +76,7 @@ func (pc *libraryPanelController) onUnlockClicked() {
 	if pc.selected == nil {
 		return
 	}
-	if err := pc.source.unlock(pc.mode.activePlayerID(), pc.selected.item.id, pc.mode.Context.ECSManager); err != nil {
+	if err := pc.source.unlock(pc.mode.activeCommanderID(), pc.selected.item.id, pc.mode.Context.ECSManager); err != nil {
 		pc.mode.SetStatus(fmt.Sprintf("Unlock failed: %v", err))
 		return
 	}
@@ -135,12 +135,12 @@ var (
 		unlockBtnText: "Unlock Perk",
 		detailPrompt:  "Select a perk to view details.",
 		allItems:      allPerkItems,
-		isUnlocked: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
-			return progression.IsPerkUnlocked(playerID, perks.PerkID(itemID), manager)
+		isUnlocked: func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
+			return progression.IsPerkUnlocked(commanderID, perks.PerkID(itemID), manager)
 		},
 		currentPoints: func(d *progression.ProgressionData) int { return d.SkillPoints },
-		unlock: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) error {
-			return progression.UnlockPerk(playerID, perks.PerkID(itemID), manager)
+		unlock: func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) error {
+			return progression.UnlockPerk(commanderID, perks.PerkID(itemID), manager)
 		},
 	}
 
@@ -150,12 +150,12 @@ var (
 		unlockBtnText: "Unlock Spell",
 		detailPrompt:  "Select a spell to view details.",
 		allItems:      allSpellItems,
-		isUnlocked: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
-			return progression.IsSpellUnlocked(playerID, templates.SpellID(itemID), manager)
+		isUnlocked: func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) bool {
+			return progression.IsSpellUnlocked(commanderID, templates.SpellID(itemID), manager)
 		},
 		currentPoints: func(d *progression.ProgressionData) int { return d.ArcanaPoints },
-		unlock: func(playerID ecs.EntityID, itemID string, manager *common.EntityManager) error {
-			return progression.UnlockSpell(playerID, templates.SpellID(itemID), manager)
+		unlock: func(commanderID ecs.EntityID, itemID string, manager *common.EntityManager) error {
+			return progression.UnlockSpell(commanderID, templates.SpellID(itemID), manager)
 		},
 	}
 )

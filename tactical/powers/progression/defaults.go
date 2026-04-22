@@ -1,6 +1,6 @@
 package progression
 
-// StartingUnlockedPerks returns the perk IDs every new Player entity starts with.
+// StartingUnlockedPerks returns the perk IDs every new Commander starts with.
 // Covers Tank + DPS + Support roles so any starter squad has something to equip.
 func StartingUnlockedPerks() []string {
 	return []string{
@@ -11,7 +11,7 @@ func StartingUnlockedPerks() []string {
 	}
 }
 
-// StartingUnlockedSpells returns the spell IDs every new Player entity starts with.
+// StartingUnlockedSpells returns the spell IDs every new Commander starts with.
 // Low-cost damage spells so a starter mage leader is functional turn one.
 func StartingUnlockedSpells() []string {
 	return []string{

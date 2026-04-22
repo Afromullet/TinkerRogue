@@ -4,7 +4,6 @@ import (
 	"game_main/core/common"
 	"game_main/core/config"
 	"game_main/tactical/powers/artifacts"
-	"game_main/tactical/powers/progression"
 	"game_main/templates"
 
 	"game_main/tactical/commander"
@@ -60,8 +59,7 @@ func InitializePlayerData(ecsmanager *common.EntityManager, pl *common.PlayerDat
 			CommanderIDs:  make([]ecs.EntityID, 0),
 			MaxCommanders: cfg.Commander.MaxCommanders,
 		}).
-		AddComponent(artifacts.ArtifactInventoryComponent, artifacts.NewArtifactInventory(cfg.Player.Limits.MaxArtifacts)).
-		AddComponent(progression.ProgressionComponent, progression.NewProgressionData())
+		AddComponent(artifacts.ArtifactInventoryComponent, artifacts.NewArtifactInventory(cfg.Player.Limits.MaxArtifacts))
 
 	// Atomically add position component and register with position system
 	ecsmanager.RegisterEntityPosition(playerEntity, gm.StartingPosition())

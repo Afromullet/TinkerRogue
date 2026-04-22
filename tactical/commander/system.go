@@ -2,8 +2,9 @@ package commander
 
 import (
 	"game_main/core/common"
-	"game_main/tactical/squads/roster"
 	"game_main/core/coords"
+	"game_main/tactical/powers/progression"
+	"game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -41,7 +42,8 @@ func CreateCommander(
 		AddComponent(common.AttributeComponent, &common.Attributes{
 			MovementSpeed: movementSpeed,
 		}).
-		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads))
+		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads)).
+		AddComponent(progression.ProgressionComponent, progression.NewProgressionData())
 
 	// Atomically add position component and register with position system
 	manager.RegisterEntityPosition(entity, startPos)

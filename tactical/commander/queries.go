@@ -3,6 +3,7 @@ package commander
 import (
 	"game_main/core/common"
 	"game_main/core/coords"
+	"game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 )
@@ -45,4 +46,24 @@ func GetAllCommanders(playerID ecs.EntityID, manager *common.EntityManager) []ec
 		return nil
 	}
 	return roster.CommanderIDs
+}
+
+// FindCommanderForSquad returns the commander entity ID that owns the given squad,
+// or 0 if no commander's roster contains it. Used to resolve "whose progression
+// library applies to this squad" — since progression is per-commander and the
+// squad→commander link lives implicitly inside each commander's SquadRoster.
+func FindCommanderForSquad(squadID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
+	for _, result := range manager.World.Query(CommanderTag) {
+		commanderID := result.Entity.GetID()
+		sr := common.GetComponentType[*roster.SquadRoster](result.Entity, roster.SquadRosterComponent)
+		if sr == nil {
+			continue
+		}
+		for _, id := range sr.OwnedSquads {
+			if id == squadID {
+				return commanderID
+			}
+		}
+	}
+	return 0
 }

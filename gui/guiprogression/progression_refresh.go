@@ -12,7 +12,7 @@ import (
 
 // refresh updates header totals and both library panels.
 func (pc *progressionController) refresh() {
-	data := progression.GetProgression(pc.mode.activePlayerID(), pc.mode.Context.ECSManager)
+	data := progression.GetProgression(pc.mode.activeCommanderID(), pc.mode.Context.ECSManager)
 	arcana, skill := 0, 0
 	if data != nil {
 		arcana = data.ArcanaPoints
@@ -26,14 +26,14 @@ func (pc *progressionController) refresh() {
 
 // refresh repopulates a single library panel's lists and resets selection state.
 func (pc *libraryPanelController) refresh() {
-	playerID := pc.mode.activePlayerID()
+	commanderID := pc.mode.activeCommanderID()
 	manager := pc.mode.Context.ECSManager
 	unlocked := []interface{}{}
 	locked := []interface{}{}
 
 	for _, item := range pc.source.allItems() {
 		entry := &libraryEntry{item: item, label: item.name}
-		if pc.source.isUnlocked(playerID, item.id, manager) {
+		if pc.source.isUnlocked(commanderID, item.id, manager) {
 			unlocked = append(unlocked, entry)
 			continue
 		}

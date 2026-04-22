@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"game_main/core/common"
 	"game_main/setup/savesystem"
+	"game_main/tactical/commander"
 	"game_main/tactical/powers/progression"
 
 	"github.com/bytearena/ecs"
@@ -14,16 +15,20 @@ func init() {
 	savesystem.RegisterChunk(&ProgressionChunk{})
 }
 
-// ProgressionChunk saves/loads the per-player ProgressionData component:
-// ArcanaPoints, SkillPoints, and the unlocked spell / perk libraries.
-// The component is attached to a Player entity that exists independently via
-// PlayerChunk, so attachment happens in RemapIDs after the player entity is rebuilt.
+// ProgressionChunk saves/loads every Commander's ProgressionData component:
+// ArcanaPoints, SkillPoints, and the unlocked spell / perk libraries. Each
+// commander entity exists independently via CommanderChunk, so component
+// re-attachment happens in RemapIDs after commanders are rebuilt.
+//
+// Format bumped to v2 when progression moved from Player-scoped to
+// Commander-scoped. Old v1 saves (single player-owned entry) are no longer
+// readable.
 type ProgressionChunk struct{}
 
 func (c *ProgressionChunk) ChunkID() string   { return "progression" }
-func (c *ProgressionChunk) ChunkVersion() int { return 1 }
+func (c *ProgressionChunk) ChunkVersion() int { return 2 }
 
-type savedProgressionChunk struct {
+type savedCommanderProgression struct {
 	OwnerEntityID    ecs.EntityID `json:"ownerEntityID"`
 	ArcanaPoints     int          `json:"arcanaPoints"`
 	SkillPoints      int          `json:"skillPoints"`
@@ -31,30 +36,32 @@ type savedProgressionChunk struct {
 	UnlockedPerkIDs  []string     `json:"unlockedPerkIDs"`
 }
 
+type savedProgressionChunk struct {
+	Commanders []savedCommanderProgression `json:"commanders"`
+}
+
 // --- Save ---
 
 func (c *ProgressionChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
-	playerTag, ok := em.WorldTags["players"]
-	if !ok {
+	entries := make([]savedCommanderProgression, 0)
+	for _, result := range em.World.Query(commander.CommanderTag) {
+		entity := result.Entity
+		data := common.GetComponentType[*progression.ProgressionData](entity, progression.ProgressionComponent)
+		if data == nil {
+			continue
+		}
+		entries = append(entries, savedCommanderProgression{
+			OwnerEntityID:    entity.GetID(),
+			ArcanaPoints:     data.ArcanaPoints,
+			SkillPoints:      data.SkillPoints,
+			UnlockedSpellIDs: append([]string(nil), data.UnlockedSpellIDs...),
+			UnlockedPerkIDs:  append([]string(nil), data.UnlockedPerkIDs...),
+		})
+	}
+	if len(entries) == 0 {
 		return nil, nil
 	}
-	results := em.World.Query(playerTag)
-	if len(results) == 0 {
-		return nil, nil
-	}
-	entity := results[0].Entity
-	data := common.GetComponentType[*progression.ProgressionData](entity, progression.ProgressionComponent)
-	if data == nil {
-		return nil, nil
-	}
-	saved := savedProgressionChunk{
-		OwnerEntityID:    entity.GetID(),
-		ArcanaPoints:     data.ArcanaPoints,
-		SkillPoints:      data.SkillPoints,
-		UnlockedSpellIDs: append([]string(nil), data.UnlockedSpellIDs...),
-		UnlockedPerkIDs:  append([]string(nil), data.UnlockedPerkIDs...),
-	}
-	return json.Marshal(saved)
+	return json.Marshal(savedProgressionChunk{Commanders: entries})
 }
 
 // --- Load ---
@@ -83,20 +90,22 @@ func (c *ProgressionChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.
 	saved := raw.(*savedProgressionChunk)
 	delete(idMap.LoadContext, progressionLoadContextKey)
 
-	newOwnerID := idMap.Remap(saved.OwnerEntityID)
-	if newOwnerID == 0 {
-		return nil
+	for _, entry := range saved.Commanders {
+		newOwnerID := idMap.Remap(entry.OwnerEntityID)
+		if newOwnerID == 0 {
+			continue
+		}
+		entity := em.FindEntityByID(newOwnerID)
+		if entity == nil {
+			continue
+		}
+		data := &progression.ProgressionData{
+			ArcanaPoints:     entry.ArcanaPoints,
+			SkillPoints:      entry.SkillPoints,
+			UnlockedSpellIDs: append([]string(nil), entry.UnlockedSpellIDs...),
+			UnlockedPerkIDs:  append([]string(nil), entry.UnlockedPerkIDs...),
+		}
+		entity.AddComponent(progression.ProgressionComponent, data)
 	}
-	entity := em.FindEntityByID(newOwnerID)
-	if entity == nil {
-		return nil
-	}
-	data := &progression.ProgressionData{
-		ArcanaPoints:     saved.ArcanaPoints,
-		SkillPoints:      saved.SkillPoints,
-		UnlockedSpellIDs: append([]string(nil), saved.UnlockedSpellIDs...),
-		UnlockedPerkIDs:  append([]string(nil), saved.UnlockedPerkIDs...),
-	}
-	entity.AddComponent(progression.ProgressionComponent, data)
 	return nil
 }

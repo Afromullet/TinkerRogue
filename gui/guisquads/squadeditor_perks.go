@@ -7,10 +7,10 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/tactical/commander"
 	"game_main/tactical/powers/perks"
 	"game_main/tactical/powers/progression"
 
-	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
 )
 
@@ -78,18 +78,16 @@ func (pc *perkPanelController) refreshPerkPanel() {
 		}
 	}
 
-	// Build available entries (perks unlocked in the owning player's library and not already equipped)
-	ownerPlayerID := ecs.EntityID(0)
-	if pc.mode.Context != nil && pc.mode.Context.PlayerData != nil {
-		ownerPlayerID = pc.mode.Context.PlayerData.PlayerEntityID
-	}
+	// Build available entries (perks unlocked in the owning commander's library and not already equipped).
+	// Progression is per-commander, so resolve the squad's commander and use that library.
+	ownerCommanderID := commander.FindCommanderForSquad(squadID, manager)
 	allIDs := perks.GetAllPerkIDs()
 	availableEntries := make([]interface{}, 0, len(allIDs)-len(equippedIDs))
 	for _, id := range allIDs {
 		if equippedSet[id] {
 			continue
 		}
-		if ownerPlayerID != 0 && !progression.IsPerkUnlocked(ownerPlayerID, id, manager) {
+		if ownerCommanderID != 0 && !progression.IsPerkUnlocked(ownerCommanderID, id, manager) {
 			continue
 		}
 		def := perks.GetPerkDefinition(id)

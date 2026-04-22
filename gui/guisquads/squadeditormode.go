@@ -5,6 +5,7 @@ import (
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
+	"game_main/gui/guiprogression"
 	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
@@ -213,9 +214,20 @@ func (sem *SquadEditorMode) buildNavigationActions() *widget.Container {
 			}
 		}},
 		{Text: "Progression", OnClick: func() {
-			if mode, exists := sem.ModeManager.GetMode("progression_manager"); exists {
-				sem.ModeManager.RequestTransition(mode, "Progression clicked")
+			mode, exists := sem.ModeManager.GetMode("progression_manager")
+			if !exists {
+				return
 			}
+			// Progression is per-commander: resolve the commander whose roster
+			// contains the currently-edited squad and pass it to the mode.
+			commanderID := ecs.EntityID(0)
+			if sem.squadNav != nil && sem.squadNav.HasSquads() {
+				commanderID = commander.FindCommanderForSquad(sem.squadNav.CurrentID(), sem.Context.ECSManager)
+			}
+			if pm, ok := mode.(*guiprogression.ProgressionMode); ok {
+				pm.SetCommanderID(commanderID)
+			}
+			sem.ModeManager.RequestTransition(mode, "Progression clicked")
 		}},
 		{Text: closeText, OnClick: func() {
 			if returnMode, exists := sem.ModeManager.GetMode(sem.GetReturnMode()); exists {

@@ -3,6 +3,7 @@ package combatlifecycle
 import (
 	"fmt"
 	"game_main/core/common"
+	"game_main/tactical/commander"
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/unitprogression"
@@ -65,14 +66,22 @@ func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 		}
 	}
 
-	if r.ArcanaPts > 0 && target.PlayerEntityID != 0 {
-		if desc := grantProgressionPoints(manager, target.PlayerEntityID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints); desc != "" {
+	// Progression points go to the commander of the first squad in the target.
+	// An encounter is owned by one commander, so all squads in SquadIDs share
+	// a commander; resolving from the first is sufficient.
+	commanderID := ecs.EntityID(0)
+	if len(target.SquadIDs) > 0 {
+		commanderID = commander.FindCommanderForSquad(target.SquadIDs[0], manager)
+	}
+
+	if r.ArcanaPts > 0 && commanderID != 0 {
+		if desc := grantProgressionPoints(manager, commanderID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints); desc != "" {
 			parts = append(parts, desc)
 		}
 	}
 
-	if r.SkillPts > 0 && target.PlayerEntityID != 0 {
-		if desc := grantProgressionPoints(manager, target.PlayerEntityID, r.SkillPts, "Skill", progression.AddSkillPoints); desc != "" {
+	if r.SkillPts > 0 && commanderID != 0 {
+		if desc := grantProgressionPoints(manager, commanderID, r.SkillPts, "Skill", progression.AddSkillPoints); desc != "" {
 			parts = append(parts, desc)
 		}
 	}
@@ -136,20 +145,21 @@ func grantManaToSquads(manager *common.EntityManager, squadIDs []ecs.EntityID, a
 	return desc
 }
 
-// grantProgressionPoints adds progression points of a given currency to the player's
-// ProgressionData. Returns "" if the player has no progression component.
+// grantProgressionPoints adds progression points of a given currency to the
+// commander's ProgressionData. Returns "" if the commander has no progression
+// component (partially-initialized fixtures).
 func grantProgressionPoints(
 	manager *common.EntityManager,
-	playerEntityID ecs.EntityID,
+	commanderID ecs.EntityID,
 	amount int,
 	label string,
 	add func(ecs.EntityID, int, *common.EntityManager),
 ) string {
-	if progression.GetProgression(playerEntityID, manager) == nil {
+	if progression.GetProgression(commanderID, manager) == nil {
 		return ""
 	}
-	add(playerEntityID, amount, manager)
-	fmt.Printf("Granted %d %s to player %d\n", amount, label, playerEntityID)
+	add(commanderID, amount, manager)
+	fmt.Printf("Granted %d %s to commander %d\n", amount, label, commanderID)
 	return fmt.Sprintf("%d %s", amount, label)
 }
 
