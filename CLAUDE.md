@@ -317,6 +317,14 @@ func GetSquadEntity(squadID ecs.EntityID, manager *common.EntityManager) *ecs.En
 4. Write tests
 5. Integrate with existing systems
 
+### Documentation Maintenance
+
+**When adding, removing, or moving source files or packages, update:**
+- `resources/docs/PROJECT_LAYOUT.md` — directory/package layout overview
+- `resources/docs/PACKAGE_DEPENDENCIES.md` — package dependency graph
+
+Keep these in sync with the code in the same change. Also update the **Key Systems** list above in this file when a new top-level package is introduced or an existing one is renamed/relocated.
+
 ### Code Review Checklist
 - [ ] No logic in components
 - [ ] Uses `ecs.EntityID` not entity pointers

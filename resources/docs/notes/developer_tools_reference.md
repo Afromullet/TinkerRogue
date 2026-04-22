@@ -11,6 +11,8 @@ Quick reference for development commands, analysis tools, profiling, and asset p
 - [Combat Simulation Tools](#combat-simulation-tools)
 - [WASM Build](#wasm-build)
 - [Performance Profiling (pprof)](#performance-profiling-pprof)
+- [Measuring Cyclomatic Complexity](#measuring-cyclomatic-complexity)
+- [Complexity Hotspots Report](#complexity-hotspots-report)
 - [Asset Preparation (GIMP)](#asset-preparation-gimp)
 
 ---
@@ -169,34 +171,51 @@ web -node=runtime.systemstack        # Graph a specific node
 list yourpkg.SomeFunction            # Annotated source for a function
 ```
 
----
+## Complexity Hotspots Report
 
-# Measuring Cyclomatic Complexity
+Script: `tools/scripts/complexity_report.sh`
 
-Calculate cyclomatic complexities of Go functions.
-Usage:
-    gocyclo [flags] <Go file or directory> ...
+Runs `gocyclo`, `gocognit`, and `golangci-lint` (with `funlen`, `nestif`, `dupl`,
+`maintidx`) against the project root and writes a sectioned text report to
+`resources/docs/complexity_report.txt`. The report has three parts:
 
-Flags:
-    -over N               show functions with complexity > N only and
-                          return exit code 1 if the set is non-empty
-    -top N                show the top N most complex functions only
-    -avg, -avg-short      show the average complexity over all functions;
-                          the short option prints the value without a label
-    -ignore REGEX         exclude files matching the given regular expression
+- **Part A — Cyclomatic Complexity (gocyclo):** average, top-N, over-threshold, bucket distribution
+- **Part B — Cognitive Complexity (gocognit):** same four sections (cognitive penalizes nesting, so it often ranks functions differently)
+- **Part C — Structural Complexity (golangci-lint):** findings per linter, top-N files by finding count, and the full list grouped by linter
 
-The output fields for each line are:
-<complexity> <package> <function> <file:line:column
+### Prerequisites
 
-## Examples
+The script expects these binaries on `PATH` (already installed under `~/go/bin`):
 
-$ gocyclo .
-$ gocyclo main.go
-$ gocyclo -top 10 mind/
-$ gocyclo -over 25 docker
-$ gocyclo -avg .
-$ gocyclo -top 20 -ignore "_test|Godeps|vendor/" .
-$ gocyclo -over 3 -avg gocyclo/
+```bash
+go install github.com/fzipp/gocyclo/cmd/gocyclo@latest
+go install github.com/uudashr/gocognit/cmd/gocognit@latest
+# golangci-lint: https://golangci-lint.run/usage/install/
+```
+
+### Usage
+
+Run from anywhere in the repo — the script resolves the project root from its own location:
+
+```bash
+bash tools/scripts/complexity_report.sh                           # default report → resources/docs/complexity_report.txt
+bash tools/scripts/complexity_report.sh --top 20 --over 10        # tighter thresholds
+bash tools/scripts/complexity_report.sh --stdout | less           # print, don't write
+bash tools/scripts/complexity_report.sh --include-tests           # include _test.go files
+bash tools/scripts/complexity_report.sh --skip-lint               # gocyclo + gocognit only (much faster)
+bash tools/scripts/complexity_report.sh --output report.txt       # custom output path
+```
+
+### Flags
+
+| Flag | Default | Description |
+|---|---|---|
+| `--top N` | `50` | Top-N functions/files to list in each section |
+| `--over N` | `15` | Complexity threshold for the "over" section |
+| `--include-tests` | off | Include `_test.go` files (excluded by default) |
+| `--skip-lint` | off | Skip the golangci-lint pass (fastest path) |
+| `--output PATH` | `resources/docs/complexity_report.txt` | Output file |
+| `--stdout` | off | Print to stdout instead of writing to a file |
 
 ---
 

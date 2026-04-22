@@ -1,6 +1,6 @@
 # TinkerRogue Caching Mechanisms
 
-**Last Updated:** 2026-02-14
+**Last Updated:** 2026-04-22
 
 This document provides a comprehensive overview of all caching mechanisms used throughout the TinkerRogue codebase. Caching is critical for performance in this ECS-based roguelike, reducing O(n) queries to O(1) or O(k) lookups where k is the number of matching entities.
 
@@ -12,11 +12,11 @@ This document provides a comprehensive overview of all caching mechanisms used t
 2. [Event-Driven Caches](#event-driven-caches)
 3. [Spatial Grid Caches](#spatial-grid-caches)
 4. [Rendering Caches](#rendering-caches)
-5. [AI Threat Evaluation Caches](#ai-threat-evaluation-caches)
+5. [AI Threat Evaluation](#ai-threat-evaluation)
 6. [Widget Render Caches](#widget-render-caches)
 7. [Cache Relationships](#cache-relationships)
 8. [Performance Characteristics](#performance-characteristics)
-9. [Hook-Based Cache Invalidation System](#hook-based-cache-invalidation-system)
+9. [PowerPipeline and Hook-Based Cache Invalidation](#powerpipeline-and-hook-based-cache-invalidation)
 
 ---
 
@@ -26,7 +26,7 @@ ECS Views are automatically-maintained caches provided by the bytearena/ecs libr
 
 ### 1.1 SquadQueryCache
 
-**File:** `tactical/squads/squadcache.go`
+**File:** `tactical/squads/squadcore/squadcache.go`
 
 **Purpose:** Provides cached access to squad-related queries for GUI hot paths.
 
@@ -68,7 +68,7 @@ manager.World.CreateView(SquadTag)
 
 ### 1.2 CombatQueryCache
 
-**File:** `tactical/combat/combatqueriescache.go`
+**File:** `tactical/combat/combatstate/combatqueriescache.go`
 
 **Purpose:** Cached access to combat-related queries (action states, factions).
 
@@ -138,7 +138,7 @@ cache := rendering.NewRenderingCache(manager)
 Several packages maintain package-level Views initialized during subsystem registration:
 
 #### Overworld Core Views
-**File:** `overworld/core/init.go`
+**File:** `campaign/overworld/core/init.go`
 
 ```go
 var OverworldNodeView *ecs.View
@@ -149,12 +149,12 @@ OverworldNodeView = em.World.CreateView(OverworldNodeTag)
 OverworldFactionView = em.World.CreateView(OverworldFactionTag)
 ```
 
-**Usage:** `overworld/influence/queries.go` uses `core.OverworldNodeView.Get()` for O(k) node queries
+**Usage:** `campaign/overworld/influence/queries.go` uses `core.OverworldNodeView.Get()` for O(k) node queries
 
 ---
 
 #### Squad Member View
-**File:** `tactical/squads/squadmanager.go`
+**File:** `tactical/squads/squadcore/squadmanager.go`
 
 ```go
 var squadMemberView *ecs.View
@@ -168,7 +168,7 @@ squadMemberView = em.World.CreateView(SquadMemberTag)
 ---
 
 #### Combat Views
-**File:** `tactical/combat/combatcomponents.go`
+**File:** `tactical/combat/combatstate/combatcomponents.go`
 
 ```go
 var factionView *ecs.View
@@ -213,6 +213,51 @@ CommanderView = em.World.CreateView(CommanderTag)
 **Memory Trade-off:** Each View maintains a list of matching entities, but this is O(k) space where k = matching entities, which is acceptable for most cases.
 
 **Critical Note:** Views are automatically maintained by the ECS library. You never need to manually update them - they reflect component changes immediately.
+
+---
+
+### 1.6 Power-System Dispatchers (Artifact / Perk)
+
+The power system caches per-battle and per-round state that the combat pipeline
+needs to query on every attack, move, and turn-end. These dispatchers are not
+ECS Views, but they live in the same subscriber pool as the GUI cache callbacks
+(see Section 9) and share the same "built once, fired many times" pattern.
+
+#### 1.6.1 ArtifactChargeTracker
+
+**File:** `tactical/powers/artifacts/artifactcharges.go`
+
+**Purpose:** Tracks charges for active artifact behaviors (per-battle and
+per-round budgets). Constructed once in `NewCombatService` and `Reset()` per
+battle inside `InitializeCombat`. The instance identity is preserved across
+battles so that the `ArtifactDispatcher`'s bindings on the `PowerPipeline`
+stay valid.
+
+**Key API:**
+```go
+UseCharge(behavior string, chargeType ChargeType)
+IsAvailable(behavior string) bool
+RefreshRoundCharges()     // called on turn boundaries via OnTurnEnd subscriber
+Reset()                   // called on battle boundaries via InitializeCombat
+```
+
+#### 1.6.2 ArtifactDispatcher
+
+**File:** `tactical/powers/artifacts/dispatcher.go`
+
+Subscribes to `OnPostReset`, `OnAttackComplete`, and `OnTurnEnd` on the
+pipeline. Consults the charge tracker before firing behaviors so that
+per-round/per-battle budgets are honored without the rest of combat knowing
+about charges.
+
+#### 1.6.3 SquadPerkDispatcher
+
+**File:** `tactical/powers/perks/dispatcher.go`
+
+Subscribes to all four pipeline events. Dispatches the corresponding perk
+lifecycle hooks (`DispatchTurnStart`, `DispatchAttackTracking`,
+`DispatchMoveTracking`, `DispatchRoundEnd`) into each squad's per-squad perk
+round-state components.
 
 ---
 
@@ -318,7 +363,7 @@ Spatial grids provide O(1) position-based entity lookup, replacing O(n) linear s
 
 ### 3.1 GlobalPositionSystem
 
-**File:** `common/positionsystem.go`
+**File:** `core/common/positionsystem.go`
 
 **Purpose:** O(1) spatial queries for entity positions using a hash map grid.
 
@@ -382,15 +427,15 @@ Rendering caches reduce CPU usage by avoiding redundant rendering operations.
 
 ### 4.1 TileRenderer Batch Cache
 
-**File:** `visual/rendering/tilerenderer.go`
+**File:** `visual/maprender/tilerenderer.go`
 
 **Purpose:** Cache tile batches when viewport hasn't moved to avoid rebuilding sprite batches every frame.
 
 **Structure:**
 ```go
 type TileRenderer struct {
-    tiles   []*worldmap.Tile
-    batches map[*ebiten.Image]*QuadBatch
+    tiles   []*worldmapcore.Tile
+    batches map[*ebiten.Image]*rendering.QuadBatch
 
     // Cache state
     lastCenterX      int
@@ -399,6 +444,9 @@ type TileRenderer struct {
     batchesBuilt     bool
 }
 ```
+
+The rebuild check also consults `RenderOptions.TileColorsDirty` so palette/tint
+changes force a refresh even when the viewport has not moved.
 
 **Cache Strategy:** Invalidate-on-change
 - Batches rebuilt only when viewport position or size changes
@@ -570,6 +618,36 @@ vr.overlayDrawOpts.GeoM.Reset()
 vr.overlayDrawOpts.GeoM.Translate(screenX, screenY)
 screen.DrawImage(vr.overlayCache, &vr.overlayDrawOpts)
 ```
+
+---
+
+### 4.5 CachedViewport
+
+**File:** `visual/rendering/viewport.go`
+
+**Purpose:** Share a single `ViewportRenderer` across multiple tile renderers and
+avoid recreating it when only the camera center changes.
+
+**Structure:**
+```go
+type CachedViewport struct {
+    renderer    *ViewportRenderer
+    lastCenter  coords.LogicalPosition
+    lastScreenX int
+    lastScreenY int
+}
+```
+
+**Cache Strategy:** Recreate-on-dimension-change
+- `GetRenderer(screen, centerPos)` rebuilds the underlying `ViewportRenderer`
+  only when the screen width/height changes
+- Center-position changes update the cached renderer in-place rather than
+  allocating a fresh one
+
+**Performance Impact:** Eliminates `ViewportRenderer` allocations during normal
+camera panning. Combined with `BorderImageCache` and the overlay cache inside
+`ViewportRenderer`, keeps tile-border/overlay rendering allocation-free on the
+hot path.
 
 ---
 
@@ -764,18 +842,19 @@ Event-Driven:
     ↓ Depends on
     SquadQueryCache + CombatQueryCache
     ↓ Invalidated by
-    Hook-based invalidation system (OnAttackComplete, OnMoveComplete, OnTurnEnd)
+    PowerPipeline subscribers (attack / move / turn-end / post-reset)
 
-Hook-Based Invalidation:
-  CombatActionSystem → fires OnAttackComplete hook
-  CombatMovementSystem → fires OnMoveComplete hook
-  TurnManager → fires OnTurnEnd hook
-    ↓ Registered at
-    CombatService (forwards to GUI callbacks)
-    ↓ GUI callbacks invoke
-    SquadInfoCache.MarkSquadDirty() / InvalidateSquad() / MarkAllSquadsDirty()
-    ↓ Also triggers
-    Threat layer updates (UpdateThreatManagers, UpdateThreatEvaluator)
+PowerPipeline (tactical/powers/powercore/pipeline.go):
+  CombatActionSystem   → FireAttackComplete(attacker, defender, result)
+  CombatMovementSystem → FireMoveComplete(squadID)
+  TurnManager          → FireTurnEnd(round), FirePostReset(factionID, squadIDs)
+    ↓ Dispatches in registration order to:
+    1. ArtifactDispatcher  (charge tracking, artifact reactions)
+    2. SquadPerkDispatcher (perk attack/move tracking, TurnStart, RoundEnd)
+    3. onAttackCompleteGUI / onMoveCompleteGUI / onTurnEndGUI (nil-safe)
+       ↓ GUI callback invokes
+       SquadInfoCache.MarkSquadDirty() / InvalidateSquad() / MarkAllSquadsDirty()
+       Threat layer updates (UpdateThreatManagers, UpdateThreatEvaluator)
 
 Threat Evaluation:
   CompositeThreatEvaluator
@@ -790,11 +869,12 @@ Threat Evaluation:
     CombatVisualizationManager.UpdateThreatEvaluator (OnTurnEnd hook)
 
 Rendering:
-  TileRenderer (viewport position cache)
+  TileRenderer (viewport position cache; visual/maprender/tilerenderer.go)
   RenderingCache.spriteBatches (image-based batching)
   CachedBackground (NineSlice pre-rendering)
   BorderImageCache (viewport border images)
   ViewportRenderer (overlay cache, reusable DrawImageOptions)
+  CachedViewport (shares a single ViewportRenderer across tile renderers)
   CachedListWrapper / CachedTextAreaWrapper (widget output)
 ```
 
@@ -819,18 +899,18 @@ Rendering:
    ↓
 7. ECS library auto-updates all Views (SquadQueryCache, CombatQueryCache, RenderingCache)
    ↓
-8. CombatMovementSystem fires OnMoveComplete hook
+8. CombatMovementSystem fires its raw hook → powerPipeline.FireMoveComplete(squadID)
    ↓
-9. CombatService forwards hook to registered GUI callbacks
+9. PowerPipeline dispatches in registration order:
+    a. SquadPerkDispatcher.DispatchMoveTracking (perk state update)
+    b. onMoveCompleteGUI → cm.Queries.MarkSquadDirty(squadID)
    ↓
-10. GUI callback: cm.Queries.MarkSquadDirty(squadID)
+10. SquadInfoCache marks squad's entry dirty
    ↓
-11. SquadInfoCache marks squad's entry dirty
-   ↓
-12. Next UI update: SquadInfoCache recomputes squad info from ECS
+11. Next UI update: SquadInfoCache recomputes squad info from ECS
 ```
 
-**Key Insight:** Hook-based invalidation eliminates manual cache invalidation calls in combat logic. Caches update automatically via registered callbacks.
+**Key Insight:** The pipeline eliminates manual cache invalidation calls in combat logic and keeps artifact, perk, and cache reactions to a single declared order.
 
 ---
 
@@ -848,6 +928,8 @@ Rendering:
 | CachedBackground | 0 (skipped) | O(width × height) | O(num sizes) | Static UI panels |
 | BorderImageCache | 0 (skipped) | O(1) | O(4 images) | Tile border rendering |
 | ViewportRenderer | 0 (reused) | 0 | O(1 image + opts) | Tile overlay/border drawing |
+| CachedViewport | 0 (reused) | O(1) on resize | O(1 renderer) | Sharing a ViewportRenderer across tile renderers |
+| PowerPipeline dispatch | O(subs) iteration | 0 (append-only) | O(subs) | Ordered artifact/perk/GUI reactions |
 | Widget Caches | 0 (skipped) | O(widget complexity) | O(widget size) | Static UI content |
 
 **k** = entities with matching component
@@ -921,408 +1003,384 @@ Rendering:
 
 ---
 
-## 9. Hook-Based Cache Invalidation System
+## 9. PowerPipeline and Hook-Based Cache Invalidation
 
-The combat cache invalidation system uses a hook-based architecture to automatically invalidate caches when game state changes occur. This ensures cache coherence without requiring manual invalidation calls scattered throughout combat logic.
+Combat cache invalidation is driven by a single dispatcher, `PowerPipeline`,
+which sits between the raw subsystem hooks (attack / move / turn-end) and every
+observer that needs to react — artifact behaviors, perk lifecycle tracking, and
+GUI cache invalidation. Ordering is established once, at pipeline-registration
+time in `NewCombatService`, and firing is a single pass down the ordered
+subscriber list.
+
+This replaces the older "CombatService maintains three Register* callback
+slices" design. There is no `combat_events.go` file, no `Register*` method,
+and no `ClearCallbacks` method — GUI callbacks are now single-valued fields
+that are rebound on every combat mode initialization.
 
 ### 9.1 Architecture Overview
 
-The hook system creates a clean separation between combat logic (write path) and cache management (invalidation path):
-
 ```
-Combat System (Write Path)          Hook System (Connector)          Cache Layer (Read Path)
-────────────────────────            ───────────────────────          ──────────────────────
-CombatActionSystem.ExecuteAttack    →  OnAttackComplete hook   →    SquadInfoCache.MarkDirty()
-CombatMovementSystem.MoveSquad      →  OnMoveComplete hook     →    SquadInfoCache.MarkDirty()
-TurnManager.EndTurn                 →  OnTurnEnd hook          →    SquadInfoCache.MarkAllDirty()
+Combat System (Write Path)         PowerPipeline (Dispatcher)         Observers (Read Path)
+──────────────────────────         ────────────────────────           ──────────────────────
+CombatActionSystem.ExecuteAttack   ─►  FireAttackComplete      ─►    ArtifactDispatcher
+CombatMovementSystem.MoveSquad     ─►  FireMoveComplete        ─►    SquadPerkDispatcher
+TurnManager.EndTurn                ─►  FireTurnEnd             ─►    GUI (SquadInfoCache, visuals)
+TurnManager (post-reset)           ─►  FirePostReset
 ```
 
 **Key Design Principles:**
-- **Orthogonal Concerns:** Combat logic focuses on game rules; cache invalidation is handled separately via hooks
-- **Single Registration Point:** All cache invalidation callbacks registered in one place (combatmode.go)
-- **Automatic Propagation:** Hooks fire for both player actions and AI actions (no special cases)
-- **Lifecycle Management:** Callbacks cleared on combat exit to prevent stale references
+- **Single dispatcher:** `PowerPipeline` owns the ordered subscriber list for
+  each event; subsystems fire directly into it.
+- **Order established at registration:** `NewCombatService` registers
+  subscribers in the exact firing order: **artifacts → perks → GUI**.
+- **Orthogonal concerns:** Combat systems fire raw hooks; pipeline subscribers
+  decide what to do (charge tracking, perk tracking, cache invalidation, visuals).
+- **Single GUI binding:** GUI callbacks are single-valued fields
+  (`onAttackCompleteGUI`, `onMoveCompleteGUI`, `onTurnEndGUI`) set via
+  `SetOn*CompleteGUI` methods — assigning a new callback replaces the previous one.
 
 **Files Involved:**
-- `tactical/combatservices/combat_events.go` - Hook callback type definitions
-- `tactical/combatservices/combat_service.go` - Hook registration and callback storage
-- `tactical/combat/combatactionsystem.go` - Fires OnAttackComplete
-- `tactical/combat/combatmovementsystem.go` - Fires OnMoveComplete
-- `tactical/combat/turnmanager.go` - Fires OnTurnEnd
-- `gui/guicombat/combatmode.go` - Registers cache invalidation callbacks
+- `tactical/powers/powercore/pipeline.go` — `PowerPipeline` (ordered subscriber lists for PostReset, AttackComplete, MoveComplete, TurnEnd)
+- `tactical/powers/artifacts/dispatcher.go` — `ArtifactDispatcher`
+- `tactical/powers/artifacts/artifactcharges.go` — `ArtifactChargeTracker`
+- `tactical/powers/perks/dispatcher.go` — `SquadPerkDispatcher`
+- `tactical/combat/combatservices/combat_service.go` — Wiring: creates pipeline, registers subscribers, exposes `SetOn*CompleteGUI` methods
+- `tactical/combat/combatcore/combatactionsystem.go` — Raw `SetOnAttackComplete` hook forwards to `powerPipeline.FireAttackComplete`
+- `tactical/combat/combatcore/combatmovementsystem.go` — Raw `SetOnMoveComplete` hook
+- `tactical/combat/combatcore/turnmanager.go` — Raw `SetOnTurnEnd` and `SetPostResetHook`
+- `gui/guicombat/combatmode.go` — `registerCombatCallbacks` binds the three GUI callbacks
 
 ---
 
-### 9.2 The Three Combat Hooks
+### 9.2 The Four Pipeline Events
 
-#### 9.2.1 OnAttackComplete Hook
+`PowerPipeline` (defined in `tactical/powers/powercore/pipeline.go`) exposes
+four lifecycle events. Each has an `On<Event>` method to register a subscriber
+and a `Fire<Event>` method that the combat subsystems call when their action
+finishes.
 
-**Purpose:** Invalidate squad caches after combat damage is applied.
-
-**Fired By:** `CombatActionSystem.ExecuteAttackAction()` (combatactionsystem.go:168-170)
 ```go
-// After all damage applied and squads potentially destroyed
-if cas.onAttackComplete != nil {
-    cas.onAttackComplete(attackerID, defenderID, result)
+type PowerPipeline struct {
+    postReset      []PostResetHandler
+    attackComplete []AttackCompleteHandler
+    turnEnd        []TurnEndHandler
+    moveComplete   []MoveCompleteHandler
 }
 ```
 
-**Registered At:** `CombatService.NewCombatService()` (combat_service.go:71-75)
-```go
-combatActSystem.SetOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-    for _, fn := range cs.onAttackComplete {
-        fn(attackerID, defenderID, result)
-    }
-})
-```
+| Event            | Handler signature                                                                 | Fired by                            |
+|------------------|-----------------------------------------------------------------------------------|-------------------------------------|
+| PostReset        | `func(factionID ecs.EntityID, squadIDs []ecs.EntityID)`                          | `TurnManager` (post-reset hook)     |
+| AttackComplete   | `func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)`    | `CombatActionSystem.ExecuteAttackAction` |
+| MoveComplete     | `func(squadID ecs.EntityID)`                                                     | `CombatMovementSystem.MoveSquad`    |
+| TurnEnd          | `func(round int)`                                                                | `TurnManager.EndTurn`               |
 
-**GUI Callback:** `combatmode.go:111-120`
-```go
-cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-    cm.Queries.MarkSquadDirty(attackerID)  // Attacker HP/action state changed
-    cm.Queries.MarkSquadDirty(defenderID)  // Defender HP changed
-    if result.AttackerDestroyed {
-        cm.Queries.InvalidateSquad(attackerID)  // Complete removal
-    }
-    if result.TargetDestroyed {
-        cm.Queries.InvalidateSquad(defenderID)  // Complete removal
-    }
-})
-```
+#### 9.2.1 OnAttackComplete
 
-**What Gets Invalidated:**
-- Attacker squad cache (HP, action state)
-- Defender squad cache (HP, potentially destroyed units)
-- Complete removal for destroyed squads (InvalidateSquad vs MarkDirty)
+**What runs (in registration order):**
+1. `ArtifactDispatcher.DispatchOnAttackComplete` — artifact reactions, charge decrement
+2. `SquadPerkDispatcher.DispatchAttackTracking` — perk bookkeeping (attacks landed, hits taken)
+3. GUI callback (set by `registerCombatCallbacks`):
+   ```go
+   cm.Queries.MarkSquadDirty(attackerID)
+   cm.Queries.MarkSquadDirty(defenderID)
+   if result.AttackerDestroyed { cm.Queries.InvalidateSquad(attackerID) }
+   if result.TargetDestroyed   { cm.Queries.InvalidateSquad(defenderID) }
+   ```
 
-**When It Fires:**
-- After all unit attacks processed
-- After counterattacks resolved
-- After damage applied to ECS components
-- After dead units disposed
-- After squads potentially destroyed
+**Fires after:** all unit attacks processed, counterattacks resolved, damage
+applied, dead units disposed, and squad-destroyed flags computed.
 
 ---
 
-#### 9.2.2 OnMoveComplete Hook
+#### 9.2.2 OnMoveComplete
 
-**Purpose:** Invalidate squad caches after movement completes.
+**What runs (in registration order):**
+1. `SquadPerkDispatcher.DispatchMoveTracking` — perk move-based triggers
+2. GUI callback:
+   ```go
+   cm.Queries.MarkSquadDirty(squadID)
+   ```
 
-**Fired By:** `CombatMovementSystem.MoveSquad()` (combatmovementsystem.go:109-112)
-```go
-// After squad and members moved atomically
-if ms.onMoveComplete != nil {
-    ms.onMoveComplete(squadID)
-}
-```
-
-**Registered At:** `CombatService.NewCombatService()` (combat_service.go:77-81)
-```go
-movementSystem.SetOnMoveComplete(func(squadID ecs.EntityID) {
-    for _, fn := range cs.onMoveComplete {
-        fn(squadID)
-    }
-})
-```
-
-**GUI Callback:** `combatmode.go:122-124`
-```go
-cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
-    cm.Queries.MarkSquadDirty(squadID)  // Position and movement remaining changed
-})
-```
-
-**What Gets Invalidated:**
-- Squad position cache
-- Movement remaining (action state)
-- HasMoved flag
-
-**When It Fires:**
-- After PositionComponent updated
-- After PositionSystem updated
-- After movement cost deducted
-- After HasMoved flag set
+**Fires after:** `PositionComponent` updated for every squad member,
+`GlobalPositionSystem` updated, movement cost deducted, and `HasMoved` flag set.
 
 ---
 
-#### 9.2.3 OnTurnEnd Hook
+#### 9.2.3 OnTurnEnd
 
-**Purpose:** Invalidate all caches and update threat evaluations at turn boundaries.
+**What runs (in registration order):**
+1. `ArtifactDispatcher.DispatchOnTurnEnd` — turn-end artifact effects and charge refresh
+2. `SquadPerkDispatcher.DispatchRoundEnd` — perk round-end bookkeeping
+3. GUI callback:
+   ```go
+   cm.Queries.MarkAllSquadsDirty()            // All action states reset
+   cm.visualization.UpdateThreatManagers()    // Recalculate threat layers
+   cm.visualization.UpdateThreatEvaluator()   // Update AI evaluation
+   ```
 
-**Fired By:** `TurnManager.EndTurn()` (turnmanager.go:145-148)
-```go
-// After turn index advanced and action states reset
-if tm.onTurnEnd != nil {
-    tm.onTurnEnd(turnState.CurrentRound)
-}
-```
-
-**Registered At:** `CombatService.NewCombatService()` (combat_service.go:83-87)
-```go
-turnManager.SetOnTurnEnd(func(round int) {
-    for _, fn := range cs.onTurnEnd {
-        fn(round)
-    }
-})
-```
-
-**GUI Callback:** `combatmode.go:126-130`
-```go
-cm.combatService.RegisterOnTurnEnd(func(round int) {
-    cm.Queries.MarkAllSquadsDirty()            // All action states reset
-    cm.visualization.UpdateThreatManagers()     // Recalculate threat layers
-    cm.visualization.UpdateThreatEvaluator()    // Update AI evaluation
-})
-```
-
-**What Gets Invalidated:**
-- All squad caches (action states reset for new faction)
-- Threat evaluation layers (AI needs fresh data)
-- Composite threat evaluators (position-based AI scoring)
-
-**When It Fires:**
-- After turn index incremented
-- After round number potentially incremented
-- After new faction's action states reset
+**Fires after:** turn index incremented, round number potentially incremented,
+next faction's action states reset.
 
 ---
 
-### 9.3 Hook Registration Flow
+#### 9.2.4 OnPostReset
 
-**Step 1: Combat Service Construction** (`combat_service.go:48-89`)
+**What runs (in registration order):**
+1. `ArtifactDispatcher.DispatchPostReset` — artifact setup (e.g. Deadlock Shackles must lock before perk TurnStart sees the state)
+2. `SquadPerkDispatcher.DispatchTurnStart` — per-round perk start-of-turn hooks
 
-The CombatService constructor creates all combat systems and wires their internal hooks to forward to registered GUI callbacks:
+**Fires after:** action states have been reset for the faction whose turn is
+about to begin, but before any AI or player input runs. No GUI callback is
+registered on this event.
+
+---
+
+### 9.3 Pipeline Wiring Flow
+
+**Step 1: `NewCombatService` registers subscribers** (`tactical/combat/combatservices/combat_service.go`)
+
+All subscribers are appended to the pipeline in a single block. The order in
+this block is exactly the order in which they fire at runtime.
 
 ```go
-func NewCombatService(manager *common.EntityManager) *CombatService {
-    // ... create systems ...
+cs.powerPipeline = &powercore.PowerPipeline{}
 
-    cs := &CombatService{
-        // ... system fields ...
-        onAttackComplete: []OnAttackCompleteFunc{},  // Empty callback slices
-        onMoveComplete:   []OnMoveCompleteFunc{},
-        onTurnEnd:        []OnTurnEndFunc{},
+// PostReset: artifacts first (e.g. Deadlock Shackles), then perk TurnStart
+cs.powerPipeline.OnPostReset(cs.artifactDispatcher.DispatchPostReset)
+cs.powerPipeline.OnPostReset(func(factionID ecs.EntityID, squadIDs []ecs.EntityID) {
+    if cs.perkDispatcher != nil {
+        cs.perkDispatcher.DispatchTurnStart(squadIDs, cs.TurnManager.GetCurrentRound(), cs.EntityManager)
     }
+})
 
-    // Wire system hooks to forward to registered callbacks
-    combatActSystem.SetOnAttackComplete(func(...) {
-        for _, fn := range cs.onAttackComplete { fn(...) }
-    })
+// AttackComplete: artifacts → perk attack tracking → GUI
+cs.powerPipeline.OnAttackComplete(cs.artifactDispatcher.DispatchOnAttackComplete)
+cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+    if cs.perkDispatcher != nil {
+        cs.perkDispatcher.DispatchAttackTracking(attackerID, defenderID, cs.EntityManager)
+    }
+})
+cs.powerPipeline.OnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+    if cs.onAttackCompleteGUI != nil {
+        cs.onAttackCompleteGUI(attackerID, defenderID, result)
+    }
+})
 
-    movementSystem.SetOnMoveComplete(func(...) {
-        for _, fn := range cs.onMoveComplete { fn(...) }
-    })
+// TurnEnd: artifacts → perk round-end → GUI
+cs.powerPipeline.OnTurnEnd(cs.artifactDispatcher.DispatchOnTurnEnd)
+cs.powerPipeline.OnTurnEnd(func(round int) {
+    if cs.perkDispatcher != nil {
+        cs.perkDispatcher.DispatchRoundEnd(cs.EntityManager)
+    }
+})
+cs.powerPipeline.OnTurnEnd(func(round int) {
+    if cs.onTurnEndGUI != nil { cs.onTurnEndGUI(round) }
+})
 
-    turnManager.SetOnTurnEnd(func(...) {
-        for _, fn := range cs.onTurnEnd { fn(...) }
-    })
+// MoveComplete: perk move tracking → GUI
+cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
+    if cs.perkDispatcher != nil {
+        cs.perkDispatcher.DispatchMoveTracking(squadID, cs.EntityManager)
+    }
+})
+cs.powerPipeline.OnMoveComplete(func(squadID ecs.EntityID) {
+    if cs.onMoveCompleteGUI != nil { cs.onMoveCompleteGUI(squadID) }
+})
 
-    return cs
-}
+// Subsystems fire directly into the pipeline — no intermediate wrapper methods.
+combatActSystem.SetOnAttackComplete(cs.powerPipeline.FireAttackComplete)
+movementSystem.SetOnMoveComplete(cs.powerPipeline.FireMoveComplete)
+turnManager.SetOnTurnEnd(cs.powerPipeline.FireTurnEnd)
+turnManager.SetPostResetHook(cs.powerPipeline.FirePostReset)
 ```
 
-**Step 2: GUI Registration** (`combatmode.go:110-130`)
+**Step 2: GUI binds its three callbacks** (`gui/guicombat/combatmode.go::registerCombatCallbacks`, lines 374–395)
 
-During combat mode initialization, the GUI registers cache invalidation callbacks:
+Combat mode calls `SetOn*CompleteGUI` to install the cache-invalidation
+callbacks. Because these are single-valued fields, re-initializing combat
+mode simply overwrites the previous closure:
 
 ```go
-func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
-    // ... create combat service and UI ...
-
-    // Register cache invalidation callbacks
-    cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+func (cm *CombatMode) registerCombatCallbacks() {
+    cm.combatService.SetOnAttackCompleteGUI(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
         cm.Queries.MarkSquadDirty(attackerID)
         cm.Queries.MarkSquadDirty(defenderID)
         if result.AttackerDestroyed { cm.Queries.InvalidateSquad(attackerID) }
-        if result.TargetDestroyed { cm.Queries.InvalidateSquad(defenderID) }
+        if result.TargetDestroyed   { cm.Queries.InvalidateSquad(defenderID) }
     })
 
-    cm.combatService.RegisterOnMoveComplete(func(squadID ecs.EntityID) {
+    cm.combatService.SetOnMoveCompleteGUI(func(squadID ecs.EntityID) {
         cm.Queries.MarkSquadDirty(squadID)
     })
 
-    cm.combatService.RegisterOnTurnEnd(func(round int) {
+    cm.combatService.SetOnTurnEndGUI(func(round int) {
         cm.Queries.MarkAllSquadsDirty()
         cm.visualization.UpdateThreatManagers()
         cm.visualization.UpdateThreatEvaluator()
     })
-
-    return nil
 }
 ```
 
-**Step 3: Hook Firing During Combat**
+**Step 3: Firing during combat**
 
-When combat actions occur, the systems fire their hooks which propagate to all registered callbacks:
-
-```go
-// Example: Attack flow
-ExecuteAttackAction() → applies damage → cas.onAttackComplete(attackerID, defenderID, result)
-    → CombatService forwards to registered callbacks
-    → GUI callback: cm.Queries.MarkSquadDirty(attackerID)
-    → SquadInfoCache marks squad dirty
-    → Next UI update recomputes squad info from ECS
+```
+ExecuteAttackAction() applies damage
+  → combatActSystem.onAttackComplete(attackerID, defenderID, result)
+    → powerPipeline.FireAttackComplete iterates subscribers in order:
+        1. ArtifactDispatcher.DispatchOnAttackComplete
+        2. SquadPerkDispatcher.DispatchAttackTracking
+        3. onAttackCompleteGUI → MarkSquadDirty / InvalidateSquad
+  → SquadInfoCache recomputes on next GetSquadInfo call
 ```
 
 ---
 
 ### 9.4 Manual Invalidation Bypass Cases
 
-Three special cases bypass the hook system and manually invalidate caches because they modify game state outside normal combat flow:
+Three actions skip the pipeline and invalidate caches directly because they
+modify game state outside the normal combat flow (no subsystem hook fires):
 
 #### 9.4.1 Undo Move
 
-**Location:** `combat_action_handler.go:199-214`
+**Location:** `gui/guicombat/combat_action_handler.go:166–178`
 
-**Why Manual:** Undo reverses a move that already fired OnMoveComplete. Re-firing the hook would be incorrect.
+Undo reverses a move whose `OnMoveComplete` already fired. Re-firing the hook
+would double-count perk/move tracking, so the handler invalidates directly.
 
 ```go
 func (cah *CombatActionHandler) UndoLastMove() {
+    if !cah.CanUndoMove() { return }
     result := cah.commandExecutor.Undo()
-
     if result.Success {
-        // Manual invalidation - undo doesn't fire hooks
         cah.deps.Queries.MarkAllSquadsDirty()
-        cah.addLog(fmt.Sprintf("⟲ Undid: %s", result.Description))
     }
 }
 ```
-
-**Invalidation Strategy:** MarkAllSquadsDirty() instead of per-squad (conservative, ensures correctness)
 
 ---
 
 #### 9.4.2 Redo Move
 
-**Location:** `combat_action_handler.go:217-232`
-
-**Why Manual:** Redo re-applies a move that was undone. Hook already fired during original move.
+**Location:** `gui/guicombat/combat_action_handler.go:180–192`
 
 ```go
 func (cah *CombatActionHandler) RedoLastMove() {
+    if !cah.CanRedoMove() { return }
     result := cah.commandExecutor.Redo()
-
     if result.Success {
-        // Manual invalidation - redo doesn't fire hooks
         cah.deps.Queries.MarkAllSquadsDirty()
-        cah.addLog(fmt.Sprintf("⟳ Redid: %s", result.Description))
     }
 }
 ```
-
-**Invalidation Strategy:** MarkAllSquadsDirty() for safety
 
 ---
 
 #### 9.4.3 Debug Kill Squad
 
-**Location:** `combat_action_handler.go:283-302`
-
-**Why Manual:** Debug action bypasses normal combat flow. No damage applied, squad just removed.
+**Location:** `gui/guicombat/combat_action_handler.go:250–263`
 
 ```go
 func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
-    // Use normal cleanup path
-    combat.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager)
-
-    // Manual invalidation - debug actions don't fire hooks
+    if cah.deps.BattleState.SelectedSquadID == squadID {
+        cah.deps.BattleState.SelectedSquadID = 0
+    }
+    if err := combatstate.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
+        return
+    }
     cah.deps.Queries.InvalidateSquad(squadID)
-
-    cah.addLog(fmt.Sprintf("[DEBUG] Killed squad: %s", squadName))
 }
 ```
 
-**Invalidation Strategy:** InvalidateSquad() (complete removal, not MarkDirty)
+`InvalidateSquad` (full removal from the cache) rather than `MarkSquadDirty`
+because the squad no longer exists.
 
 ---
 
-### 9.5 Cleanup and Lifecycle Management
+### 9.5 Callback Lifecycle
 
-#### Clearing Callbacks on Combat Exit
-
-**Location:** `combat_service.go:269` (called from `CleanupCombat()`)
+There is no `ClearCallbacks` method and `CleanupCombat` does not touch the GUI
+callback fields. GUI callbacks are single-valued fields:
 
 ```go
-func (cs *CombatService) ClearCallbacks() {
-    cs.onAttackComplete = nil
-    cs.onMoveComplete = nil
-    cs.onTurnEnd = nil
+type CombatService struct {
+    onAttackCompleteGUI func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
+    onMoveCompleteGUI   func(squadID ecs.EntityID)
+    onTurnEndGUI        func(round int)
 }
 ```
 
-**Why This Matters:**
-- GUI state is torn down when exiting combat mode
-- Callbacks reference `cm.Queries` and `cm.visualization` which become invalid
-- Leaving callbacks registered would cause nil pointer dereferences if systems fire hooks after mode exit
-- Called during `CleanupCombat()` before entity disposal
+Each combat mode initialization calls `registerCombatCallbacks`, which
+overwrites the previous closures. The closures capture `cm.Queries` and
+`cm.visualization`, which are reconstructed together with the callbacks, so
+there is no stale-reference hazard as long as pipeline firing is paused while
+combat mode is being rebuilt (enforced by the combat mode lifecycle — the
+pipeline is not fired outside an initialized combat mode).
 
-**Call Site:** `combat_service.go:266-289`
-```go
-func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) {
-    // Clear registered callbacks (they reference GUI state being torn down)
-    cs.ClearCallbacks()
-
-    // ... rest of cleanup ...
-}
-```
+If a future change introduces a long-lived CombatService that outlives the
+GUI, add an explicit clear step here.
 
 ---
 
 ### 9.6 Read Path vs Write Path Separation
 
-The hook system maintains a clean separation between data access patterns:
+The pipeline maintains a clean separation between data access patterns:
 
 #### Write Path (Combat Logic)
-- `CombatActionSystem.ExecuteAttackAction()` - Modifies HP, action states
-- `CombatMovementSystem.MoveSquad()` - Modifies positions, movement remaining
-- `TurnManager.EndTurn()` - Modifies turn state, resets actions
-- These systems NEVER query caches or invalidate caches
-- They only fire hooks at completion boundaries
+- `CombatActionSystem.ExecuteAttackAction()` — Modifies HP, action states
+- `CombatMovementSystem.MoveSquad()` — Modifies positions, movement remaining
+- `TurnManager.EndTurn()` / post-reset hook — Modifies turn state, resets actions
+- These systems never query caches or invalidate caches
+- They only call `powerPipeline.Fire<Event>` at completion boundaries
 
 #### Read Path (GUI and AI)
-- `SquadInfoCache.GetSquadInfo()` - Reads aggregate HP, action states
-- `CombatQueryCache.FindActionStateBySquadID()` - Reads action availability
-- `GUIQueries.GetSquadInfo()` - Reads comprehensive squad data
-- These systems NEVER modify game state
-- They only react to hook callbacks by marking dirty flags
+- `SquadInfoCache.GetSquadInfo()` — Reads aggregate HP, action states
+- `CombatQueryCache.FindActionStateBySquadID()` — Reads action availability
+- `GUIQueries.GetSquadInfo()` — Reads comprehensive squad data
+- These systems never modify game state
+- They only react to pipeline events by marking dirty flags
 
-#### Hook System (Connector)
-- Bridges write path to read path
-- Fires at discrete event boundaries (attack complete, move complete, turn end)
-- Allows multiple observers (GUI cache, AI cache, visualization)
-- Decouples combat logic from cache management
+#### PowerPipeline (Connector)
+- Single ordered-dispatch layer between write and read paths
+- Fires at discrete event boundaries (attack / move / turn-end / post-reset)
+- Supports multiple observers per event (artifacts, perks, GUI)
+- Registration order in `NewCombatService` is the firing order
 
-**Benefit:** Combat systems can be tested without GUI, AI can be tested without graphics, caches can be validated independently.
+**Benefit:** Combat systems can be tested without GUI, AI can be tested without
+graphics, and new power-system subscribers (new artifact families, new perk
+categories, analytics exports) can be added with a single `OnX` call instead
+of editing four parallel `Fire*` method bodies.
 
 ---
 
-### 9.7 Hook System Benefits
+### 9.7 Pipeline Benefits
 
 **Automatic Invalidation:**
 - No manual invalidation calls scattered in combat logic
-- Hooks fire for both player and AI actions (no special cases)
-- Single registration point makes invalidation logic auditable
+- Pipeline fires for both player and AI actions (no special cases)
+- Registration block in `NewCombatService` is the single place ordering is declared
 
 **Correct Timing:**
-- Hooks fire AFTER state modifications complete
+- Subscribers fire AFTER state modifications complete
 - Caches never see intermediate/invalid state
-- Hooks fire atomically (no interleaving with game logic)
+- Each `Fire<Event>` call iterates in deterministic registration order
 
 **Multiple Observers:**
-- GUI caches invalidate on hooks
-- AI threat layers invalidate on hooks
-- Visualization updates on hooks
-- Easy to add new observers without modifying combat systems
+- `ArtifactDispatcher` reacts to attack/turn-end/post-reset
+- `SquadPerkDispatcher` reacts to attack/move/turn-end/post-reset
+- GUI callback marks caches dirty and refreshes visualization
+- Adding a new observer is one `powerPipeline.OnX(handler)` call
 
 **Lifecycle Safety:**
-- Callbacks cleared on combat exit
-- No stale references to torn-down GUI state
-- Systems can be tested without GUI (hooks optional)
+- GUI callbacks are single-valued fields; re-initialization overwrites them
+- Artifact charge state lives in a long-lived `ArtifactChargeTracker` that is
+  `Reset()` per battle, so the dispatcher's bindings on the pipeline stay valid
+  across battles
 
 **Performance:**
 - Invalidation only at discrete events (not every frame)
-- Lazy recomputation (caches rebuild on next access, not immediately)
-- Minimal overhead (simple function calls, no complex event systems)
+- Lazy recomputation (caches rebuild on next access)
+- Minimal overhead — a `FireX` call is a for-loop over a small subscriber slice
 
 ---
 
@@ -1330,70 +1388,68 @@ The hook system maintains a clean separation between data access patterns:
 
 #### Pattern 1: Marking Individual Squads Dirty
 
-Use when squad state changes but squad still exists:
+Use when squad state changes but the squad still exists. Wire inside the GUI
+callback that `registerCombatCallbacks` installs:
 
 ```go
-cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
-    cm.Queries.MarkSquadDirty(attackerID)   // HP or action state changed
-    cm.Queries.MarkSquadDirty(defenderID)   // HP changed
+cm.combatService.SetOnAttackCompleteGUI(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
+    cm.Queries.MarkSquadDirty(attackerID)
+    cm.Queries.MarkSquadDirty(defenderID)
 })
 ```
 
 #### Pattern 2: Invalidating Destroyed Squads
 
-Use when squad is completely removed from combat:
-
 ```go
 if result.TargetDestroyed {
-    cm.Queries.InvalidateSquad(defenderID)  // Complete removal from cache
+    cm.Queries.InvalidateSquad(defenderID)
 }
 ```
 
-**Difference:**
-- `MarkSquadDirty()` - Flags for recomputation, squad still exists
-- `InvalidateSquad()` - Complete removal, squad no longer queryable
+- `MarkSquadDirty()` — flags for recomputation, squad still exists
+- `InvalidateSquad()` — complete removal, squad no longer queryable
 
 #### Pattern 3: Marking All Squads Dirty
 
-Use when global state changes (turn boundaries, undo/redo):
-
 ```go
-cm.combatService.RegisterOnTurnEnd(func(round int) {
-    cm.Queries.MarkAllSquadsDirty()  // All action states reset
+cm.combatService.SetOnTurnEndGUI(func(round int) {
+    cm.Queries.MarkAllSquadsDirty()
 })
 ```
 
-#### Pattern 4: Hook + Cache Update
+#### Pattern 4: Adding a New Pipeline Subscriber
 
-Use when hooks trigger both cache invalidation and visualization updates:
+To have a new system react to combat lifecycle events (e.g. analytics,
+battle recorder, a future power category), append a subscriber in
+`NewCombatService` in the correct order relative to artifacts / perks / GUI:
 
 ```go
-cm.combatService.RegisterOnTurnEnd(func(round int) {
-    cm.Queries.MarkAllSquadsDirty()            // Cache invalidation
-    cm.visualization.UpdateThreatManagers()     // Visualization update
-})
+cs.powerPipeline.OnAttackComplete(myAnalytics.RecordAttack)
 ```
+
+No other code needs to change — subsystems already fire directly into
+`powerPipeline.Fire*`.
 
 ---
 
 ### 9.9 Testing Cache Invalidation
 
-#### Verifying Hook Firing
+#### Verifying Pipeline Firing
 
 ```go
-func TestAttackFiresHook(t *testing.T) {
-    hookFired := false
-    attackerID := ecs.EntityID(0)
+func TestAttackFiresPipeline(t *testing.T) {
+    fired := false
+    var receivedAttacker ecs.EntityID
 
-    combatService.RegisterOnAttackComplete(func(attacker, defender ecs.EntityID, result *squads.CombatResult) {
-        hookFired = true
-        attackerID = attacker
+    combatService.SetOnAttackCompleteGUI(func(attacker, defender ecs.EntityID, result *combattypes.CombatResult) {
+        fired = true
+        receivedAttacker = attacker
     })
 
     combatService.CombatActSystem.ExecuteAttackAction(squadA, squadB)
 
-    assert.True(t, hookFired, "OnAttackComplete should fire")
-    assert.Equal(t, squadA, attackerID, "Hook should receive correct attacker ID")
+    assert.True(t, fired, "GUI attack callback should fire")
+    assert.Equal(t, squadA, receivedAttacker, "Callback should receive correct attacker ID")
 }
 ```
 
@@ -1401,30 +1457,29 @@ func TestAttackFiresHook(t *testing.T) {
 
 ```go
 func TestCacheInvalidationOnAttack(t *testing.T) {
-    // Get initial cached data
     info1 := guiQueries.GetSquadInfo(squadA)
 
-    // Perform attack
     combatService.CombatActSystem.ExecuteAttackAction(squadA, squadB)
 
-    // Get updated cached data
     info2 := guiQueries.GetSquadInfo(squadA)
 
-    // Verify action state changed
     assert.NotEqual(t, info1.HasActed, info2.HasActed, "Cache should reflect new action state")
 }
 ```
 
-#### Verifying Callback Cleanup
+#### Verifying Callback Rebinding
 
 ```go
-func TestCallbacksClearedOnExit(t *testing.T) {
-    combatService.RegisterOnAttackComplete(func(...) { /* callback */ })
+func TestGUICallbackIsOverwritten(t *testing.T) {
+    firstFired, secondFired := false, false
 
-    combatService.CleanupCombat(enemySquads)
+    combatService.SetOnAttackCompleteGUI(func(...) { firstFired = true })
+    combatService.SetOnAttackCompleteGUI(func(...) { secondFired = true })
 
-    // Verify no callbacks remain
-    assert.Empty(t, combatService.onAttackComplete, "Callbacks should be cleared")
+    combatService.CombatActSystem.ExecuteAttackAction(squadA, squadB)
+
+    assert.False(t, firstFired, "Replaced callback must not fire")
+    assert.True(t, secondFired, "Latest callback must fire")
 }
 ```
 
@@ -1433,16 +1488,15 @@ func TestCallbacksClearedOnExit(t *testing.T) {
 ### 9.10 Future Improvements
 
 **Potential Enhancements:**
-1. **Hook Metrics** - Track hook firing frequency for performance analysis
-2. **Conditional Callbacks** - Register callbacks with predicates (only fire for specific factions)
-3. **Priority Ordering** - Allow callbacks to specify execution order
-4. **Deferred Invalidation** - Batch invalidations at frame boundaries
-5. **Hook Replay** - Record and replay hook sequences for testing
+1. **Pipeline Metrics** — Track subscriber count and per-event firing frequency for profiling
+2. **Conditional Subscribers** — Register with predicates (only fire for specific factions/squads)
+3. **Deferred Invalidation** — Batch cache invalidations at frame boundaries instead of on every Fire call
+4. **Pipeline Replay** — Record and replay event sequences for regression tests
 
 **Current Limitations:**
-- No ordering guarantees for multiple registered callbacks
-- No error handling if callback throws (would need panic recovery)
-- No way to unregister specific callbacks (only ClearCallbacks() clears all)
+- Subscribers fire in strict registration order; inserting a new one "between" artifacts and perks requires editing `NewCombatService`
+- No panic recovery around individual subscribers — a panic aborts the whole Fire
+- No way to unregister a single subscriber (the pipeline is rebuilt only by constructing a fresh `CombatService`)
 
 ---
 
@@ -1478,34 +1532,32 @@ pos.X = newX
 pos.Y = newY
 ```
 
-**Hook-Based Invalidation (Combat Systems):** Register callbacks once, fire automatically
+**Pipeline-Based Invalidation (Combat Systems):** Bind GUI callbacks once, fire automatically
 ```go
-// ✅ CORRECT - Register callbacks during mode initialization
-cm.combatService.RegisterOnAttackComplete(func(attackerID, defenderID ecs.EntityID, result *squads.CombatResult) {
+// ✅ CORRECT — bind GUI callbacks during combat mode initialization
+cm.combatService.SetOnAttackCompleteGUI(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
     cm.Queries.MarkSquadDirty(attackerID)
     cm.Queries.MarkSquadDirty(defenderID)
     if result.TargetDestroyed { cm.Queries.InvalidateSquad(defenderID) }
 })
 
-// ✅ CORRECT - Combat systems fire hooks, don't invalidate caches directly
-if cas.onAttackComplete != nil {
-    cas.onAttackComplete(attackerID, defenderID, result)
-}
+// ✅ CORRECT — combat systems fire the pipeline; the pipeline fans out to artifacts/perks/GUI
+combatActSystem.SetOnAttackComplete(cs.powerPipeline.FireAttackComplete)
 
-// ❌ WRONG - Combat logic should NOT invalidate caches directly
+// ❌ WRONG — combat logic should NOT touch caches directly
 combatActSystem.ExecuteAttack(...)
-guiQueries.MarkSquadDirty(squadID)  // This should be in a hook callback
+guiQueries.MarkSquadDirty(squadID)  // Belongs in the GUI callback
 ```
 
-**Manual Invalidation (Special Cases):** Only for actions that bypass hooks
+**Manual Invalidation (Special Cases):** Only for actions that bypass the pipeline
 ```go
-// Undo/Redo - hooks already fired during original action
+// Undo/Redo — original move already fired through the pipeline; bypass now
 cah.commandExecutor.Undo()
-cah.deps.Queries.MarkAllSquadsDirty()  // Manual invalidation required
+cah.deps.Queries.MarkAllSquadsDirty()
 
-// Debug actions - bypass normal combat flow
-combat.RemoveSquadFromMap(squadID, manager)
-queries.InvalidateSquad(squadID)  // Manual invalidation required
+// Debug actions — bypass normal combat flow entirely
+combatstate.RemoveSquadFromMap(squadID, manager)
+queries.InvalidateSquad(squadID)
 ```
 
 **Event-Driven Caches (Non-Combat):** Explicit invalidation at event sites
@@ -1534,8 +1586,8 @@ cachedList.MarkDirty()
 
 **Threat Layers:** Recomputed at lifecycle points (no dirty flag)
 ```go
-// Via OnTurnEnd hook (automatic)
-cm.combatService.RegisterOnTurnEnd(func(round int) {
+// Via the GUI OnTurnEnd callback (installed by registerCombatCallbacks)
+cm.combatService.SetOnTurnEndGUI(func(round int) {
     cm.visualization.UpdateThreatManagers()
     cm.visualization.UpdateThreatEvaluator()
 })
@@ -1604,27 +1656,27 @@ Consider adding cache statistics:
 
 TinkerRogue uses a layered caching strategy:
 
-1. **ECS Views** - Automatic, always-correct, O(k) queries (foundation)
-2. **Spatial Grids** - O(1) position lookups (critical for gameplay)
-3. **Event-Driven Caches** - Turn-based aggregates (optimal for UI)
-4. **Hook-Based Invalidation** - Automatic cache invalidation via combat events (clean separation)
-5. **Threat Layers** - Round-based AI (expensive computations)
-6. **Rendering Caches** - Frame-level drawing (GPU bottleneck mitigation)
+1. **ECS Views** — Automatic, always-correct, O(k) queries (foundation)
+2. **Spatial Grids** — O(1) position lookups (critical for gameplay)
+3. **Event-Driven Caches** — Turn-based aggregates (optimal for UI)
+4. **PowerPipeline Dispatch** — Ordered artifact/perk/GUI reactions to combat events (clean separation)
+5. **Threat Layers** — Per-turn AI recomputation at lifecycle points
+6. **Rendering Caches** — Frame-level drawing (GPU bottleneck mitigation)
 
 The key insight is matching cache invalidation strategy to data access patterns:
 - **Frame-level:** Clear every frame (sprite batches)
 - **Event-driven:** Invalidate on specific game events (SquadInfoCache)
-- **Hook-based:** Automatic invalidation via registered callbacks (combat caches)
-- **Round-based:** Recompute per turn (threat layers)
+- **Pipeline-driven:** Ordered dispatch to artifact/perk/GUI subscribers (combat caches)
+- **Turn-based:** Recompute at lifecycle points (threat layers)
 - **Viewport-based:** Rebuild on camera movement (tile renderer)
-- **Size-based:** Rebuild on dimension changes (border cache, overlay cache)
+- **Size-based:** Rebuild on dimension changes (border cache, overlay cache, CachedViewport)
 - **Automatic:** ECS Views (no manual management)
 
-**Hook-Based Invalidation Benefits:**
+**PowerPipeline Benefits:**
 - Eliminates manual cache invalidation in combat logic
 - Works for both player and AI actions automatically
 - Clean separation between combat systems (write path) and caches (read path)
-- Single registration point makes invalidation auditable
-- Easy to add new cache observers without modifying combat code
+- Single ordered-subscriber list per event, declared once in `NewCombatService`
+- Easy to add new observers — artifacts, perks, analytics, or any future power category — with one `powerPipeline.OnX(handler)` call
 
 When in doubt, start without caching and profile. Premature caching adds complexity without guaranteed benefit. Let the profiler guide optimization efforts.
