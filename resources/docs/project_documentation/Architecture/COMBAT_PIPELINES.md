@@ -54,9 +54,9 @@ TinkerRogue has five distinct combat entry points, but they all funnel into one 
 2. `combatlifecycle.ExecuteCombatStart` calls `starter.Prepare()` (which sets up ECS factions and squad positions), then calls `encounterService.TransitionToCombat()` (which saves player state, moves the camera, and switches the UI to combat mode).
 3. `CombatMode.Enter()` initializes the turn manager and begins the battle.
 4. When the battle ends, `CombatMode.Exit()` calls `encounterService.ExitCombat()` with the outcome.
-5. `ExitCombat` dispatches to a type-specific **CombatResolver** (via `resolveEncounterOutcome` → `combatlifecycle.ExecuteResolution`), records history, calls `CombatService.CleanupCombat()` for entity disposal (which returns the player squad IDs for a follow-up `StripCombatComponents` call), and fires the post-combat listener for any registered systems (e.g., `RaidRunner`).
+5. `ExitCombat` dispatches to a type-specific **CombatResolver** (via `resolveEncounterOutcome` → `combatlifecycle.ExecuteResolution`), records history, calls `CombatService.TeardownCombat()` for entity disposal (which returns the player squad IDs for a follow-up `StripCombatComponents` call), and fires the post-combat listener for any registered systems (e.g., `RaidRunner`).
 
-The key design decision is that all type-specific behavior is encoded in small, stateless structs (`CombatStarter` for entry, `CombatResolver` for exit), while the shared infrastructure (`ExecuteCombatStart`, `EncounterService.ExitCombat`, `CombatService.CleanupCombat`) is invariant across all combat types.
+The key design decision is that all type-specific behavior is encoded in small, stateless structs (`CombatStarter` for entry, `CombatResolver` for exit), while the shared infrastructure (`ExecuteCombatStart`, `EncounterService.ExitCombat`, `CombatService.TeardownCombat`) is invariant across all combat types.
 
 ---
 
@@ -95,7 +95,7 @@ The `GameModeCoordinator` (`gui/framework/coordinator.go`) owns both `UIModeMana
 ## Core Interfaces and Contracts
 
 All combat-lifecycle contracts live in `mind/combatlifecycle/`:
-- **`contracts.go`** — entry-side types (`CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `CombatStartRollback`, `EncounterCallbacks`, `CombatCleaner`, `CombatExitReason`, the `PostCombatReturnRaid`/`PostCombatReturnDefault` constants).
+- **`contracts.go`** — entry-side types (`CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `CombatStartRollback`, `CombatTeardown`, `CombatExitReason`, the `PostCombatReturnRaid`/`PostCombatReturnDefault` constants). `EncounterController` lives in `mind/encounter/types.go` — it is not a shared contract, only a GUI↔encounter port.
 - **`pipeline.go`** — resolution types (`CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`).
 - **`reward.go`** — generic reward primitives (`Reward`, `GrantTarget`, `Grant`).
 
@@ -163,23 +163,23 @@ type CombatStartRollback interface {
 
 Only `OverworldCombatStarter` implements this. If `TransitionToCombat` fails after `Prepare` has already hidden the encounter sprite, `Rollback` restores the sprite's visibility.
 
-### EncounterCallbacks
+### EncounterController
 
 ```go
-type EncounterCallbacks interface {
-    ExitCombat(reason CombatExitReason, result *EncounterOutcome, cleaner CombatCleaner)
+type EncounterController interface {
+    ExitCombat(reason CombatExitReason, result *EncounterOutcome, cleaner CombatTeardown)
     GetRosterOwnerID() ecs.EntityID
     GetCurrentEncounterID() ecs.EntityID
 }
 ```
 
-The GUI's narrow view of `EncounterService`. `CombatMode` holds this as an interface (not a concrete type), keeping `gui/guicombat` from importing `mind/encounter`.
+The GUI's narrow view of `EncounterService`. `CombatMode` holds this as an interface (not a concrete type), so the GUI depends only on the `EncounterController` surface area — not on `EncounterService`'s full implementation. Defined in `mind/encounter/types.go`.
 
-### CombatCleaner
+### CombatTeardown
 
 ```go
-type CombatCleaner interface {
-    CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
+type CombatTeardown interface {
+    TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
 }
 ```
 
@@ -601,7 +601,7 @@ Activated when: `Type = CombatTypeGarrisonDefense`.
 - Calls `garrison.TransferNodeOwnership(manager, DefendedNodeID, newOwner)` where `newOwner` is the attacking faction type as a string.
 - The node now belongs to the enemy faction.
 
-**Special cleanup:** When `ExitCombat` detects `combatType == CombatTypeGarrisonDefense && result.IsPlayerVictory`, it calls `returnGarrisonSquadsToNode(defendedNodeID)` before `CleanupCombat`. This calls `combatlifecycle.StripCombatComponents` on the garrison squads, removing their `FactionMembershipComponent` and `PositionComponent`, resetting `IsDeployed = false`, but NOT disposing the squad entities. The garrison squads survive and remain in the `garrison.GarrisonData`.
+**Special cleanup:** When `ExitCombat` detects `combatType == CombatTypeGarrisonDefense && result.IsPlayerVictory`, it calls `returnGarrisonSquadsToNode(defendedNodeID)` before `TeardownCombat`. This calls `combatlifecycle.StripCombatComponents` on the garrison squads, removing their `FactionMembershipComponent` and `PositionComponent`, resetting `IsDeployed = false`, but NOT disposing the squad entities. The garrison squads survive and remain in the `garrison.GarrisonData`.
 
 ### Raid Room Resolution
 
@@ -634,9 +634,9 @@ In `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterDa
 
 ## Combat Cleanup
 
-`EncounterService.ExitCombat` calls `combatCleaner.CleanupCombat(enemySquadIDs)` where the cleaner is `CombatService`. The method **returns the player squad IDs**, which `EncounterService` then passes to `combatlifecycle.StripCombatComponents` (calling across the package boundary on the way back to avoid a circular import).
+`EncounterService.ExitCombat` calls `teardown.TeardownCombat(enemySquadIDs)` where `teardown` is the `CombatTeardown` interface satisfied by `CombatService`. The method **returns the player squad IDs**, which `EncounterService` then passes to `combatlifecycle.StripCombatComponents` (calling across the package boundary on the way back to avoid a circular import).
 
-### CombatService.CleanupCombat
+### CombatService.TeardownCombat
 
 **File:** `tactical/combat/combatservices/combat_service.go`
 
@@ -660,7 +660,7 @@ Executed in this order:
 
 9. **Return**: the player squad ID slice.
 
-After `CleanupCombat` returns, `EncounterService.ExitCombat` calls `combatlifecycle.StripCombatComponents` on those IDs, completing the player-squad teardown (position removal, faction membership removal, `IsDeployed = false`).
+After `TeardownCombat` returns, `EncounterService.ExitCombat` calls `combatlifecycle.StripCombatComponents` on those IDs, completing the player-squad teardown (position removal, faction membership removal, `IsDeployed = false`).
 
 GUI callback clearing (attack-complete / move-complete / turn-end) happens separately on combat-mode exit, ensuring stale GUI closures cannot fire against torn-down widgets.
 
@@ -668,9 +668,9 @@ GUI callback clearing (attack-complete / move-complete / turn-end) happens separ
 
 Enemy squads and their units are permanently disposed from the ECS world. They were created specifically for this combat encounter (by the spawning package or taken from a pre-generated raid garrison). After disposal, they cease to exist.
 
-**Exception:** For garrison defense victories, the garrison squads are NOT in `enemySquadIDs` at cleanup time because `returnGarrisonSquadsToNode` ran first and stripped their combat components. Since `CleanupCombat` only disposes squads in the provided `enemySquadIDs` list, the garrison squads survive.
+**Exception:** For garrison defense victories, the garrison squads are NOT in `enemySquadIDs` at cleanup time because `returnGarrisonSquadsToNode` ran first and stripped their combat components. Since `TeardownCombat` only disposes squads in the provided `enemySquadIDs` list, the garrison squads survive.
 
-For raid defeats, garrison squads in the room being fought are pre-created by `GenerateGarrison` and stored in `RoomData.GarrisonSquadIDs`. These ARE disposed by `CleanupCombat` after a defeat or flee (the room's garrison is treated as an enemy squad list). On victory, `RaidRoomResolver` marks them as `IsDestroyed = true` but they remain in ECS until `CleanupCombat` disposes them.
+For raid defeats, garrison squads in the room being fought are pre-created by `GenerateGarrison` and stored in `RoomData.GarrisonSquadIDs`. These ARE disposed by `TeardownCombat` after a defeat or flee (the room's garrison is treated as an enemy squad list). On victory, `RaidRoomResolver` marks them as `IsDestroyed = true` but they remain in ECS until `TeardownCombat` disposes them.
 
 ### Player Squad Cleanup (Strip and Return)
 
@@ -690,11 +690,11 @@ Player squad entities are NOT disposed. They return to their pre-combat state: n
 
 ### Garrison Defense Special Case
 
-For garrison defense victories specifically, `ExitCombat` calls `returnGarrisonSquadsToNode(defendedNodeID)` **before** passing `enemySquadIDs` to `CleanupCombat`. In this pathway:
+For garrison defense victories specifically, `ExitCombat` calls `returnGarrisonSquadsToNode(defendedNodeID)` **before** passing `enemySquadIDs` to `TeardownCombat`. In this pathway:
 
 - In `GarrisonDefenseStarter.Prepare`, the garrison squads join the **player faction** and the generated attackers join the **enemy faction**. So `CombatSetup.EnemySquadIDs` contains the generated attacker squads. The garrison squads are in the player faction.
-- `CleanupCombat(enemySquadIDs)` disposes the generated attacker squads (the enemies in this context) and returns the player faction's squad IDs (which includes the garrison squads).
-- But garrison squads must survive for future use. So before `CleanupCombat`, `returnGarrisonSquadsToNode` calls `StripCombatComponents` on the garrison squads, removing their position and faction membership. When `EncounterService` later calls `StripCombatComponents` on the returned player squad IDs, the garrison squads have no `FactionMembershipComponent` left to strip and are safely skipped.
+- `TeardownCombat(enemySquadIDs)` disposes the generated attacker squads (the enemies in this context) and returns the player faction's squad IDs (which includes the garrison squads).
+- But garrison squads must survive for future use. So before `TeardownCombat`, `returnGarrisonSquadsToNode` calls `StripCombatComponents` on the garrison squads, removing their position and faction membership. When `EncounterService` later calls `StripCombatComponents` on the returned player squad IDs, the garrison squads have no `FactionMembershipComponent` left to strip and are safely skipped.
 
 The garrison squads end up alive in ECS with no position and `IsDeployed = false`, which is exactly the state needed for them to remain in `garrison.GarrisonData.SquadIDs` for future defense.
 
@@ -728,7 +728,8 @@ The following shows import relationships relevant to the combat pipeline. Arrows
 gui/guicombat
   → tactical/combat/combattypes       (CombatResult, DamageModifiers)
   → tactical/combat/combatservices    (CombatService)
-  → mind/combatlifecycle              (CombatExitReason, EncounterCallbacks)
+  → mind/combatlifecycle              (CombatExitReason, EncounterOutcome, CombatTeardown)
+  → mind/encounter                    (EncounterController interface only)
   → mind/ai                           (SetupCombatAI — injected at init time only)
 
 gui/guioverworld
@@ -775,7 +776,7 @@ tactical/combat/combatservices
   → mind/combatlifecycle              (StripCombatComponents — via return-value protocol)
 ```
 
-The critical boundary is that `gui/guicombat` never imports `mind/encounter`. The `EncounterCallbacks` interface in `mind/combatlifecycle/contracts.go` is the bridge, satisfied by `EncounterService` via structural typing.
+The critical boundary is that `gui/guicombat` only touches `mind/encounter` through the `EncounterController` interface in `mind/encounter/types.go` — satisfied by `EncounterService` via structural typing. It does not depend on the concrete service or its internals.
 
 ---
 
@@ -874,7 +875,7 @@ EncounterService.ExitCombat(reason, outcome, combatService)
      ├─── Step 4: RecordEncounterCompletion()
      │       └─→ Clear activeEncounter
      │
-     ├─── Step 5: playerSquadIDs := combatService.CleanupCombat(enemySquadIDs)
+     ├─── Step 5: playerSquadIDs := combatService.TeardownCombat(enemySquadIDs)
      │       ├─→ cleanupEffects()
      │       ├─→ collectPlayerSquadIDs() — returned to caller
      │       ├─→ disposeEntitiesByTag(FactionTag)
@@ -964,7 +965,7 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 
 | File | Purpose |
 |------|---------|
-| `mind/combatlifecycle/contracts.go` | All shared interfaces: `CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `EncounterCallbacks`, `CombatCleaner`, `CombatExitReason`, `PostCombatReturnRaid`/`PostCombatReturnDefault` constants |
+| `mind/combatlifecycle/contracts.go` | Shared contracts: `CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `CombatTeardown`, `CombatExitReason`, `PostCombatReturnRaid`/`PostCombatReturnDefault` constants |
 | `mind/combatlifecycle/starter.go` | `ExecuteCombatStart`: the single entry point for all combat initiation |
 | `mind/combatlifecycle/pipeline.go` | `CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`: the single entry point for all combat resolution |
 | `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadInFaction`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
@@ -979,14 +980,14 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `mind/encounter/encounter_trigger.go` | `TriggerCombatFromThreat`, `TriggerRandomEncounter`, `TriggerGarrisonDefense`: creates encounter entities |
 | `mind/encounter/encounter_setup.go` | `SpawnCombatEntities` (returns `*SpawnResult`), `generateAttackerSquads`, `assembleCombatFactions`: combat entity creation |
 | `mind/encounter/resolvers.go` | `OverworldCombatResolver`, `GarrisonDefenseResolver`, `FleeResolver` |
-| `mind/encounter/types.go` | `ActiveEncounter`, `CompletedEncounter`, `SpawnResult`, `ModeCoordinator` interface |
+| `mind/encounter/types.go` | `ActiveEncounter`, `CompletedEncounter`, `SpawnResult`, `ModeCoordinator`, `EncounterController` interfaces |
 | `mind/spawning/squadscreation.go` | `createSquadForPowerBudget`: power-budget squad generation used by encounter setup |
 | `mind/spawning/composition.go` | `generateRandomComposition` and faction-typed composition helpers |
 | `campaign/raid/starters.go` | `RaidCombatStarter`: raid-specific `CombatStarter` implementation |
 | `campaign/raid/raidencounter.go` | `SetupRaidFactions`: positions squads for raid combat |
 | `campaign/raid/raidrunner.go` | `RaidRunner`: orchestrates the full raid loop, registered as post-combat listener |
 | `campaign/raid/resolvers.go` | `RaidRoomResolver`, `RaidDefeatResolver` |
-| `tactical/combat/combatservices/combat_service.go` | `CombatService.CleanupCombat` (returns `[]ecs.EntityID`), `InitializeCombat`, `CheckVictoryCondition` |
+| `tactical/combat/combatservices/combat_service.go` | `CombatService.TeardownCombat` (satisfies `combatlifecycle.CombatTeardown`, returns `[]ecs.EntityID`), `InitializeCombat`, `CheckVictoryCondition` |
 | `tactical/combat/combatservices/combat_power_dispatch.go` | Logger wiring and perk dispatcher injection into `CombatActionSystem` |
 | `tactical/combat/combatstate/combatfactionmanager.go` | `CombatFactionManager.CreateStandardFactions`, `CreateFactionWithPlayer`, `AddSquadToFaction` |
 | `tactical/combat/combatstate/combatqueries.go` | `CreateActionStateForSquad`, `RemoveSquadFromMap`, `GetAllFactions`, `GetSquadsForFaction` |
@@ -1002,7 +1003,7 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `tactical/powers/perks/dispatcher.go` | `SquadPerkDispatcher`: implements `combattypes.PerkDispatcher` + lifecycle `Dispatch*` methods |
 | `gui/guicombat/combatmode.go` | `CombatMode.Enter` (init), `CombatMode.Exit` (calls ExitCombat) |
 | `gui/guicombat/combat_turn_flow.go` | `CheckAndHandleVictory`, `HandleFlee`, `completeTurn`, `getPostCombatReturnMode` |
-| `gui/guicombat/combatdeps.go` | `CombatModeDeps`: dependency container, holds `EncounterCallbacks` interface |
+| `gui/guicombat/combatdeps.go` | `CombatModeDeps`: dependency container, holds `encounter.EncounterController` interface |
 | `gui/guioverworld/overworld_action_handler.go` | `EngageThreat`, `HandleRaid`, `StartRandomEncounter` |
 | `gui/guioverworld/overworld_panels_registry.go` | Debug panel with "Start Random Encounter" button |
 | `gui/guiexploration/exploration_panels_registry.go` | Debug panel with "Start Raid" button (roguelike only) |

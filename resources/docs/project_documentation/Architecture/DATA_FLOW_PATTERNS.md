@@ -656,7 +656,7 @@ Inside ExitCombat:
         └─ Mark threat node as defeated (or retreat)
     → RecordEncounterCompletion()
         (restores player position)
-    → combatService.CleanupCombat(enemySquadIDs) → returns player squad IDs
+    → combatService.TeardownCombat(enemySquadIDs) → returns player squad IDs
     → PostCombatCallback (if set, e.g., RaidRunner)
     ↓
 Returns to "exploration" mode (or PostCombatReturnMode)
@@ -704,7 +704,7 @@ CombatMode.Exit()
         │   (dispatches to type-specific CombatResolver)
         ├─ RecordEncounterCompletion()
         │   (restore player position, clear ActiveEncounter)
-        ├─ CombatService.CleanupCombat(enemySquadIDs)
+        ├─ CombatService.TeardownCombat(enemySquadIDs)
         │   ├─ Clear callbacks + effects
         │   ├─ Collect player squad IDs (returned to caller)
         │   └─ Dispose enemy squads, factions, action state,

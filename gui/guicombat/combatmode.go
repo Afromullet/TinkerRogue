@@ -11,6 +11,7 @@ import (
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
 	"game_main/mind/combatlifecycle"
+	"game_main/mind/encounter"
 	"game_main/core/config"
 	"game_main/tactical/combat/battlelog"
 	"game_main/tactical/combat/combattypes"
@@ -58,8 +59,8 @@ type CombatMode struct {
 	// Input action map
 	actionMap *framework.ActionMap
 
-	// Encounter callbacks (stored until deps are created in Initialize)
-	encounterCallbacks combatlifecycle.EncounterCallbacks
+	// GUI's port onto EncounterService (stored until deps are created in Initialize)
+	encounterController encounter.EncounterController
 
 	// Factory for creating a fully-wired CombatService (with AI injected)
 	serviceFactory func(*common.EntityManager) *combatservices.CombatService
@@ -69,10 +70,10 @@ type CombatMode struct {
 	lastSelectedSquad ecs.EntityID
 }
 
-func NewCombatMode(modeManager *framework.UIModeManager, encounterCallbacks combatlifecycle.EncounterCallbacks, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
+func NewCombatMode(modeManager *framework.UIModeManager, encounterController encounter.EncounterController, serviceFactory func(*common.EntityManager) *combatservices.CombatService) *CombatMode {
 	cm := &CombatMode{
-		encounterCallbacks: encounterCallbacks,
-		serviceFactory:     serviceFactory,
+		encounterController: encounterController,
+		serviceFactory:      serviceFactory,
 	}
 	cm.SetModeName("combat")
 	cm.SetReturnMode("exploration")
@@ -127,7 +128,7 @@ func (cm *CombatMode) Initialize(ctx *framework.UIContext) error {
 		cm.combatService,
 		cm.Queries,
 		cm.ModeManager,
-		cm.encounterCallbacks,
+		cm.encounterController,
 	)
 
 	// Create handlers with deps
@@ -407,7 +408,7 @@ func (cm *CombatMode) Enter(fromMode framework.UIMode) error {
 		cm.Queries.ClearSquadCache()
 		cm.visualization.ResetHighlightColors()
 
-		// Re-register callbacks (cleared by previous CleanupCombat)
+		// Re-register callbacks (cleared by previous TeardownCombat)
 		cm.registerCombatCallbacks()
 
 		// Refresh threat manager with newly created factions (must be after SpawnCombatEntities)

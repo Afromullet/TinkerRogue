@@ -2,7 +2,7 @@ package guiartifacts
 
 import (
 	"game_main/gui/framework"
-	"game_main/mind/combatlifecycle"
+	"game_main/mind/encounter"
 	"game_main/tactical/combat/combatservices"
 )
 
@@ -12,6 +12,6 @@ type ArtifactActivationDeps struct {
 	CombatService *combatservices.CombatService
 	Queries       *framework.GUIQueries
 
-	// Encounter callbacks (replacing direct EncounterService dependency)
-	Encounter combatlifecycle.EncounterCallbacks
+	// GUI's narrow command/query port onto EncounterService
+	Encounter encounter.EncounterController
 }

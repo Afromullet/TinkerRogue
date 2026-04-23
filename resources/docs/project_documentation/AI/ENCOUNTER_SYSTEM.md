@@ -105,10 +105,10 @@ Player Triggers Encounter
 When combat ends, `EncounterService.ExitCombat()` is called with the exit reason (Victory/Defeat/Flee):
 
 ```go
-ExitCombat(reason, result, combatCleaner):
+ExitCombat(reason, result, teardown):
   1. EndEncounter() or RestoreEncounterSprite() based on reason
   2. RecordEncounterCompletion() - history + restore player position
-  3. combatCleaner.CleanupCombat(enemySquadIDs) - dispose combat entities
+  3. teardown.TeardownCombat(enemySquadIDs) - dispose combat entities
 ```
 
 **Reward Calculation:**

@@ -9,68 +9,12 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// encounterParams describes a combat scenario generated from a threat node
-type encounterParams struct {
-	ThreatNodeID  ecs.EntityID
-	Difficulty    int // Derived from threat intensity
-	EncounterName string
-	EncounterType string
-}
-
-// translateThreatToEncounter generates combat parameters from a threat node.
-// This creates the encounter metadata (name, difficulty, type).
-// Enemy composition is generated later by SetupBalancedEncounter() using
-// power-based balancing to match player strength.
-func translateThreatToEncounter(
-	manager *common.EntityManager,
-	threatEntity *ecs.Entity,
-) (*encounterParams, error) {
-	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
-	if nodeData == nil {
-		return nil, fmt.Errorf("entity is not an overworld node")
-	}
-
-	// Get the encounter that was assigned to this node when it was created
-	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(nodeData.EncounterID)
-	if selectedEncounter == nil {
-		return nil, fmt.Errorf("encounter %s not found for node", nodeData.EncounterID)
-	}
-
-	// Create encounter name using the selected encounter's name
-	encounterName := fmt.Sprintf("%s (Level %d)",
-		getEncounterDisplayName(selectedEncounter, nodeData.NodeTypeID),
-		nodeData.Intensity)
-
-	return &encounterParams{
-		ThreatNodeID:  nodeData.NodeID,
-		Difficulty:    nodeData.Intensity,
-		EncounterName: encounterName,
-		EncounterType: selectedEncounter.EncounterTypeID,
-	}, nil
-}
-
 // createEncounterEntity creates an encounter entity from OverworldEncounterData.
 // This is the single place where encounter entities are born.
 func createEncounterEntity(manager *common.EntityManager, data *core.OverworldEncounterData) ecs.EntityID {
 	entity := manager.World.NewEntity()
 	entity.AddComponent(core.OverworldEncounterComponent, data)
 	return entity.GetID()
-}
-
-// createOverworldEncounter creates an encounter entity from threat parameters
-func createOverworldEncounter(
-	manager *common.EntityManager,
-	params *encounterParams,
-) (ecs.EntityID, error) {
-	encounterData := &core.OverworldEncounterData{
-		Name:          params.EncounterName,
-		Level:         params.Difficulty,
-		EncounterType: params.EncounterType,
-		IsDefeated:    false,
-		ThreatNodeID:  params.ThreatNodeID,
-	}
-
-	return createEncounterEntity(manager, encounterData), nil
 }
 
 // getEncounterDisplayName returns the display name for an encounter.
@@ -91,39 +35,40 @@ func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID str
 // ThreatNodeID 0 means EndEncounter skips overworld resolution (no side effects).
 // Empty EncounterType falls back to generateRandomComposition.
 func TriggerRandomEncounter(manager *common.EntityManager, difficulty int) (ecs.EntityID, error) {
-	params := &encounterParams{
-		ThreatNodeID:  0,
-		Difficulty:    difficulty,
-		EncounterName: fmt.Sprintf("Random Encounter (Level %d)", difficulty),
+	return createEncounterEntity(manager, &core.OverworldEncounterData{
+		Name:          fmt.Sprintf("Random Encounter (Level %d)", difficulty),
+		Level:         difficulty,
 		EncounterType: "",
-	}
-	return createOverworldEncounter(manager, params)
+		IsDefeated:    false,
+		ThreatNodeID:  0,
+	}), nil
 }
 
-// TriggerCombatFromThreat initiates combat when player engages a threat
-// This function bridges the overworld -> combat transition
-// Returns the created encounter ID
+// TriggerCombatFromThreat initiates combat when player engages a threat.
+// Bridges the overworld -> combat transition. Returns the created encounter ID.
 func TriggerCombatFromThreat(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
 ) (ecs.EntityID, error) {
-	// 1. Translate threat to encounter
-	params, err := translateThreatToEncounter(manager, threatEntity)
-	if err != nil {
-		return 0, fmt.Errorf("failed to translate threat: %w", err)
+	nodeData := common.GetComponentType[*core.OverworldNodeData](threatEntity, core.OverworldNodeComponent)
+	if nodeData == nil {
+		return 0, fmt.Errorf("entity is not an overworld node")
 	}
 
-	// 2. Create encounter entity
-	encounterID, err := createOverworldEncounter(manager, params)
-	if err != nil {
-		return 0, fmt.Errorf("failed to create encounter: %w", err)
+	selectedEncounter := core.GetNodeRegistry().GetEncounterByID(nodeData.EncounterID)
+	if selectedEncounter == nil {
+		return 0, fmt.Errorf("encounter %s not found for node", nodeData.EncounterID)
 	}
 
-	// 3. Combat system will call SetupBalancedEncounter with the encounter data
-	// This happens in the combat mode transition (handled by GUI/mode coordinator)
-	// The encounter ID is stored and passed to combat lifecycle for resolution
-
-	return encounterID, nil
+	return createEncounterEntity(manager, &core.OverworldEncounterData{
+		Name: fmt.Sprintf("%s (Level %d)",
+			getEncounterDisplayName(selectedEncounter, nodeData.NodeTypeID),
+			nodeData.Intensity),
+		Level:         nodeData.Intensity,
+		EncounterType: selectedEncounter.EncounterTypeID,
+		IsDefeated:    false,
+		ThreatNodeID:  nodeData.NodeID,
+	}), nil
 }
 
 // TriggerGarrisonDefense creates an encounter entity for a garrison defense scenario.

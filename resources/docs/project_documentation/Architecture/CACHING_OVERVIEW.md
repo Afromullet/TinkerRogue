@@ -1299,7 +1299,7 @@ because the squad no longer exists.
 
 ### 9.5 Callback Lifecycle
 
-There is no `ClearCallbacks` method and `CleanupCombat` does not touch the GUI
+There is no `ClearCallbacks` method and `TeardownCombat` does not touch the GUI
 callback fields. GUI callbacks are single-valued fields:
 
 ```go

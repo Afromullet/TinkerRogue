@@ -71,7 +71,8 @@ type CombatSetup struct {
 
 	// SkipServiceResolution indicates the starter's domain handles resolution
 	// via its own post-combat callback (e.g., RaidRunner). When true,
-	// EncounterService.ExitCombat skips resolveEncounterOutcome and markEncounterDefeated.
+	// EncounterService.ExitCombat skips the type-switch that dispatches to the
+	// CombatResolver and also skips markEncounterDefeated.
 	SkipServiceResolution bool
 }
 
@@ -141,19 +142,13 @@ type EncounterOutcome struct {
 	DefeatedFactions []ecs.EntityID
 }
 
-// CombatCleaner handles tactical-side entity disposal when exiting combat.
+// CombatTeardown handles tactical-side entity disposal when exiting combat.
 // Implemented by CombatService (satisfies via Go structural typing, no import needed).
 // Returns the player squad IDs that were in combat so the caller can finish
 // cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
 // StripCombatComponents) without tactical/combat depending on mind/.
-type CombatCleaner interface {
-	CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
-}
-
-// EncounterCallbacks is the GUI's narrow view of encounter services.
-// EncounterService structurally satisfies this interface — pass it directly.
-type EncounterCallbacks interface {
-	ExitCombat(reason CombatExitReason, result *EncounterOutcome, cleaner CombatCleaner)
-	GetRosterOwnerID() ecs.EntityID
-	GetCurrentEncounterID() ecs.EntityID
+// Invoked by EncounterService.ExitCombat as one step in the exit orchestration —
+// it is NOT the full combat-exit flow.
+type CombatTeardown interface {
+	TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
 }

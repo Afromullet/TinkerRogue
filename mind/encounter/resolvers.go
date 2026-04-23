@@ -52,7 +52,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	nodeData *core.OverworldNodeData,
 	enemyUnitsKilled int,
 ) *combatlifecycle.ResolutionPlan {
-	damageDealt := calculateThreatDamage(enemyUnitsKilled)
+	damageDealt := enemyUnitsKilled / EnemiesPerIntensityPoint
 	oldIntensity := nodeData.Intensity
 	nodeData.Intensity -= damageDealt
 	currentTick := core.GetCurrentTick(manager)
@@ -202,11 +202,6 @@ func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatlifecycle.R
 	return &combatlifecycle.ResolutionPlan{
 		Description: fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
 	}
-}
-
-// calculateThreatDamage converts enemy casualties to threat intensity damage.
-func calculateThreatDamage(enemiesKilled int) int {
-	return enemiesKilled / EnemiesPerIntensityPoint
 }
 
 // getAllPlayerSquadIDs returns all player squad IDs from the roster.
