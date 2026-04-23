@@ -62,7 +62,7 @@ These live for the entire game session and are never disposed — this is correc
 **Current behavior:** Encounter entity is marked `IsDefeated` and sprite is hidden, but entity is **never disposed** from the ECS world.
 
 **Recommended fix:**
-After `combatCleaner.CleanupCombat(enemySquadIDs)` in `ExitCombat`, dispose the encounter entity:
+After `teardown.TeardownCombat(enemySquadIDs)` in `ExitCombat`, dispose the encounter entity:
 
 ```go
 // In ExitCombat, after Step 3 (combat cleanup):
@@ -192,7 +192,7 @@ func disposeRaidEntities(manager *common.EntityManager, raidEntityID ecs.EntityI
 
 **Current flow:**
 1. Garrison squads created: `mind/raid/garrison.go:108` (`InstantiateGarrisonSquad`)
-2. Enemy garrison squads in combat: properly disposed via `CleanupCombat` → `disposeEnemySquads`
+2. Enemy garrison squads in combat: properly disposed via `TeardownCombat` → `disposeEnemySquads`
 3. Surviving garrison squads returned to node: `encounter_service.go:259` (`returnGarrisonSquadsToNode`)
 4. Node destroyed later: `DestroyNode` (`overworld/node/system.go:108`) — **only disposes the node entity itself**, not associated garrison squads
 

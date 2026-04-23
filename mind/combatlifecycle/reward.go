@@ -86,7 +86,7 @@ func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 		}
 	}
 
-	return FormatDescription(parts)
+	return strings.Join(parts, ", ")
 }
 
 // grantGold finds the player's ResourceStockpile and adds gold.
@@ -163,8 +163,3 @@ func grantProgressionPoints(
 	return fmt.Sprintf("%d %s", amount, label)
 }
 
-// FormatDescription joins non-empty reward description parts into a single string.
-// Example: ["150 gold", "75 XP"] -> "150 gold, 75 XP"
-func FormatDescription(parts []string) string {
-	return strings.Join(parts, ", ")
-}

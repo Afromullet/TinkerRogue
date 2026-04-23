@@ -924,7 +924,7 @@ type SpellCastingDeps struct {
     GameMap     *worldmap.GameMap          // For tile color matrix (overlay)
     PlayerPos   *coords.LogicalPosition    // For coordinate conversion
     Queries     *framework.GUIQueries      // For squad info, cache invalidation, and CombatCache
-    Encounter   combatcore.EncounterCallbacks // For encounter IDs (enemy validation)
+    Encounter   encounter.EncounterController // For encounter IDs (enemy validation)
 }
 ```
 

@@ -79,3 +79,13 @@ type SpawnResult struct {
 	PlayerFactionID ecs.EntityID
 	EnemyFactionID  ecs.EntityID
 }
+
+// EncounterController is the GUI's command/query port onto EncounterService.
+// EncounterService structurally satisfies this interface — pass it directly.
+// Not a callback mechanism; for post-combat listener hooks see
+// EncounterService.SetPostCombatCallback.
+type EncounterController interface {
+	ExitCombat(reason combatlifecycle.CombatExitReason, result *combatlifecycle.EncounterOutcome, teardown combatlifecycle.CombatTeardown)
+	GetRosterOwnerID() ecs.EntityID
+	GetCurrentEncounterID() ecs.EntityID
+}

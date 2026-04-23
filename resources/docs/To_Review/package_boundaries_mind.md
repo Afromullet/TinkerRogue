@@ -32,17 +32,9 @@ Both are `*EncounterService` methods used only by the service itself, not by any
 
 ---
 
-## 4. Move `EncounterCallbacks` to `encounter`
+## 4. ~~Move `EncounterCallbacks` to `encounter`~~ — **DONE (2026-04-23)**
 
-**From:** `mind/combatlifecycle/contracts.go:153-159`
-**To:** `mind/encounter/types.go`
-
-Update all usage sites to import `encounter.EncounterCallbacks` instead of `combatlifecycle.EncounterCallbacks`:
-
-- `gui/guicombat/combatdeps.go:30`
-- `gui/guicombat/combatmode.go:62` and `:72`
-- `gui/guispells/spell_deps.go:21`
-- `gui/guiartifacts/artifact_deps.go:16`
+Moved to `mind/encounter/types.go` and renamed `EncounterCallbacks` → `EncounterController` to stop the naming collision with `EncounterService.postCombatCallback` (which is an actual callback). Also renamed the adjacent `CombatCleaner` interface + its `CleanupCombat` method to `CombatTeardown` + `TeardownCombat` so the orchestrator (`EncounterService.ExitCombat`) and the step it invokes no longer read as duplicates of each other.
 
 ---
 

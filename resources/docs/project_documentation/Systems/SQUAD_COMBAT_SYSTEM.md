@@ -1040,7 +1040,7 @@ The GUI registers cache invalidation callbacks (`MarkSquadDirty`, `InvalidateSqu
 
 ### 7.3 Combat Cleanup
 
-**CleanupCombat** (`CleanupCombat(enemySquadIDs []ecs.EntityID)`):
+**TeardownCombat** (`TeardownCombat(enemySquadIDs []ecs.EntityID)`):
 
 1. Clears all registered callbacks (GUI state is being torn down)
 2. Removes all active effects from all unit entities via `cleanupEffects`
@@ -1188,7 +1188,7 @@ Artifacts integrate with the combat system at these points:
 - **Post-reset hook**: Major artifact behaviors fire `OnPostReset` after each faction's action states are reset (start of turn)
 - **Attack complete hook**: Major artifact behaviors fire `OnAttackComplete` after every attack resolves (e.g., Twin Strike Banner grants bonus attacks)
 - **Turn end hook**: `ArtifactChargeTracker.RefreshRoundCharges` is called, then behaviors fire `OnTurnEnd`
-- **Battle end** (`CombatService.CleanupCombat`): All artifact-applied effects are removed; equipment assignments persist across battles
+- **Battle end** (`CombatService.TeardownCombat`): All artifact-applied effects are removed; equipment assignments persist across battles
 
 ---
 

@@ -322,7 +322,7 @@ When `CombatService.InitializeCombat` is called:
 
 ### Battle End
 
-`CombatService.CleanupCombat` removes all active effects from all units (including those applied by artifacts), disposes enemy entities, and returns the player squad IDs so the encounter service can strip cross-cutting combat components. The charge tracker is not disposed — it is reset at the start of the next battle. Artifact equipment assignments on squads persist across battles; the `EquipmentComponent` is not touched during cleanup.
+`CombatService.TeardownCombat` removes all active effects from all units (including those applied by artifacts), disposes enemy entities, and returns the player squad IDs so the encounter service can strip cross-cutting combat components. The charge tracker is not disposed — it is reset at the start of the next battle. Artifact equipment assignments on squads persist across battles; the `EquipmentComponent` is not touched during cleanup.
 
 ---
 

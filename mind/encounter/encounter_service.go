@@ -52,42 +52,6 @@ func NewEncounterService(
 	}
 }
 
-// RecordEncounterCompletion records the encounter outcome to history.
-// This does NOT handle resolution - CombatService handles that.
-// This just tracks what happened for analytics/debugging.
-func (es *EncounterService) RecordEncounterCompletion(
-	reason combatlifecycle.CombatExitReason,
-	victorFaction ecs.EntityID,
-	victorName string,
-	roundsCompleted int,
-) {
-	if es.activeEncounter == nil {
-		fmt.Println("WARNING: RecordEncounterCompletion called with no active encounter")
-		return
-	}
-
-	// Create history record
-	completed := &CompletedEncounter{
-		EncounterID:     es.activeEncounter.EncounterID,
-		ThreatID:        es.activeEncounter.ThreatID,
-		ThreatName:      es.activeEncounter.ThreatName,
-		PlayerPosition:  es.activeEncounter.PlayerPosition,
-		StartTime:       es.activeEncounter.StartTime,
-		EndTime:         time.Now(),
-		Duration:        time.Since(es.activeEncounter.StartTime),
-		Outcome:         reason,
-		RoundsCompleted: roundsCompleted,
-		VictorFaction:   victorFaction,
-		VictorName:      victorName,
-	}
-
-	es.addToHistory(completed)
-
-	// Clear active encounter
-	es.activeEncounter = nil
-
-}
-
 // === QUERY METHODS ===
 
 // IsEncounterActive returns true if an encounter is currently in progress
@@ -137,15 +101,18 @@ func (es *EncounterService) ClearPostCombatCallback() {
 func (es *EncounterService) ExitCombat(
 	reason combatlifecycle.CombatExitReason,
 	result *combatlifecycle.EncounterOutcome,
-	combatCleaner combatlifecycle.CombatCleaner,
+	teardown combatlifecycle.CombatTeardown,
 ) {
 	if es.activeEncounter == nil {
 		return
 	}
 
-	// Snapshot encounter before RecordEncounterCompletion clears activeEncounter.
+	// Snapshot encounter before we clear activeEncounter.
 	// All cleanup steps reference this snapshot so new fields don't get missed.
 	enc := *es.activeEncounter
+
+	// Single lookup of the encounter entity + data; reused by all steps below.
+	encounterEntity, encounterData := es.getEncounterData(enc.EncounterID)
 
 	// Step 1: Resolve combat outcome based on type + reason.
 	// Starters that own their own resolution (e.g. raid via its callback) set
@@ -153,20 +120,40 @@ func (es *EncounterService) ExitCombat(
 	switch reason {
 	case combatlifecycle.ExitVictory, combatlifecycle.ExitDefeat:
 		if !enc.SkipServiceResolution {
-			es.resolveEncounterOutcome(&enc, result.IsPlayerVictory)
+			if encounterData == nil {
+				fmt.Printf("WARNING: Encounter entity %d not found during resolution\n", enc.EncounterID)
+			} else {
+				switch enc.Type {
+				case combatlifecycle.CombatTypeGarrisonDefense:
+					combatlifecycle.ExecuteResolution(es.manager, &GarrisonDefenseResolver{
+						PlayerVictory:        result.IsPlayerVictory,
+						DefendedNodeID:       enc.DefendedNodeID,
+						AttackingFactionType: encounterData.AttackingFactionType,
+					})
+				case combatlifecycle.CombatTypeOverworld:
+					if encounterData.ThreatNodeID != 0 {
+						combatlifecycle.ExecuteResolution(es.manager, &OverworldCombatResolver{
+							ThreatNodeID:   encounterData.ThreatNodeID,
+							PlayerVictory:  result.IsPlayerVictory,
+							PlayerEntityID: enc.PlayerEntityID,
+							PlayerSquadIDs: es.getAllPlayerSquadIDs(),
+							EnemySquadIDs:  enc.EnemySquadIDs,
+						})
+					}
+					// CombatTypeDebug: no resolution needed
+				}
+			}
 		}
 	case combatlifecycle.ExitFlee:
-		es.restoreEncounterSprite(enc.EncounterID)
-		_, encounterData := es.getEncounterData(enc.EncounterID)
+		restoreEncounterSprite(encounterEntity, encounterData)
 		if encounterData != nil && encounterData.ThreatNodeID != 0 {
-			resolver := &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID}
-			combatlifecycle.ExecuteResolution(es.manager, resolver)
+			combatlifecycle.ExecuteResolution(es.manager, &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID})
 		}
 	}
 
 	// Step 2: Mark encounter defeated on victory (unless owned by callback)
 	if result.IsPlayerVictory && !enc.SkipServiceResolution {
-		es.markEncounterDefeated(enc.EncounterID)
+		markEncounterDefeated(encounterEntity, encounterData)
 	}
 
 	// Step 3: Restore player to original position (before they were teleported to encounter)
@@ -176,16 +163,32 @@ func (es *EncounterService) ExitCombat(
 		}
 	}
 
-	// Step 4: Record history
-	es.RecordEncounterCompletion(reason, result.VictorFaction,
-		result.VictorName, result.RoundsCompleted)
+	// Step 4: Record history from the snapshot, then clear activeEncounter.
+	completed := &CompletedEncounter{
+		EncounterID:     enc.EncounterID,
+		ThreatID:        enc.ThreatID,
+		ThreatName:      enc.ThreatName,
+		PlayerPosition:  enc.PlayerPosition,
+		StartTime:       enc.StartTime,
+		EndTime:         time.Now(),
+		Duration:        time.Since(enc.StartTime),
+		Outcome:         reason,
+		RoundsCompleted: result.RoundsCompleted,
+		VictorFaction:   result.VictorFaction,
+		VictorName:      result.VictorName,
+	}
+	es.history = append(es.history, completed)
+	if len(es.history) > es.maxHistory {
+		es.history = es.history[len(es.history)-es.maxHistory:]
+	}
+	es.activeEncounter = nil
 
-	// Step 5: Clean up all combat entities
-	if combatCleaner != nil {
+	// Step 5: Tear down all combat entities
+	if teardown != nil {
 		if enc.Type == combatlifecycle.CombatTypeGarrisonDefense && result.IsPlayerVictory {
 			es.returnGarrisonSquadsToNode(enc.DefendedNodeID)
 		}
-		playerSquadIDs := combatCleaner.CleanupCombat(enc.EnemySquadIDs)
+		playerSquadIDs := teardown.TeardownCombat(enc.EnemySquadIDs)
 		if len(playerSquadIDs) > 0 {
 			combatlifecycle.StripCombatComponents(es.manager, playerSquadIDs)
 		}
@@ -197,40 +200,8 @@ func (es *EncounterService) ExitCombat(
 	}
 }
 
-// resolveEncounterOutcome dispatches to the correct resolver based on combat type.
-func (es *EncounterService) resolveEncounterOutcome(encounter *ActiveEncounter, isPlayerVictory bool) {
-	_, encounterData := es.getEncounterData(encounter.EncounterID)
-	if encounterData == nil {
-		fmt.Printf("WARNING: Encounter entity %d not found during resolution\n", encounter.EncounterID)
-		return
-	}
-
-	switch encounter.Type {
-	case combatlifecycle.CombatTypeGarrisonDefense:
-		resolver := &GarrisonDefenseResolver{
-			PlayerVictory:        isPlayerVictory,
-			DefendedNodeID:       encounter.DefendedNodeID,
-			AttackingFactionType: encounterData.AttackingFactionType,
-		}
-		combatlifecycle.ExecuteResolution(es.manager, resolver)
-	case combatlifecycle.CombatTypeOverworld:
-		if encounterData.ThreatNodeID != 0 {
-			resolver := &OverworldCombatResolver{
-				ThreatNodeID:   encounterData.ThreatNodeID,
-				PlayerVictory:  isPlayerVictory,
-				PlayerEntityID: encounter.PlayerEntityID,
-				PlayerSquadIDs: es.getAllPlayerSquadIDs(),
-				EnemySquadIDs:  encounter.EnemySquadIDs,
-			}
-			combatlifecycle.ExecuteResolution(es.manager, resolver)
-		}
-		// CombatTypeDebug: no resolution needed
-	}
-}
-
 // markEncounterDefeated marks the encounter as defeated and hides its sprite permanently.
-func (es *EncounterService) markEncounterDefeated(encounterID ecs.EntityID) {
-	entity, encounterData := es.getEncounterData(encounterID)
+func markEncounterDefeated(entity *ecs.Entity, encounterData *core.OverworldEncounterData) {
 	if entity == nil || encounterData == nil {
 		return
 	}
@@ -241,12 +212,10 @@ func (es *EncounterService) markEncounterDefeated(encounterID ecs.EntityID) {
 	if renderable != nil {
 		renderable.Visible = false
 	}
-
 }
 
 // restoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
-func (es *EncounterService) restoreEncounterSprite(encounterID ecs.EntityID) {
-	entity, encounterData := es.getEncounterData(encounterID)
+func restoreEncounterSprite(entity *ecs.Entity, encounterData *core.OverworldEncounterData) {
 	if entity == nil || encounterData == nil || encounterData.IsDefeated {
 		return
 	}
@@ -324,12 +293,3 @@ func (es *EncounterService) getEncounterData(encounterID ecs.EntityID) (*ecs.Ent
 	return entity, data
 }
 
-// addToHistory adds a completed encounter to the history
-func (es *EncounterService) addToHistory(completed *CompletedEncounter) {
-	es.history = append(es.history, completed)
-
-	// Trim history if exceeds max
-	if len(es.history) > es.maxHistory {
-		es.history = es.history[len(es.history)-es.maxHistory:]
-	}
-}

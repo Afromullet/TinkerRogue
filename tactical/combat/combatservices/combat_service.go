@@ -398,13 +398,14 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 // Combat Lifecycle Methods
 // ================================
 
-// CleanupCombat removes tactical-side combat entities when returning to exploration.
-// Enemy squads must be provided by the encounter service for cleanup.
+// TeardownCombat disposes tactical-side combat entities when returning to exploration.
+// Enemy squads must be provided by the encounter service for disposal.
 // Returns the player squad IDs that were in combat so the caller (EncounterService) can
 // finish cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
 // combatlifecycle.StripCombatComponents) without tactical/combat depending on mind/.
-func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID {
-	fmt.Println("=== Combat Cleanup Starting ===")
+// Satisfies combatlifecycle.CombatTeardown via structural typing.
+func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID {
+	fmt.Println("=== Combat Teardown Starting ===")
 
 	// Remove all active effects from player units before leaving combat
 	cs.cleanupEffects()
@@ -425,7 +426,7 @@ func (cs *CombatService) CleanupCombat(enemySquadIDs []ecs.EntityID) []ecs.Entit
 	cs.disposeEnemySquads(enemySquadIDs)
 	cs.disposeEnemyUnits(enemySquadSet)
 
-	fmt.Println("=== Combat Cleanup Complete ===")
+	fmt.Println("=== Combat Teardown Complete ===")
 	return playerSquadIDs
 }
 

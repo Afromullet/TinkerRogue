@@ -57,28 +57,6 @@ func TestScale(t *testing.T) {
 	}
 }
 
-func TestFormatDescription(t *testing.T) {
-	tests := []struct {
-		name     string
-		parts    []string
-		expected string
-	}{
-		{"empty", nil, ""},
-		{"single", []string{"150 gold"}, "150 gold"},
-		{"two", []string{"150 gold", "75 XP"}, "150 gold, 75 XP"},
-		{"three", []string{"150 gold", "75 XP", "10 mana (10/20)"}, "150 gold, 75 XP, 10 mana (10/20)"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := FormatDescription(tt.parts)
-			if result != tt.expected {
-				t.Errorf("FormatDescription(%v) = %q, want %q", tt.parts, result, tt.expected)
-			}
-		})
-	}
-}
-
 func TestRewardZeroFields(t *testing.T) {
 	r := Reward{Gold: 100}
 	if r.Experience != 0 || r.Mana != 0 {
