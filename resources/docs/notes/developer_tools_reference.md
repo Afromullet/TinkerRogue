@@ -235,6 +235,14 @@ bash tools/scripts/complexity_report.sh --output report.txt       # custom outpu
 
 ---
 
+# Running Go CleanArch
+
+go-cleanarch
+
+
+
+---
+
 ## Asset Preparation (GIMP)
 
 Two selection techniques cover most UI asset extraction scenarios. The choice depends on how uniform the background is.
