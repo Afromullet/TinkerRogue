@@ -167,7 +167,7 @@ func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combat
 	}
 
 	// Transfer ownership to attacking faction
-	newOwner := r.AttackingFactionType.String()
+	newOwner := core.OwnerIDFromFaction(r.AttackingFactionType)
 	if err := garrison.TransferNodeOwnership(manager, r.DefendedNodeID, newOwner); err != nil {
 		fmt.Printf("ERROR: Failed to transfer node ownership: %v\n", err)
 	} else {

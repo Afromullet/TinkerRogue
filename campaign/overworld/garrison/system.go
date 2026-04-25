@@ -3,11 +3,12 @@ package garrison
 import (
 	"fmt"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -26,7 +27,7 @@ func AssignSquadToNode(manager *common.EntityManager, squadID ecs.EntityID, node
 		return fmt.Errorf("entity %d is not an overworld node", nodeID)
 	}
 
-	if !core.IsFriendlyOwner(nodeData.OwnerID) {
+	if !ids.IsFriendlyOwner(nodeData.OwnerID) {
 		return fmt.Errorf("cannot garrison node owned by %s", nodeData.OwnerID)
 	}
 
@@ -210,7 +211,7 @@ func generateGarrisonUnits(factionType core.FactionType, level int) []unitdefs.U
 
 // TransferNodeOwnership changes the owner of a node after a garrison defeat.
 // Removes the garrison component (garrison squads are already disposed by combat cleanup).
-func TransferNodeOwnership(manager *common.EntityManager, nodeID ecs.EntityID, newOwnerID string) error {
+func TransferNodeOwnership(manager *common.EntityManager, nodeID ecs.EntityID, newOwnerID ids.OwnerID) error {
 	nodeEntity := manager.FindEntityByID(nodeID)
 	if nodeEntity == nil {
 		return fmt.Errorf("node entity %d not found", nodeID)

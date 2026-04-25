@@ -30,7 +30,7 @@ func (npm *NodePlacementMode) renderPlacementPreview(screen *ebiten.Image) {
 
 	// Get node color
 	previewColor := color.RGBA{R: 100, G: 200, B: 100, A: 120} // semi-transparent green
-	nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
+	nodeDef := core.GetNodeRegistry().GetNodeByID(npm.selectedNodeType)
 	if nodeDef != nil {
 		previewColor = color.RGBA{R: nodeDef.Color.R, G: nodeDef.Color.G, B: nodeDef.Color.B, A: 120}
 	}
@@ -79,7 +79,7 @@ func (npm *NodePlacementMode) renderSelectionHUD(screen *ebiten.Image) {
 		return
 	}
 
-	nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
+	nodeDef := core.GetNodeRegistry().GetNodeByID(npm.selectedNodeType)
 	displayName := string(npm.selectedNodeType)
 	category := ""
 	if nodeDef != nil {
@@ -90,7 +90,7 @@ func (npm *NodePlacementMode) renderSelectionHUD(screen *ebiten.Image) {
 	// Find current selection index for display
 	selIndex := 0
 	for i, node := range npm.nodeTypes {
-		if node.ID == string(npm.selectedNodeType) {
+		if node.ID == npm.selectedNodeType {
 			selIndex = i + 1
 			break
 		}

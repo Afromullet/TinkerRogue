@@ -26,7 +26,7 @@ func GenerateEncounterSuite(pool *UnitPool) []Scenario {
 	var scenarios []Scenario
 
 	for _, enc := range templates.EncounterDefinitionTemplates {
-		roster, ok := factionRoster[enc.FactionID]
+		roster, ok := factionRoster[string(enc.FactionID)]
 		if !ok {
 			continue
 		}
@@ -41,7 +41,7 @@ func GenerateEncounterSuite(pool *UnitPool) []Scenario {
 				continue
 			}
 
-			squadName := fmt.Sprintf("%s %s %d", enc.FactionID, pref, sqIdx+1)
+			squadName := fmt.Sprintf("%s %s %d", string(enc.FactionID), pref, sqIdx+1)
 			enemySquads = append(enemySquads, makeSquadBP(
 				squadName,
 				squadFormationForPref(pref),
@@ -63,7 +63,7 @@ func GenerateEncounterSuite(pool *UnitPool) []Scenario {
 		)
 
 		bp := ScenarioBlueprint{
-			Name:  fmt.Sprintf("Encounter: %s (%s)", enc.EncounterTypeName, enc.FactionID),
+			Name:  fmt.Sprintf("Encounter: %s (%s)", enc.EncounterTypeName, string(enc.FactionID)),
 			Suite: "encounters",
 			SideA: []SquadBlueprint{playerSquad},
 			SideB: enemySquads,

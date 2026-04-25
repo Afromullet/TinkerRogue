@@ -3,28 +3,29 @@ package threat
 import (
 	"fmt"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
 	"game_main/campaign/overworld/node"
-	"game_main/templates"
+	"game_main/core/common"
 	"game_main/core/coords"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
 
 // selectRandomEncounterForNode randomly selects an encounter variant for a threat node.
 // This is called once when the node is created to determine which encounter variant it uses.
-func selectRandomEncounterForNode(threatType core.ThreatType) string {
+func selectRandomEncounterForNode(threatType core.ThreatType) ids.EncounterID {
 	// Get the node definition to find the faction
 	node := core.GetNodeRegistry().GetNodeByType(threatType)
 	if node == nil || node.FactionID == "" {
-		return threatType.EncounterTypeID()
+		return ids.EncounterID(threatType.EncounterTypeID())
 	}
 
 	// Get all encounters for this faction
 	encounters := core.GetNodeRegistry().GetEncountersByFaction(node.FactionID)
 	if len(encounters) == 0 {
-		return threatType.EncounterTypeID()
+		return ids.EncounterID(threatType.EncounterTypeID())
 	}
 
 	// Randomly select one encounter from the faction's pool
@@ -43,9 +44,9 @@ func CreateThreatNode(
 ) ecs.EntityID {
 	// Determine faction owner from node definition
 	nodeDef := core.GetNodeRegistry().GetNodeByType(threatType)
-	ownerID := ""
+	var ownerID ids.OwnerID
 	if nodeDef != nil {
-		ownerID = nodeDef.FactionID
+		ownerID = ids.OwnerID(nodeDef.FactionID)
 	}
 
 	// Select random encounter variant
@@ -58,7 +59,7 @@ func CreateThreatNode(
 
 	entityID, err := node.CreateNode(manager, node.CreateNodeParams{
 		Position:         pos,
-		NodeTypeID:       string(threatType),
+		NodeTypeID:       ids.NodeTypeID(threatType),
 		OwnerID:          ownerID,
 		InitialIntensity: initialIntensity,
 		EncounterID:      encounterID,
@@ -147,8 +148,8 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 		return
 	}
 
-	switch nodeData.NodeTypeID {
-	case string(core.ThreatNecromancer):
+	switch core.ThreatType(nodeData.NodeTypeID) {
+	case core.ThreatNecromancer:
 		// Spawn child node at tier 3 (with max intensity 5, only spawns once)
 		if nodeData.Intensity%templates.OverworldConfigTemplate.ThreatGrowth.ChildNodeSpawnThreshold == 0 {
 			pos := common.GetComponentType[*coords.LogicalPosition](entity, common.PositionComponent)
@@ -159,7 +160,7 @@ func ExecuteThreatEvolutionEffect(manager *common.EntityManager, entity *ecs.Ent
 				}
 			}
 		}
-	case string(core.ThreatCorruption):
+	case core.ThreatCorruption:
 		// Spread to adjacent tiles
 		SpreadCorruption(manager, entity)
 	}
@@ -224,7 +225,7 @@ func DestroyThreatNode(manager *common.EntityManager, threatEntity *ecs.Entity) 
 		}
 
 		nodeDef := core.GetNodeRegistry().GetNodeByID(nodeData.NodeTypeID)
-		displayName := nodeData.NodeTypeID
+		displayName := string(nodeData.NodeTypeID)
 		if nodeDef != nil {
 			displayName = nodeDef.DisplayName
 		}

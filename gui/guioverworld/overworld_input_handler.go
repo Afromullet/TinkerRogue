@@ -3,10 +3,10 @@ package guioverworld
 import (
 	"fmt"
 
+	"game_main/campaign/overworld/garrison"
+	"game_main/campaign/overworld/ids"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
-	"game_main/campaign/overworld/core"
-	"game_main/campaign/overworld/garrison"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/squadcore"
 
@@ -268,7 +268,7 @@ func (ih *OverworldInputHandler) handleGarrison() {
 		return
 	}
 
-	if !core.IsFriendlyOwner(nodeData.OwnerID) {
+	if !ids.IsFriendlyOwner(nodeData.OwnerID) {
 		ih.deps.LogEvent(fmt.Sprintf("Can only garrison player-owned nodes (this node owned by: %s)", nodeData.OwnerID))
 		return
 	}

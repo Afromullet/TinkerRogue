@@ -34,34 +34,36 @@ func validateNodeDefinitions(data *NodeDefinitionsData) {
 	}
 
 	for _, node := range data.Nodes {
+		nodeID := string(node.ID)
+		factionID := string(node.FactionID)
 		if node.ID == "" {
 			panic("Node definition missing required 'id' field")
 		}
 		if node.DisplayName == "" {
-			panic("Node definition '" + node.ID + "' missing required 'displayName' field")
+			panic("Node definition '" + nodeID + "' missing required 'displayName' field")
 		}
 		if node.Category == "" {
-			panic("Node definition '" + node.ID + "' missing required 'category' field")
+			panic("Node definition '" + nodeID + "' missing required 'category' field")
 		}
 
-		if seenIDs[node.ID] {
-			panic("Duplicate node definition ID: " + node.ID)
+		if seenIDs[nodeID] {
+			panic("Duplicate node definition ID: " + nodeID)
 		}
-		seenIDs[node.ID] = true
+		seenIDs[nodeID] = true
 
 		if !validCategories[node.Category] {
-			panic("Node '" + node.ID + "' has invalid category: " + node.Category)
+			panic("Node '" + nodeID + "' has invalid category: " + node.Category)
 		}
 
-		if node.Category == "threat" && node.FactionID == "" {
-			panic("Threat node '" + node.ID + "' missing required 'factionId' field")
+		if node.Category == "threat" && factionID == "" {
+			panic("Threat node '" + nodeID + "' missing required 'factionId' field")
 		}
 
 		if node.Color.A == 0 {
-			println("Warning: Node '" + node.ID + "' has zero alpha (invisible)")
+			println("Warning: Node '" + nodeID + "' has zero alpha (invisible)")
 		}
 
-		markFound(requiredNodes, node.ID)
+		markFound(requiredNodes, nodeID)
 	}
 
 	checkRequired("node definition", requiredNodes)
@@ -88,37 +90,40 @@ func validateEncounterDefinitions(data *EncounterDataWithNew, validSquadTypes ma
 	encountersPerFaction := make(map[string][]string)
 
 	for _, encounter := range data.EncounterDefinitions {
+		encID := string(encounter.ID)
+		encTypeID := string(encounter.EncounterTypeID)
+		factionID := string(encounter.FactionID)
 		if encounter.ID == "" {
 			panic("Encounter definition missing required 'id' field")
 		}
 		if encounter.EncounterTypeID == "" {
-			panic("Encounter definition '" + encounter.ID + "' missing required 'encounterTypeId' field")
+			panic("Encounter definition '" + encID + "' missing required 'encounterTypeId' field")
 		}
 
-		if seenIDs[encounter.ID] {
-			panic("Duplicate encounter definition ID: " + encounter.ID)
+		if seenIDs[encID] {
+			panic("Duplicate encounter definition ID: " + encID)
 		}
-		seenIDs[encounter.ID] = true
+		seenIDs[encID] = true
 
-		if seenEncounterTypeIDs[encounter.EncounterTypeID] {
-			panic("Duplicate encounterTypeId: " + encounter.EncounterTypeID)
+		if seenEncounterTypeIDs[encTypeID] {
+			panic("Duplicate encounterTypeId: " + encTypeID)
 		}
-		seenEncounterTypeIDs[encounter.EncounterTypeID] = true
+		seenEncounterTypeIDs[encTypeID] = true
 
 		for _, pref := range encounter.SquadPreferences {
 			if !validSquadTypes[pref] {
-				panic("Encounter '" + encounter.ID + "' references invalid squad type: " + pref)
+				panic("Encounter '" + encID + "' references invalid squad type: " + pref)
 			}
 		}
 
-		if encounter.FactionID != "" {
-			if _, exists := data.Factions[encounter.FactionID]; !exists {
-				panic("Encounter '" + encounter.ID + "' references unknown faction: " + encounter.FactionID)
+		if factionID != "" {
+			if _, exists := data.Factions[factionID]; !exists {
+				panic("Encounter '" + encID + "' references unknown faction: " + factionID)
 			}
-			encountersPerFaction[encounter.FactionID] = append(encountersPerFaction[encounter.FactionID], encounter.ID)
+			encountersPerFaction[factionID] = append(encountersPerFaction[factionID], encID)
 		}
 
-		markFound(requiredEncounters, encounter.ID)
+		markFound(requiredEncounters, encID)
 	}
 
 	checkRequired("encounter definition", requiredEncounters)
@@ -135,14 +140,14 @@ func validateNodeEncounterLinks() {
 	encountersPerFaction := make(map[string]int)
 	for _, enc := range EncounterDefinitionTemplates {
 		if enc.FactionID != "" {
-			encountersPerFaction[enc.FactionID]++
+			encountersPerFaction[string(enc.FactionID)]++
 		}
 	}
 
 	for _, node := range NodeDefinitionTemplates {
 		if node.Category == "threat" && node.FactionID != "" {
-			if encountersPerFaction[node.FactionID] == 0 {
-				panic("Threat node '" + node.ID + "' has factionId '" + node.FactionID + "' but no encounters exist for that faction")
+			if encountersPerFaction[string(node.FactionID)] == 0 {
+				panic("Threat node '" + string(node.ID) + "' has factionId '" + string(node.FactionID) + "' but no encounters exist for that faction")
 			}
 		}
 	}

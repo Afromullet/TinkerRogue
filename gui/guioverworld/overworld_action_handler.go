@@ -3,15 +3,16 @@ package guioverworld
 import (
 	"fmt"
 
-	"game_main/core/common"
-	"game_main/core/config"
-	"game_main/mind/encounter"
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/garrison"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
+	"game_main/core/config"
+	"game_main/core/coords"
+	"game_main/mind/encounter"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -147,7 +148,7 @@ func (ah *OverworldActionHandler) EngageThreat(nodeID ecs.EntityID) {
 	}
 
 	nodeDef := core.GetNodeRegistry().GetNodeByID(threatData.NodeTypeID)
-	displayName := threatData.NodeTypeID
+	displayName := string(threatData.NodeTypeID)
 	if nodeDef != nil {
 		displayName = nodeDef.DisplayName
 	}
@@ -303,7 +304,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		return
 	}
 	nodeData := ah.deps.Queries.GetNodeData(nodeID)
-	if nodeData == nil || !core.IsFriendlyOwner(nodeData.OwnerID) {
+	if nodeData == nil || !ids.IsFriendlyOwner(nodeData.OwnerID) {
 		ah.deps.LogEvent("Must be at a player-owned settlement or fortress to recruit")
 		return
 	}

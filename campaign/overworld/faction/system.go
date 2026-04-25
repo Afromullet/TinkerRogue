@@ -236,7 +236,7 @@ func FortifyTerritory(manager *common.EntityManager, entity *ecs.Entity, faction
 			continue
 		}
 		// Only garrison nodes owned by this faction
-		if nodeData.OwnerID != factionData.FactionType.String() {
+		if nodeData.OwnerID != core.OwnerIDFromFaction(factionData.FactionType) {
 			continue
 		}
 		// Only garrison if not already garrisoned (30% chance per tick)
@@ -344,7 +344,7 @@ func SpawnThreatForFaction(
 	threatType := core.MapFactionToThreatType(factionType)
 
 	// Check resource cost
-	nodeDef := core.GetNodeRegistry().GetNodeByID(string(threatType))
+	nodeDef := core.GetNodeRegistry().GetNodeByID(threatType.AsNodeTypeID())
 	if nodeDef != nil {
 		stockpile := common.GetComponentType[*common.ResourceStockpile](factionEntity, common.ResourceStockpileComponent)
 		if stockpile != nil && !core.CanAfford(stockpile, nodeDef.Cost) {

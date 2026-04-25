@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"math"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
-	"game_main/templates"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 	"game_main/core/coords"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -70,7 +71,7 @@ func ValidatePlayerPlacement(manager *common.EntityManager, pos coords.LogicalPo
 // ValidatePlayerPlacementWithCost extends ValidatePlayerPlacement with a resource affordability check.
 // Returns invalid if the player cannot afford the node type's resource cost.
 // commanderPos is the selected commander's position used for range validation.
-func ValidatePlayerPlacementWithCost(manager *common.EntityManager, pos coords.LogicalPosition, commanderPos *coords.LogicalPosition, playerEntityID ecs.EntityID, nodeTypeID string) PlacementResult {
+func ValidatePlayerPlacementWithCost(manager *common.EntityManager, pos coords.LogicalPosition, commanderPos *coords.LogicalPosition, playerEntityID ecs.EntityID, nodeTypeID ids.NodeTypeID) PlacementResult {
 	// Run all existing placement checks first
 	result := ValidatePlayerPlacement(manager, pos, commanderPos)
 	if !result.Valid {

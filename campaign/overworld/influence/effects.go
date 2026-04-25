@@ -1,8 +1,9 @@
 package influence
 
 import (
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 	"game_main/templates"
 
 	"github.com/bytearena/ecs"
@@ -18,8 +19,8 @@ func ClassifyInteraction(manager *common.EntityManager, entityA, entityB ecs.Ent
 		return core.InteractionCompetition
 	}
 
-	aHostile := core.IsHostileOwner(dataA.OwnerID)
-	bHostile := core.IsHostileOwner(dataB.OwnerID)
+	aHostile := ids.IsHostileOwner(dataA.OwnerID)
+	bHostile := ids.IsHostileOwner(dataB.OwnerID)
 
 	// Both hostile (threat factions)
 	if aHostile && bHostile {
@@ -75,9 +76,9 @@ func calculateSuppressionPenalty(manager *common.EntityManager, entityA, entityB
 	dataB := common.GetComponentTypeByID[*core.OverworldNodeData](manager, entityB, core.OverworldNodeComponent)
 
 	var suppressorData *core.OverworldNodeData
-	if dataA != nil && !core.IsHostileOwner(dataA.OwnerID) {
+	if dataA != nil && !ids.IsHostileOwner(dataA.OwnerID) {
 		suppressorData = dataA
-	} else if dataB != nil && !core.IsHostileOwner(dataB.OwnerID) {
+	} else if dataB != nil && !ids.IsHostileOwner(dataB.OwnerID) {
 		suppressorData = dataB
 	}
 

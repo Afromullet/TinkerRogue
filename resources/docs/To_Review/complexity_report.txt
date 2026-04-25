@@ -1,0 +1,525 @@
+========================================================================
+  TinkerRogue Complexity Report (Cyclomatic + Cognitive)
+========================================================================
+  Generated: 2026-04-22 17:19:45
+  Branch:    main
+  Commit:    7fd505e
+  Scope:     production .go files (_test.go excluded)
+  Tools:     gocyclo (cyclomatic), gocognit (cognitive), golangci-lint (structural)
+  Note:      cyclomatic counts branch paths; cognitive penalizes nesting.
+             A function can be low on one and high on the other.
+
+########################################################################
+#  PART A — Cyclomatic Complexity (gocyclo)
+########################################################################
+
+------------------------------------------------------------------------
+  Average complexity
+------------------------------------------------------------------------
+  Average: 3.34 (over 2389 functions)
+
+------------------------------------------------------------------------
+  Top 20 most complex functions (hot spots)
+------------------------------------------------------------------------
+47 guicombat (*CombatInputHandler).HandleInput gui\guicombat\combat_input_handler.go:112:1
+37 garrisongen (*GarrisonRaidGenerator).Generate world\garrisongen\generator.go:37:1
+26 worldgen (*CavernGenerator).carveDrunkardTunnel world\worldgen\gen_cavern.go:366:1
+26 garrisongen carveZShapeCorridor world\garrisongen\generator.go:309:1
+25 garrisongen placeDoorway world\garrisongen\generator.go:368:1
+25 templates validateOverworldConfig templates\validation.go:374:1
+24 perks validatePerkBalance tactical\powers\perks\balanceconfig.go:130:1
+24 combatcore processAttack tactical\combat\combatcore\combatprocessing.go:24:1
+23 worldgen CarveCorridorBetween world\worldgen\gen_helpers.go:170:1
+23 garrisongen BuildGarrisonDAG world\garrisongen\dag.go:94:1
+22 main renderUnitSummary tools\combat_visualizer\summary_renderer.go:118:1
+21 main LoadCSV tools\report_compressor\loader.go:11:1
+19 worldgen (*CavernGenerator).checkWalkableRatio world\worldgen\gen_cavern.go:579:1
+19 templates validateGameConfig templates\gameconfig.go:115:1
+19 battlelog generateSummaryText tactical\combat\battlelog\battle_summary.go:284:1
+19 framework (*ActionMap).ResolveInto gui\framework\actionmap.go:84:1
+19 overworldlog GenerateThreatSummary campaign\overworld\overworldlog\overworld_summary.go:49:1
+19 core (EventType).String campaign\overworld\core\types.go:160:1
+18 worldgen (*CavernGenerator).erosionAccretionPass world\worldgen\gen_cavern.go:511:1
+18 main DetectAlerts tools\report_compressor\aggregator.go:121:1
+
+------------------------------------------------------------------------
+  All functions with complexity > 10
+------------------------------------------------------------------------
+47 guicombat (*CombatInputHandler).HandleInput gui\guicombat\combat_input_handler.go:112:1
+37 garrisongen (*GarrisonRaidGenerator).Generate world\garrisongen\generator.go:37:1
+26 worldgen (*CavernGenerator).carveDrunkardTunnel world\worldgen\gen_cavern.go:366:1
+26 garrisongen carveZShapeCorridor world\garrisongen\generator.go:309:1
+25 garrisongen placeDoorway world\garrisongen\generator.go:368:1
+25 templates validateOverworldConfig templates\validation.go:374:1
+24 perks validatePerkBalance tactical\powers\perks\balanceconfig.go:130:1
+24 combatcore processAttack tactical\combat\combatcore\combatprocessing.go:24:1
+23 worldgen CarveCorridorBetween world\worldgen\gen_helpers.go:170:1
+23 garrisongen BuildGarrisonDAG world\garrisongen\dag.go:94:1
+22 main renderUnitSummary tools\combat_visualizer\summary_renderer.go:118:1
+21 main LoadCSV tools\report_compressor\loader.go:11:1
+19 worldgen (*CavernGenerator).checkWalkableRatio world\worldgen\gen_cavern.go:579:1
+19 templates validateGameConfig templates\gameconfig.go:115:1
+19 battlelog generateSummaryText tactical\combat\battlelog\battle_summary.go:284:1
+19 framework (*ActionMap).ResolveInto gui\framework\actionmap.go:84:1
+19 overworldlog GenerateThreatSummary campaign\overworld\overworldlog\overworld_summary.go:49:1
+19 core (EventType).String campaign\overworld\core\types.go:160:1
+18 worldgen (*CavernGenerator).erosionAccretionPass world\worldgen\gen_cavern.go:511:1
+18 main DetectAlerts tools\report_compressor\aggregator.go:121:1
+18 main processEngagement tools\combat_balance\aggregator.go:73:1
+18 guisquads (*ArtifactMode).refreshInventory gui\guisquads\artifact_refresh.go:59:1
+17 combatmath GetCoverProvidersFor tactical\combat\combatmath\combatcover.go:11:1
+17 savesystem LoadGame setup\savesystem\savesystem.go:149:1
+17 chunks saveSquadMember setup\savesystem\chunks\squad_chunk.go:202:1
+17 combatlifecycle Grant mind\combatlifecycle\reward.go:48:1
+17 guiraid (*FloorMapRenderer).ComputeLayout gui\guiraid\floormap_renderer.go:86:1
+16 worldgen (*StrategicOverworldGenerator).placeFactionStartPositions world\worldgen\gen_overworld.go:304:1
+16 worldgen (*CavernGenerator).placeStalactites world\worldgen\gen_cavern.go:656:1
+16 worldgen (*CavernGenerator).cellularAutomataStep world\worldgen\gen_cavern.go:465:1
+16 worldgen (*CavernGenerator).buildMST world\worldgen\gen_cavern.go:286:1
+16 main main tools\combat_simulator\main.go:12:1
+16 templates validateGarrisonRaidConfig templates\validation.go:328:1
+16 squadcore CreateSquadFromTemplate tactical\squads\squadcore\squadcreation.go:294:1
+16 combatmath CalculateCoverBreakdown tactical\combat\combatmath\combatcover.go:69:1
+16 encounter (*EncounterService).ExitCombat mind\encounter\encounter_service.go:137:1
+16 guisquads (*SquadEditorMode).HandleInput gui\guisquads\squadeditormode.go:284:1
+16 guioverworld (*OverworldInputHandler).HandleInput gui\guioverworld\overworld_input_handler.go:34:1
+16 raid ActivateReserves campaign\raid\alert.go:13:1
+15 worldgen EnsureTerrainConnectivity world\worldgen\gen_helpers.go:207:1
+15 main renderEngagementTotals tools\combat_visualizer\summary_renderer.go:305:1
+15 main createSimSquad tools\combat_simulator\squad_factory.go:17:1
+15 templates validatePowerConfig templates\validation.go:201:1
+15 squadcore ComputeGenericPatternFiltered tactical\squads\squadcore\squadqueries.go:345:1
+15 perks LoadPerkDefinitions tactical\powers\perks\registry.go:121:1
+15 battlelog buildUnitSummary tactical\combat\battlelog\battle_summary.go:63:1
+15 behavior (*PositionalRiskLayer).getDirection mind\behavior\threat_positional.go:127:1
+15 guioverworld (*OverworldActionHandler).RecruitCommander gui\guioverworld\overworld_action_handler.go:271:1
+15 builders (*PanelBuilders).BuildPanel gui\builders\panels.go:219:1
+15 victory CheckVictoryCondition campaign\overworld\victory\system.go:13:1
+14 main parseRow tools\report_compressor\loader.go:117:1
+14 main renderHealSummary tools\combat_visualizer\summary_renderer.go:224:1
+14 main RunBattle tools\combat_simulator\combat_runner.go:20:1
+14 bootstrap CreateInitialPlayerSquads testing\bootstrap\initial_squads.go:21:1
+14 combatcore CheckAndTriggerAbilities tactical\combat\combatcore\combatabilities.go:14:1
+14 chunks (*RaidChunk).Save setup\savesystem\chunks\raid_chunk.go:91:1
+14 chunks (*MapChunk).Load setup\savesystem\chunks\map_chunk.go:121:1
+14 evaluation CalculateSquadPowerByRange mind\evaluation\power.go:228:1
+14 guiraid (*FloorMapRenderer).computeDepths gui\guiraid\floormap_renderer.go:456:1
+13 worldgen (*StrategicOverworldGenerator).placeGuildHalls world\worldgen\gen_overworld.go:446:1
+13 vfx (*RandomAnimator).Update visual\vfx\animators.go:22:1
+13 maprender (*TileRenderer).Render visual\maprender\tilerenderer.go:50:1
+13 graphics CreateShapeFromConfig visual\graphics\drawableshapes.go:84:1
+13 main main tools\combat_balance\main.go:12:1
+13 squadcore PlaceUnitInSquad tactical\squads\squadcore\squadcreation.go:149:1
+13 combatmath selectLowestArmorTarget tactical\combat\combatmath\combattargeting.go:168:1
+13 guisquads (*ArtifactMode).refreshEquipment gui\guisquads\artifact_refresh.go:261:1
+13 guioverworld (*OverworldActionHandler).EngageThreat gui\guioverworld\overworld_action_handler.go:98:1
+13 guiexploration init gui\guiexploration\exploration_panels_registry.go:74:1
+13 guicombat (*CombatInputHandler).handleSquadClick gui\guicombat\combat_input_handler.go:349:1
+13 guicombat (*CombatAnimationMode).Update gui\guicombat\combat_animation_mode.go:341:1
+13 builders (*PanelBuilders).BuildTypedPanel gui\builders\panels.go:390:1
+13 faction ExpandTerritory campaign\overworld\faction\system.go:162:1
+12 main main tools\combat_visualizer\main.go:11:1
+12 templates validateEncounterDefinitions templates\validation.go:76:1
+12 templates validateNodeDefinitions templates\validation.go:19:1
+12 gamesetup RestoreRenderables setup\gamesetup\savehelpers.go:51:1
+12 behavior (*PositionalRiskLayer).computeFlankingRisk mind\behavior\threat_positional.go:74:1
+12 guisquads (*ArtifactMode).refreshInventoryDetail gui\guisquads\artifact_refresh.go:195:1
+12 guiraid (*RaidMode).Enter gui\guiraid\raidmode.go:101:1
+12 guioverworld (*OverworldInputHandler).handleMouseClick gui\guioverworld\overworld_input_handler.go:117:1
+12 guiinspect (*InspectPanelController).PopulateGrid gui\guiinspect\inspect_panel.go:78:1
+12 framework BuildRegisteredPanel gui\framework\panelregistry.go:70:1
+12 builders CreatePanelWithConfig gui\builders\widgets.go:313:1
+12 overworldlog GenerateFactionSummary campaign\overworld\overworldlog\overworld_summary.go:120:1
+11 worldgen (*StrategicOverworldGenerator).isValidPOITerrain world\worldgen\gen_overworld.go:504:1
+11 main WriteCSV tools\combat_balance\csv_writer.go:10:1
+11 bootstrap EquipPlayerActivatedArtifacts testing\bootstrap\initial_artifacts.go:42:1
+11 templates validateAIConfig templates\validation.go:175:1
+11 unitdefs GetAttackType tactical\squads\unitdefs\enums.go:75:1
+11 squadcore MoveUnitInSquad tactical\squads\squadcore\squadcreation.go:239:1
+11 spells applyDamageSpell tactical\powers\spells\system.go:150:1
+11 artifacts EquipArtifact tactical\powers\artifacts\system.go:75:1
+11 savesystem SaveGame setup\savesystem\savesystem.go:84:1
+11 spawning createSquadForPowerBudget mind\spawning\squadscreation.go:66:1
+11 input (*CameraController).HandleInput input\cameracontroller.go:28:1
+11 guisquads (*SquadEditorMode).buildNavigationActions gui\guisquads\squadeditormode.go:199:1
+11 guisquads (*SquadEditorMode).backfillRosterWithSquadUnits gui\guisquads\squadeditor_roster.go:302:1
+11 guiraid (*FloorMapRenderer).renderHoverDetail gui\guiraid\floormap_renderer.go:363:1
+11 guicombat (*ThreatVisualizer).Update gui\guicombat\threatvisualizer.go:217:1
+11 builders CreateTextInputWithConfig gui\builders\widgets.go:381:1
+11 raid (*RaidRunner).ResolveEncounter campaign\raid\raidrunner.go:213:1
+11 core ValidateNodeRegistry campaign\overworld\core\node_registry.go:276:1
+
+  Total functions over 10: 103
+
+------------------------------------------------------------------------
+  Distribution by complexity bucket
+------------------------------------------------------------------------
+  Bucket        Count  Percent
+  ------        -----  -------
+  1-5            2003    83.8%
+  6-10            283    11.8%
+  11-15            64     2.7%
+  16-20            27     1.1%
+  21+              12     0.5%
+  Total          2389
+
+########################################################################
+#  PART B — Cognitive Complexity (gocognit)
+########################################################################
+
+------------------------------------------------------------------------
+  Average complexity
+------------------------------------------------------------------------
+  Average: 5.18 (over 1442 functions)
+
+------------------------------------------------------------------------
+  Top 20 most complex functions (hot spots)
+------------------------------------------------------------------------
+76 guicombat (*CombatInputHandler).HandleInput gui\guicombat\combat_input_handler.go:112:1
+74 garrisongen (*GarrisonRaidGenerator).Generate world\garrisongen\generator.go:37:1
+57 combatcore processAttack tactical\combat\combatcore\combatprocessing.go:24:1
+55 worldgen (*CavernGenerator).carveDrunkardTunnel world\worldgen\gen_cavern.go:366:1
+52 overworldlog GenerateThreatSummary campaign\overworld\overworldlog\overworld_summary.go:49:1
+49 worldgen (*CavernGenerator).checkWalkableRatio world\worldgen\gen_cavern.go:579:1
+46 guisquads (*ArtifactMode).refreshInventory gui\guisquads\artifact_refresh.go:59:1
+39 garrisongen BuildGarrisonDAG world\garrisongen\dag.go:94:1
+39 worldgen (*CavernGenerator).erosionAccretionPass world\worldgen\gen_cavern.go:511:1
+37 worldgen (*CavernGenerator).cellularAutomataStep world\worldgen\gen_cavern.go:465:1
+36 worldgen (*CavernGenerator).placeStalactites world\worldgen\gen_cavern.go:656:1
+34 garrisongen placeDoorway world\garrisongen\generator.go:368:1
+33 garrisongen carveZShapeCorridor world\garrisongen\generator.go:309:1
+33 main renderUnitSummary tools\combat_visualizer\summary_renderer.go:118:1
+32 worldgen (*CavernGenerator).buildMST world\worldgen\gen_cavern.go:286:1
+31 main LoadCSV tools\report_compressor\loader.go:11:1
+31 squadcore CreateSquadFromTemplate tactical\squads\squadcore\squadcreation.go:294:1
+31 guiexploration init gui\guiexploration\exploration_panels_registry.go:74:1
+31 worldgen (*StrategicOverworldGenerator).placeFactionStartPositions world\worldgen\gen_overworld.go:304:1
+29 worldgen EnsureTerrainConnectivity world\worldgen\gen_helpers.go:207:1
+
+------------------------------------------------------------------------
+  All functions with complexity > 10
+------------------------------------------------------------------------
+76 guicombat (*CombatInputHandler).HandleInput gui\guicombat\combat_input_handler.go:112:1
+74 garrisongen (*GarrisonRaidGenerator).Generate world\garrisongen\generator.go:37:1
+57 combatcore processAttack tactical\combat\combatcore\combatprocessing.go:24:1
+55 worldgen (*CavernGenerator).carveDrunkardTunnel world\worldgen\gen_cavern.go:366:1
+52 overworldlog GenerateThreatSummary campaign\overworld\overworldlog\overworld_summary.go:49:1
+49 worldgen (*CavernGenerator).checkWalkableRatio world\worldgen\gen_cavern.go:579:1
+46 guisquads (*ArtifactMode).refreshInventory gui\guisquads\artifact_refresh.go:59:1
+39 garrisongen BuildGarrisonDAG world\garrisongen\dag.go:94:1
+39 worldgen (*CavernGenerator).erosionAccretionPass world\worldgen\gen_cavern.go:511:1
+37 worldgen (*CavernGenerator).cellularAutomataStep world\worldgen\gen_cavern.go:465:1
+36 worldgen (*CavernGenerator).placeStalactites world\worldgen\gen_cavern.go:656:1
+34 garrisongen placeDoorway world\garrisongen\generator.go:368:1
+33 garrisongen carveZShapeCorridor world\garrisongen\generator.go:309:1
+33 main renderUnitSummary tools\combat_visualizer\summary_renderer.go:118:1
+32 worldgen (*CavernGenerator).buildMST world\worldgen\gen_cavern.go:286:1
+31 main LoadCSV tools\report_compressor\loader.go:11:1
+31 squadcore CreateSquadFromTemplate tactical\squads\squadcore\squadcreation.go:294:1
+31 guiexploration init gui\guiexploration\exploration_panels_registry.go:74:1
+31 worldgen (*StrategicOverworldGenerator).placeFactionStartPositions world\worldgen\gen_overworld.go:304:1
+29 worldgen EnsureTerrainConnectivity world\worldgen\gen_helpers.go:207:1
+29 main createSimSquad tools\combat_simulator\squad_factory.go:17:1
+29 combatmath GetCoverProvidersFor tactical\combat\combatmath\combatcover.go:11:1
+29 behavior (*PositionalRiskLayer).computeFlankingRisk mind\behavior\threat_positional.go:74:1
+28 guisquads (*SquadEditorMode).backfillRosterWithSquadUnits gui\guisquads\squadeditor_roster.go:302:1
+27 main DetectAlerts tools\report_compressor\aggregator.go:121:1
+27 perks LoadPerkDefinitions tactical\powers\perks\registry.go:121:1
+27 main main tools\combat_simulator\main.go:12:1
+26 combatmath CalculateCoverBreakdown tactical\combat\combatmath\combatcover.go:69:1
+26 savesystem LoadGame setup\savesystem\savesystem.go:149:1
+25 templates validateGarrisonRaidConfig templates\validation.go:328:1
+25 overworldlog GenerateFactionSummary campaign\overworld\overworldlog\overworld_summary.go:120:1
+24 victory CheckVictoryCondition campaign\overworld\victory\system.go:13:1
+24 worldgen CarveCorridorBetween world\worldgen\gen_helpers.go:170:1
+24 guioverworld (*OverworldInputHandler).showGarrisonDialog gui\guioverworld\overworld_input_handler.go:286:1
+24 framework (*ActionMap).ResolveInto gui\framework\actionmap.go:84:1
+23 guiraid (*FloorMapRenderer).computeDepths gui\guiraid\floormap_renderer.go:456:1
+23 spells applyDamageSpell tactical\powers\spells\system.go:150:1
+23 guicombat (*CombatAnimationMode).Update gui\guicombat\combat_animation_mode.go:341:1
+23 perks validatePerkBalance tactical\powers\perks\balanceconfig.go:130:1
+22 main renderHealSummary tools\combat_visualizer\summary_renderer.go:224:1
+22 templates validateEncounterDefinitions templates\validation.go:76:1
+22 main RunBattle tools\combat_simulator\combat_runner.go:20:1
+21 guisquads (*ArtifactMode).refreshEquipment gui\guisquads\artifact_refresh.go:261:1
+21 guiraid (*FloorMapRenderer).ComputeLayout gui\guiraid\floormap_renderer.go:86:1
+21 framework BuildRegisteredPanel gui\framework\panelregistry.go:70:1
+21 roster (*UnitRoster).MarkUnitAvailable tactical\squads\roster\unitroster.go:133:1
+21 evaluation CalculateSquadPowerByRange mind\evaluation\power.go:228:1
+21 chunks (*GearChunk).RemapIDs setup\savesystem\chunks\gear_chunk.go:113:1
+21 guisquads (*ArtifactMode).refreshInventoryDetail gui\guisquads\artifact_refresh.go:195:1
+21 combatlifecycle Grant mind\combatlifecycle\reward.go:48:1
+20 main processEngagement tools\combat_balance\aggregator.go:73:1
+20 battlelog generateSummaryText tactical\combat\battlelog\battle_summary.go:284:1
+20 guioverworld (*OverworldInputHandler).HandleInput gui\guioverworld\overworld_input_handler.go:34:1
+20 guicombat (*CombatInputHandler).handleSquadClick gui\guicombat\combat_input_handler.go:349:1
+20 maprender (*TileRenderer).Render visual\maprender\tilerenderer.go:50:1
+20 squadcore ComputeGenericPatternFiltered tactical\squads\squadcore\squadqueries.go:345:1
+20 worldmapcore loadBiomeTiles world\worldmapcore\GameMapUtil.go:82:1
+19 guioverworld (*OverworldInputHandler).handleMouseClick gui\guioverworld\overworld_input_handler.go:117:1
+19 chunks (*RaidChunk).Save setup\savesystem\chunks\raid_chunk.go:91:1
+19 templates validatePowerConfig templates\validation.go:201:1
+19 encounter (*EncounterService).ExitCombat mind\encounter\encounter_service.go:137:1
+19 guisquads (*SquadEditorMode).buildNavigationActions gui\guisquads\squadeditormode.go:199:1
+19 worldgen (*StrategicOverworldGenerator).placeGuildHalls world\worldgen\gen_overworld.go:446:1
+19 templates validateOverworldConfig templates\validation.go:374:1
+18 bootstrap CreateInitialPlayerSquads testing\bootstrap\initial_squads.go:21:1
+18 guisquads (*SquadEditorMode).HandleInput gui\guisquads\squadeditormode.go:284:1
+18 templates validateGameConfig templates\gameconfig.go:115:1
+18 core ValidateNodeRegistry campaign\overworld\core\node_registry.go:276:1
+18 main renderEngagementTotals tools\combat_visualizer\summary_renderer.go:305:1
+18 templates validateNodeDefinitions templates\validation.go:19:1
+18 guisquads init gui\guisquads\unitpurchase_panels_registry.go:24:1
+18 chunks (*GearChunk).Save setup\savesystem\chunks\gear_chunk.go:53:1
+18 gamesetup RestoreRenderables setup\gamesetup\savehelpers.go:51:1
+17 worldgen (*CavernGenerator).seedChambers world\worldgen\gen_cavern.go:169:1
+17 raid ActivateReserves campaign\raid\alert.go:13:1
+17 chunks saveSquadMember setup\savesystem\chunks\squad_chunk.go:202:1
+17 main WriteCSV tools\combat_balance\csv_writer.go:10:1
+17 battlelog buildUnitSummary tactical\combat\battlelog\battle_summary.go:63:1
+17 behavior (*PositionalRiskLayer).computeRetreatQuality mind\behavior\threat_positional.go:202:1
+17 guiinspect (*InspectPanelController).PopulateGrid gui\guiinspect\inspect_panel.go:78:1
+16 main main tools\combat_balance\main.go:12:1
+16 chunks (*PlayerChunk).RemapIDs setup\savesystem\chunks\player_chunk.go:194:1
+16 squadcore MoveUnitInSquad tactical\squads\squadcore\squadcreation.go:239:1
+16 guicombat init gui\guicombat\combat_panels_registry.go:53:1
+16 guicombat (*CombatMode).initializeUpdateComponents gui\guicombat\combatmode.go:296:1
+16 raid (*RaidRunner).ResolveEncounter campaign\raid\raidrunner.go:213:1
+16 chunks (*MapChunk).Load setup\savesystem\chunks\map_chunk.go:121:1
+16 guisquads init gui\guisquads\squaddeployment_panels_registry.go:24:1
+16 bootstrap EquipPlayerActivatedArtifacts testing\bootstrap\initial_artifacts.go:42:1
+15 builders (*PanelBuilders).BuildPanel gui\builders\panels.go:219:1
+15 guisquads init gui\guisquads\squadeditor_panels_registry.go:49:1
+15 combatcore CheckAndTriggerAbilities tactical\combat\combatcore\combatabilities.go:14:1
+15 behavior (*CombatThreatLayer).Compute mind\behavior\threat_combat.go:46:1
+15 behavior (*PositionalRiskLayer).getDirection mind\behavior\threat_positional.go:127:1
+15 guiartifacts (*ArtifactActivationHandler).GetAvailableArtifacts gui\guiartifacts\artifact_handler.go:112:1
+15 overworldlog GenerateCombatSummary campaign\overworld\overworldlog\overworld_summary.go:168:1
+15 faction ExpandTerritory campaign\overworld\faction\system.go:162:1
+15 vfx (*RandomAnimator).Update visual\vfx\animators.go:22:1
+14 commander (*CommanderMovementSystem).GetValidMovementTiles tactical\commander\movement.go:92:1
+14 battlelog snapshotUnits tactical\combat\battlelog\combatlogging.go:25:1
+14 chunks (*SquadChunk).Save setup\savesystem\chunks\squad_chunk.go:151:1
+14 guioverworld (*OverworldActionHandler).RecruitCommander gui\guioverworld\overworld_action_handler.go:271:1
+14 combatservices NewCombatService tactical\combat\combatservices\combat_service.go:63:1
+14 combatcore (*CombatActionSystem).getUnitsInRange tactical\combat\combatcore\combatactionsystem.go:252:1
+14 worldgen (*StrategicOverworldGenerator).placePOIType world\worldgen\gen_overworld.go:393:1
+14 garrisongen TopologicalSort world\garrisongen\dag.go:307:1
+14 influence finalizeNetModifiers campaign\overworld\influence\system.go:89:1
+14 builders (*PanelBuilders).BuildTypedPanel gui\builders\panels.go:390:1
+14 worldgen (*StrategicOverworldGenerator).generateFBmMap world\worldgen\gen_overworld.go:130:1
+14 templates validateDifficultyConfig templates\difficulty.go:187:1
+14 main main tools\combat_visualizer\main.go:11:1
+14 ai (*AIController).DecideFactionTurn mind\ai\ai_controller.go:80:1
+14 combatlifecycle StripCombatComponents mind\combatlifecycle\cleanup.go:31:1
+14 artifacts ApplyArtifactStatEffects tactical\powers\artifacts\system.go:170:1
+14 garrison FindPlayerNodesNearFaction campaign\overworld\garrison\queries.go:46:1
+14 guiraid (*RaidMode).Enter gui\guiraid\raidmode.go:101:1
+13 combatmath RecordDamageToUnit tactical\combat\combatmath\combatcalculation.go:188:1
+13 combatmath selectLowestArmorTarget tactical\combat\combatmath\combattargeting.go:168:1
+13 main parseRow tools\report_compressor\loader.go:117:1
+13 savesystem SaveGame setup\savesystem\savesystem.go:84:1
+13 artifacts EquipArtifact tactical\powers\artifacts\system.go:75:1
+13 faction FortifyTerritory campaign\overworld\faction\system.go:214:1
+13 artifacts ValidateBehaviorCoverage tactical\powers\artifacts\registry.go:70:1
+13 common (*PositionSystem).ValidatePositionSync core\common\positionsystem.go:166:1
+13 builders CreateConfirmationDialog gui\builders\dialogs.go:116:1
+13 main RenderSquadGrid tools\combat_visualizer\grid_renderer.go:10:1
+13 combatservices (*CombatService).CheckVictoryCondition tactical\combat\combatservices\combat_service.go:288:1
+13 graphics CreateShapeFromConfig visual\graphics\drawableshapes.go:84:1
+13 worldgen FindBestOpenPosition world\worldgen\gen_helpers.go:310:1
+13 builders CreateSelectionDialog gui\builders\dialogs.go:325:1
+13 perks EquipPerk tactical\powers\perks\system.go:17:1
+13 worldgen (*CavernGenerator).carveNoiseShape world\worldgen\gen_cavern.go:221:1
+13 spawning getDifficultyModifier mind\spawning\util.go:74:1
+13 combatmath getUnitsInLine tactical\combat\combatmath\combattargeting.go:135:1
+13 garrisongen findSpawnsInZone world\garrisongen\meta.go:153:1
+13 threat UpdateThreatNodes campaign\overworld\threat\system.go:82:1
+13 guisquads CreateSquadList gui\guisquads\squadlists.go:26:1
+13 framework (*UIModeManager).updateInputState gui\framework\modemanager.go:143:1
+13 combatcore applyFireballEffect tactical\combat\combatcore\combatabilities.go:194:1
+12 chunks (*RaidChunk).RemapIDs setup\savesystem\chunks\raid_chunk.go:285:1
+12 combatmath selectHealTargets tactical\combat\combatmath\combattargeting.go:219:1
+12 combatcore (*CombatMovementSystem).GetValidMovementTiles tactical\combat\combatcore\combatmovementsystem.go:112:1
+12 guicombat (*ThreatVisualizer).Update gui\guicombat\threatvisualizer.go:217:1
+12 artifacts (*ArtifactDispatcher).DispatchPostReset tactical\powers\artifacts\dispatcher.go:54:1
+12 combatstate IsInZoneOfControl tactical\combat\combatstate\combatqueries.go:226:1
+12 raid generateFloor campaign\raid\garrison.go:42:1
+12 chunks (*PlayerChunk).Save setup\savesystem\chunks\player_chunk.go:63:1
+12 guioverworld (*OverworldRenderer).renderNodes gui\guioverworld\overworld_renderer.go:79:1
+12 worldgen FloodFillRegion world\worldgen\gen_helpers.go:141:1
+12 guioverworld (*OverworldActionHandler).EngageThreat gui\guioverworld\overworld_action_handler.go:98:1
+12 combatmath calculateBaseDamageAndCrit tactical\combat\combatmath\combatcalculation.go:94:1
+12 guisquads (*perkPanelController).refreshPerkPanel gui\guisquads\squadeditor_perks.go:59:1
+12 guiraid (*FloorMapRenderer).renderEdges gui\guiraid\floormap_renderer.go:207:1
+12 behavior (*PositionalRiskLayer).computeIsolationRisk mind\behavior\threat_positional.go:148:1
+12 faction ExecuteRaid campaign\overworld\faction\system.go:251:1
+11 builders CreateTextInputDialog gui\builders\dialogs.go:193:1
+11 artifacts applyPendingEffects tactical\powers\artifacts\behaviors.go:60:1
+11 guiraid (*FloorMapRenderer).renderHoverDetail gui\guiraid\floormap_renderer.go:363:1
+11 perks CountTanksInRow tactical\powers\perks\unithelpers.go:67:1
+11 framework (*SquadInfoCache).buildSquadInfo gui\framework\squadinfo_cache.go:42:1
+11 guicombat (*CombatMode).Enter gui\guicombat\combatmode.go:401:1
+11 effects TickEffects tactical\powers\effects\system.go:57:1
+11 main RenderEngagement tools\combat_visualizer\summary_renderer.go:9:1
+11 guioverworld FormatThreatInfo gui\guioverworld\overworld_formatters.go:17:1
+11 faction IsTileOwnedByAnyFaction campaign\overworld\faction\system.go:322:1
+11 spawning createSquadForPowerBudget mind\spawning\squadscreation.go:66:1
+11 ai (*ActionEvaluator).findNearestEnemy mind\ai\action_evaluator.go:291:1
+11 guicombat (*CombatAnimationMode).computeDefenderColorLists gui\guicombat\combat_animation_mode.go:183:1
+11 ai (*ActionEvaluator).getValidMovementTiles mind\ai\action_evaluator.go:161:1
+11 garrison AssignSquadToNode campaign\overworld\garrison\system.go:17:1
+11 garrisongen findDownstreamCriticalNodes world\garrisongen\dag.go:284:1
+11 framework (*ActionMap).modifiersMatch gui\framework\actionmap.go:130:1
+11 threat ExecuteThreatEvolutionEffect campaign\overworld\threat\system.go:143:1
+11 guicombat (*CombatAnimationMode).computeHealTargetColors gui\guicombat\combat_animation_mode.go:223:1
+11 chunks (*CommanderChunk).Save setup\savesystem\chunks\commander_chunk.go:55:1
+11 guicombat (*CombatTurnFlow).playNextAIAttack gui\guicombat\combat_turn_flow.go:149:1
+11 rendering processRenderablesCore visual\rendering\rendering.go:33:1
+11 ai (*ActionEvaluator).scoreZoCRisk mind\ai\action_evaluator.go:216:1
+11 squadcore PlaceUnitInSquad tactical\squads\squadcore\squadcreation.go:149:1
+11 worldgen ScoreTerrainOpenness world\worldgen\gen_helpers.go:293:1
+11 main main tools\report_compressor\main.go:12:1
+11 behavior PaintThreatToMap mind\behavior\threat_painting.go:24:1
+
+  Total functions over 10: 182
+
+------------------------------------------------------------------------
+  Distribution by complexity bucket
+------------------------------------------------------------------------
+  Bucket        Count  Percent
+  ------        -----  -------
+  1-5            1040    72.1%
+  6-10            220    15.3%
+  11-15            93     6.4%
+  16-20            39     2.7%
+  21+              50     3.5%
+  Total          1442
+
+########################################################################
+#  PART C — Structural Complexity (golangci-lint: funlen/nestif/dupl/maintidx)
+########################################################################
+
+------------------------------------------------------------------------
+  Findings by linter
+------------------------------------------------------------------------
+  Total findings: 70
+
+  Linter          Count
+  ------          -----
+  funlen             50
+  nestif             18
+  dupl                2
+
+  Legend:
+    funlen    — function too long (>60 lines or >40 statements by default)
+    nestif    — deeply nested if-blocks (default min complexity 5)
+    dupl      — near-duplicate code blocks (default threshold 150 tokens)
+    maintidx  — low maintainability index (composite of cyclomatic + halstead + LOC)
+
+------------------------------------------------------------------------
+  Top 20 files by finding count
+------------------------------------------------------------------------
+     3  tools\combat_visualizer\summary_renderer.go
+     3  gui\guisquads\artifact_refresh.go
+     3  gui\guicombat\combat_input_handler.go
+     3  gui\builders\panels.go
+     2  world\worldgen\gen_cavern.go
+     2  world\garrisongen\generator.go
+     2  world\garrisongen\dag.go
+     2  testing\bootstrap\initial_squads.go
+     2  tactical\combat\combatservices\combat_service.go
+     2  tactical\combat\combatmath\combatcalculation.go
+     2  tactical\combat\battlelog\battle_summary.go
+     2  setup\savesystem\chunks\squad_chunk.go
+     2  setup\savesystem\chunks\raid_chunk.go
+     2  gui\widgetresources\guiresources.go
+     2  gui\guiraid\floormap_renderer.go
+     2  gui\guioverworld\overworld_input_handler.go
+     2  gui\guicombat\combatmode.go
+     1  tools\combat_simulator\squad_factory.go
+     1  tools\combat_simulator\main.go
+     1  tools\combat_simulator\combat_runner.go
+
+------------------------------------------------------------------------
+  All findings (grouped by linter)
+------------------------------------------------------------------------
+  [dupl]
+    testing\bootstrap\initial_squads.go:168: 168-214 lines are duplicate of `testing\bootstrap\initial_squads.go:324-369` (dupl)
+    testing\bootstrap\initial_squads.go:324: 324-369 lines are duplicate of `testing\bootstrap\initial_squads.go:168-214` (dupl)
+
+  [funlen]
+    campaign\overworld\core\node_registry.go:76:6: Function 'newNodeRegistry' is too long (69 > 60) (funlen)
+    campaign\overworld\overworldlog\overworld_summary.go:49:6: Function 'GenerateThreatSummary' is too long (63 > 60) (funlen)
+    gui\builders\panels.go:219:26: Function 'BuildPanel' is too long (81 > 60) (funlen)
+    gui\builders\panels.go:390:26: Function 'BuildTypedPanel' is too long (66 > 60) (funlen)
+    gui\builders\widgets.go:381:6: Function 'CreateTextInputWithConfig' is too long (62 > 60) (funlen)
+    gui\framework\squadinfo_cache.go:42:27: Function 'buildSquadInfo' is too long (67 > 60) (funlen)
+    gui\guicombat\combat_input_handler.go:112:32: Function 'HandleInput' has too many statements (99 > 40) (funlen)
+    gui\guicombat\combat_panels_registry.go:53:6: Function 'init' is too long (341 > 60) (funlen)
+    gui\guicombat\combatmode.go:296:23: Function 'initializeUpdateComponents' is too long (68 > 60) (funlen)
+    gui\guicombat\combatmode.go:89:23: Function 'Initialize' is too long (113 > 60) (funlen)
+    gui\guiexploration\exploration_panels_registry.go:74:6: Function 'init' is too long (113 > 60) (funlen)
+    gui\guiraid\floormap_renderer.go:241:28: Function 'renderCard' has too many statements (60 > 40) (funlen)
+    gui\guiraid\floormap_renderer.go:86:28: Function 'ComputeLayout' has too many statements (57 > 40) (funlen)
+    gui\guiraid\raid_panels_registry.go:19:6: Function 'init' is too long (171 > 60) (funlen)
+    gui\guisquads\artifact_panels_registry.go:19:6: Function 'init' is too long (171 > 60) (funlen)
+    gui\guisquads\artifact_refresh.go:261:25: Function 'refreshEquipment' is too long (61 > 60) (funlen)
+    gui\guisquads\artifact_refresh.go:59:25: Function 'refreshInventory' is too long (97 > 60) (funlen)
+    gui\guisquads\squaddeployment_panels_registry.go:24:6: Function 'init' is too long (132 > 60) (funlen)
+    gui\guisquads\squadeditor_panels_registry.go:49:6: Function 'init' is too long (384 > 60) (funlen)
+    gui\guisquads\squadeditor_perks.go:59:32: Function 'refreshPerkPanel' is too long (72 > 60) (funlen)
+    gui\guisquads\squadeditormode.go:284:29: Function 'HandleInput' is too long (65 > 60) (funlen)
+    gui\guisquads\unitpurchase_panels_registry.go:24:6: Function 'init' is too long (167 > 60) (funlen)
+    gui\widgetresources\guiresources.go:178:6: Function 'newTextAreaResources' is too long (70 > 60) (funlen)
+    gui\widgetresources\guiresources.go:81:6: Function 'newListResources' is too long (84 > 60) (funlen)
+    input\cameracontroller.go:28:29: Function 'HandleInput' is too long (61 > 60) (funlen)
+    mind\evaluation\power.go:228:6: Function 'CalculateSquadPowerByRange' is too long (78 > 60) (funlen)
+    mind\spawning\squadscreation.go:66:6: Function 'createSquadForPowerBudget' is too long (65 > 60) (funlen)
+    setup\savesystem\chunks\map_chunk.go:121:20: Function 'Load' has too many statements (46 > 40) (funlen)
+    setup\savesystem\chunks\raid_chunk.go:194:21: Function 'Load' is too long (73 > 60) (funlen)
+    setup\savesystem\chunks\raid_chunk.go:91:21: Function 'Save' is too long (91 > 60) (funlen)
+    setup\savesystem\chunks\squad_chunk.go:202:6: Function 'saveSquadMember' is too long (91 > 60) (funlen)
+    setup\savesystem\chunks\squad_chunk.go:350:6: Function 'loadSquadMember' is too long (85 > 60) (funlen)
+    tactical\combat\battlelog\battle_summary.go:284:6: Function 'generateSummaryText' is too long (63 > 60) (funlen)
+    tactical\combat\battlelog\battle_summary.go:63:6: Function 'buildUnitSummary' is too long (77 > 60) (funlen)
+    tactical\combat\combatmath\combatcover.go:69:6: Function 'CalculateCoverBreakdown' has too many statements (44 > 40) (funlen)
+    tactical\combat\combatservices\combat_service.go:63:6: Function 'NewCombatService' is too long (74 > 60) (funlen)
+    tactical\powers\perks\balanceconfig.go:130:6: Function 'validatePerkBalance' has too many statements (42 > 40) (funlen)
+    tactical\squads\squadcore\squadcreation.go:294:6: Function 'CreateSquadFromTemplate' has too many statements (48 > 40) (funlen)
+    tactical\squads\unitdefs\templates.go:41:6: Function 'CreateUnitTemplates' is too long (64 > 60) (funlen)
+    tools\combat_balance\aggregator.go:73:6: Function 'processEngagement' has too many statements (53 > 40) (funlen)
+    tools\combat_balance\csv_writer.go:10:6: Function 'WriteCSV' is too long (98 > 60) (funlen)
+    tools\combat_balance\main.go:12:6: Function 'main' has too many statements (41 > 40) (funlen)
+    tools\combat_simulator\combat_runner.go:20:6: Function 'RunBattle' has too many statements (43 > 40) (funlen)
+    tools\combat_simulator\main.go:12:6: Function 'main' has too many statements (71 > 40) (funlen)
+    tools\combat_simulator\squad_factory.go:17:6: Function 'createSimSquad' is too long (82 > 60) (funlen)
+    tools\combat_visualizer\summary_renderer.go:118:6: Function 'renderUnitSummary' has too many statements (48 > 40) (funlen)
+    tools\combat_visualizer\summary_renderer.go:224:6: Function 'renderHealSummary' has too many statements (49 > 40) (funlen)
+    tools\combat_visualizer\summary_renderer.go:305:6: Function 'renderEngagementTotals' has too many statements (70 > 40) (funlen)
+    world\garrisongen\dag.go:94:6: Function 'BuildGarrisonDAG' has too many statements (73 > 40) (funlen)
+    world\garrisongen\generator.go:37:33: Function 'Generate' has too many statements (113 > 40) (funlen)
+
+  [nestif]
+    gui\builders\panels.go:394:1: `if config.SpecName != ""` has complex nested blocks (complexity: 8) (nestif)
+    gui\framework\panelregistry.go:83:1: `if desc.OnCreate == nil` has complex nested blocks (complexity: 9) (nestif)
+    gui\guicombat\combat_input_handler.go:120:1: `if cih.spellPanel != nil && cih.spellPanel.Handler().IsInSpellMode()` has complex nested blocks (complexity: 16) (nestif)
+    gui\guicombat\combat_input_handler.go:382:1: `if factionData != nil && factionData.IsPlayerControlled` has complex nested blocks (complexity: 8) (nestif)
+    gui\guicombat\combat_turn_flow.go:164:1: `if exists` has complex nested blocks (complexity: 5) (nestif)
+    gui\guioverworld\overworld_input_handler.go:138:1: `if commanderID != 0` has complex nested blocks (complexity: 6) (nestif)
+    gui\guioverworld\overworld_input_handler.go:328:1: `if label == selected` has complex nested blocks (complexity: 6) (nestif)
+    gui\guisquads\artifact_refresh.go:138:1: `if e == selected && i < len(entryIDs)` has complex nested blocks (complexity: 7) (nestif)
+    gui\guisquads\squadeditor_grid.go:29:1: `if len(unitIDs) > 0` has complex nested blocks (complexity: 5) (nestif)
+    mind\behavior\threat_positional.go:128:1: `if dx == 0 && dy > 0` has complex nested blocks (complexity: 7) (nestif)
+    tactical\combat\combatcore\combatprocessing.go:88:1: `if event.WasKilled && dispatcher != nil` has complex nested blocks (complexity: 13) (nestif)
+    tactical\combat\combatmath\combatcalculation.go:115:1: `if modifiers.SkipCrit` has complex nested blocks (complexity: 6) (nestif)
+    tactical\combat\combatmath\combatcalculation.go:194:1: `if attr != nil` has complex nested blocks (complexity: 5) (nestif)
+    tactical\combat\combatservices\combat_service.go:316:1: `if factionsWithSquads <= 1` has complex nested blocks (complexity: 5) (nestif)
+    world\garrisongen\dag.go:188:1: `if currentTotal < targetTotal && common.GetRandomBetween(1, 10) <= 4` has complex nested blocks (complexity: 7) (nestif)
+    world\garrisongen\generator.go:375:1: `if onLeft || onRight` has complex nested blocks (complexity: 9) (nestif)
+    world\worldgen\gen_cavern.go:395:1: `if float64(common.GetDiceRoll(100))/100.0 <= g.config.TunnelBias` has complex nested blocks (complexity: 11) (nestif)
+    world\worldgen\gen_cavern.go:590:1: `if ratio > g.config.TargetWalkableMax` has complex nested blocks (complexity: 7) (nestif)
+
+========================================================================
+  End of report
+========================================================================

@@ -1,9 +1,10 @@
 package core
 
 import (
+	"game_main/campaign/overworld/ids"
 	"game_main/core/common"
-	"game_main/templates"
 	"game_main/core/coords"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -86,7 +87,7 @@ func GetThreatNodeAt(manager *common.EntityManager, pos coords.LogicalPosition) 
 			continue
 		}
 		data := common.GetComponentTypeByID[*OverworldNodeData](manager, entityID, OverworldNodeComponent)
-		if data != nil && IsHostileOwner(data.OwnerID) {
+		if data != nil && ids.IsHostileOwner(data.OwnerID) {
 			return entityID
 		}
 	}

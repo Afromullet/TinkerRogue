@@ -3,10 +3,11 @@ package node
 import (
 	"fmt"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
-	"game_main/templates"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 	"game_main/core/coords"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
@@ -14,10 +15,10 @@ import (
 // CreateNodeParams contains all parameters needed to create a unified overworld node.
 type CreateNodeParams struct {
 	Position         coords.LogicalPosition
-	NodeTypeID       string
-	OwnerID          string
+	NodeTypeID       ids.NodeTypeID
+	OwnerID          ids.OwnerID
 	InitialIntensity int
-	EncounterID      string
+	EncounterID      ids.EncounterID
 	CurrentTick      int64
 }
 
@@ -73,12 +74,12 @@ func CreateNode(manager *common.EntityManager, params CreateNodeParams) (ecs.Ent
 // CreatePlayerNode creates a new player-owned node at the given position.
 // Delegates to CreateNode with player-specific defaults, then logs the event.
 // If playerEntityID is non-zero, deducts the node's resource cost from the player's stockpile.
-func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition, nodeTypeID core.NodeTypeID, currentTick int64, playerEntityID ecs.EntityID) (ecs.EntityID, error) {
+func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition, nodeTypeID ids.NodeTypeID, currentTick int64, playerEntityID ecs.EntityID) (ecs.EntityID, error) {
 	// Deduct resource cost if player entity is provided
 	if playerEntityID != 0 {
-		nodeDef := core.GetNodeRegistry().GetNodeByID(string(nodeTypeID))
+		nodeDef := core.GetNodeRegistry().GetNodeByID(nodeTypeID)
 		if nodeDef == nil {
-			return 0, fmt.Errorf("unknown node type ID: %q", string(nodeTypeID))
+			return 0, fmt.Errorf("unknown node type ID: %q", nodeTypeID)
 		}
 		stockpile := common.GetResourceStockpile(playerEntityID, manager)
 		if stockpile != nil {
@@ -90,8 +91,8 @@ func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition,
 
 	entityID, err := CreateNode(manager, CreateNodeParams{
 		Position:    pos,
-		NodeTypeID:  string(nodeTypeID),
-		OwnerID:     core.OwnerPlayer,
+		NodeTypeID:  nodeTypeID,
+		OwnerID:     ids.OwnerPlayer,
 		CurrentTick: currentTick,
 	})
 	if err != nil {
@@ -100,7 +101,7 @@ func CreatePlayerNode(manager *common.EntityManager, pos coords.LogicalPosition,
 
 	core.LogEvent(core.EventPlayerNodePlaced, currentTick, entityID,
 		fmt.Sprintf("Player node '%s' placed at (%d, %d)",
-			string(nodeTypeID), pos.X, pos.Y), nil)
+			nodeTypeID, pos.X, pos.Y), nil)
 
 	return entityID, nil
 }

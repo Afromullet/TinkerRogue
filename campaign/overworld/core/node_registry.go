@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 
+	"game_main/campaign/overworld/ids"
 	"game_main/templates"
 )
 
@@ -17,7 +18,7 @@ type ThreatTypeParams struct {
 // NodeDefinition is the runtime representation of an overworld node.
 // This is the new format that separates node properties from encounter properties.
 type NodeDefinition struct {
-	ID          string // The node type ID (e.g., "necromancer")
+	ID          ids.NodeTypeID // The node type ID (e.g., "necromancer")
 	Category    NodeCategory
 	DisplayName string
 
@@ -30,7 +31,7 @@ type NodeDefinition struct {
 	CanSpawnChildren bool
 
 	// Faction (for threat nodes)
-	FactionID string
+	FactionID ids.FactionID
 
 	// Resource cost to place this node
 	Cost ResourceCost
@@ -39,22 +40,22 @@ type NodeDefinition struct {
 // EncounterDefinition is the runtime representation of combat mechanics.
 // This is separate from node properties.
 type EncounterDefinition struct {
-	ID                string
-	EncounterTypeID   string
+	ID                ids.EncounterID
+	EncounterTypeID   ids.EncounterTypeID
 	EncounterTypeName string
 	SquadPreferences  []string
 	DefaultDifficulty int
 	Tags              []string
 
 	// Faction
-	FactionID string
+	FactionID ids.FactionID
 }
 
 // NodeRegistry provides lookups for node and encounter definitions.
 // This is the new unified registry that supports multiple node types.
 type NodeRegistry struct {
-	nodesByID        map[string]*NodeDefinition      // "necromancer" -> def (ThreatType is now string-based)
-	encountersByID   map[string]*EncounterDefinition // "necromancer" -> def
+	nodesByID        map[ids.NodeTypeID]*NodeDefinition  // "necromancer" -> def
+	encountersByID   map[ids.EncounterID]*EncounterDefinition
 	defaultNode      *NodeDefinition
 	defaultEncounter *EncounterDefinition
 	initialized      bool
@@ -75,14 +76,14 @@ func GetNodeRegistry() *NodeRegistry {
 // newNodeRegistry creates and initializes a new node registry from JSON templates.
 func newNodeRegistry() *NodeRegistry {
 	registry := &NodeRegistry{
-		nodesByID:      make(map[string]*NodeDefinition),
-		encountersByID: make(map[string]*EncounterDefinition),
+		nodesByID:      make(map[ids.NodeTypeID]*NodeDefinition),
+		encountersByID: make(map[ids.EncounterID]*EncounterDefinition),
 	}
 
 	// Load node definitions from JSON templates
 	for _, jsonDef := range templates.NodeDefinitionTemplates {
 		def := &NodeDefinition{
-			ID:          jsonDef.ID, // This is the ThreatType (string)
+			ID:          jsonDef.ID, // typed NodeTypeID from JSON DTO
 			Category:    NodeCategory(jsonDef.Category),
 			DisplayName: jsonDef.DisplayName,
 			Color: color.RGBA{
@@ -154,9 +155,9 @@ func newNodeRegistry() *NodeRegistry {
 
 // --- Node Lookup Methods ---
 
-// GetNodeByID returns a node definition by its string ID.
+// GetNodeByID returns a node definition by its NodeTypeID.
 // Returns default if not found.
-func (r *NodeRegistry) GetNodeByID(id string) *NodeDefinition {
+func (r *NodeRegistry) GetNodeByID(id ids.NodeTypeID) *NodeDefinition {
 	if def, ok := r.nodesByID[id]; ok {
 		return def
 	}
@@ -168,7 +169,7 @@ func (r *NodeRegistry) GetNodeByID(id string) *NodeDefinition {
 // Since ThreatType is now string-based, this is the same as GetNodeByID.
 // Kept for API compatibility.
 func (r *NodeRegistry) GetNodeByType(threatType ThreatType) *NodeDefinition {
-	return r.GetNodeByID(string(threatType))
+	return r.GetNodeByID(ids.NodeTypeID(threatType))
 }
 
 // GetPlaceableNodeTypes returns all settlement and fortress nodes available for player placement.
@@ -184,9 +185,9 @@ func (r *NodeRegistry) GetPlaceableNodeTypes() []*NodeDefinition {
 
 // --- Encounter Lookup Methods ---
 
-// GetEncounterByID returns an encounter definition by its string ID.
+// GetEncounterByID returns an encounter definition by its EncounterID.
 // Returns default if not found.
-func (r *NodeRegistry) GetEncounterByID(id string) *EncounterDefinition {
+func (r *NodeRegistry) GetEncounterByID(id ids.EncounterID) *EncounterDefinition {
 	if enc, ok := r.encountersByID[id]; ok {
 		return enc
 	}
@@ -210,7 +211,7 @@ func (r *NodeRegistry) GetEncounterForThreatType(threatType ThreatType) *Encount
 // GetEncountersByFaction returns all encounters for a specific faction.
 // Supports multiple encounter types per faction (basic, elite, boss variants).
 // Returns empty slice if no encounters found for the faction.
-func (r *NodeRegistry) GetEncountersByFaction(factionID string) []*EncounterDefinition {
+func (r *NodeRegistry) GetEncountersByFaction(factionID ids.FactionID) []*EncounterDefinition {
 	var encounters []*EncounterDefinition
 	for _, enc := range r.encountersByID {
 		if enc.FactionID == factionID {
@@ -222,7 +223,7 @@ func (r *NodeRegistry) GetEncountersByFaction(factionID string) []*EncounterDefi
 
 // GetEncounterByTypeID returns an encounter definition by its EncounterTypeID field.
 // Linear scan — returns first match or default.
-func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDefinition {
+func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID ids.EncounterTypeID) *EncounterDefinition {
 	for _, enc := range r.encountersByID {
 		if enc.EncounterTypeID == encounterTypeID {
 			return enc
@@ -235,7 +236,7 @@ func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID string) *EncounterDe
 // GetThreatTypeForFaction returns the ThreatType for a faction.
 // Finds the first threat-category node whose FactionID matches.
 func (r *NodeRegistry) GetThreatTypeForFaction(factionType FactionType) ThreatType {
-	factionID := factionType.String()
+	factionID := FactionIDFor(factionType)
 	for _, node := range r.nodesByID {
 		if node.Category == NodeCategoryThreat && node.FactionID == factionID {
 			return ThreatType(node.ID)
@@ -262,7 +263,7 @@ func (r *NodeRegistry) GetOverworldParams(threatType ThreatType) ThreatTypeParam
 }
 
 // GetEncounterTypeID returns the encounter type ID for a threat type.
-func (r *NodeRegistry) GetEncounterTypeID(threatType ThreatType) string {
+func (r *NodeRegistry) GetEncounterTypeID(threatType ThreatType) ids.EncounterTypeID {
 	enc := r.GetEncounterForThreatType(threatType)
 	if enc == nil {
 		return ""

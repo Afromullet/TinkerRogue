@@ -1,6 +1,7 @@
 package core
 
 import (
+	"game_main/campaign/overworld/ids"
 	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
@@ -84,11 +85,11 @@ type TravelStateData struct {
 
 // OverworldEncounterData - Encounter metadata created from overworld threats
 type OverworldEncounterData struct {
-	Name          string       // Display name (e.g., "Goblin Patrol")
-	Level         int          // Difficulty level
-	EncounterType string       // Type identifier for spawn logic
-	IsDefeated    bool         // Marked true after victory
-	ThreatNodeID  ecs.EntityID // Link to overworld threat node (0 if not from threat)
+	Name          string              // Display name (e.g., "Goblin Patrol")
+	Level         int                 // Difficulty level
+	EncounterType ids.EncounterTypeID // Type identifier for spawn logic
+	IsDefeated    bool                // Marked true after victory
+	ThreatNodeID  ecs.EntityID        // Link to overworld threat node (0 if not from threat)
 
 	// Garrison defense fields
 	IsGarrisonDefense    bool        // True if this is a garrison defense encounter
@@ -136,14 +137,14 @@ type InteractionData struct {
 // OverworldNodeData - Unified data component for all overworld nodes (threats, settlements, POIs).
 // Replaces both ThreatNodeData and PlayerNodeData with explicit faction ownership.
 type OverworldNodeData struct {
-	NodeID         ecs.EntityID // Entity ID of this node
-	NodeTypeID     string       // "necromancer", "town", "watchtower", etc.
-	Category       NodeCategory // Cached: "threat", "settlement", "fortress"
-	OwnerID        string       // "player", "Neutral", "Necromancers", etc.
-	EncounterID    string       // Empty for non-combat nodes
-	Intensity      int          // 0 for settlements
-	GrowthProgress float64      // 0.0 for non-growing nodes
-	GrowthRate     float64      // 0.0 for settlements
+	NodeID         ecs.EntityID    // Entity ID of this node
+	NodeTypeID     ids.NodeTypeID  // "necromancer", "town", "watchtower", etc.
+	Category       NodeCategory    // Cached: "threat", "settlement", "fortress"
+	OwnerID        ids.OwnerID     // "player", "Neutral", "Necromancers", etc.
+	EncounterID    ids.EncounterID // Empty for non-combat nodes
+	Intensity      int             // 0 for settlements
+	GrowthProgress float64         // 0.0 for non-growing nodes
+	GrowthRate     float64         // 0.0 for settlements
 	IsContained    bool
 	CreatedTick    int64
 }

@@ -3,13 +3,14 @@ package guinodeplacement
 import (
 	"fmt"
 
+	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/campaign/overworld/node"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/gui/framework"
 	"game_main/gui/guioverworld"
-	"game_main/campaign/overworld/core"
-	"game_main/campaign/overworld/node"
 	"game_main/templates"
-	"game_main/core/coords"
 
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -23,7 +24,7 @@ type NodePlacementMode struct {
 	renderer *guioverworld.OverworldRenderer
 
 	// Placement state
-	selectedNodeType core.NodeTypeID
+	selectedNodeType ids.NodeTypeID
 	nodeTypes        []*core.NodeDefinition
 	cursorPos        *coords.LogicalPosition
 	lastValidation   *node.PlacementResult
@@ -89,7 +90,7 @@ func (npm *NodePlacementMode) Enter(fromMode framework.UIMode) error {
 
 	// Default select first type if available
 	if len(npm.nodeTypes) > 0 && npm.selectedNodeType == "" {
-		npm.selectedNodeType = core.NodeTypeID(npm.nodeTypes[0].ID)
+		npm.selectedNodeType = npm.nodeTypes[0].ID
 	}
 
 	npm.refreshNodeList()
@@ -140,7 +141,7 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 	}
 	for i, action := range nodeTypeActions {
 		if inputState.ActionActive(action) && i < len(npm.nodeTypes) {
-			npm.selectedNodeType = core.NodeTypeID(npm.nodeTypes[i].ID)
+			npm.selectedNodeType = npm.nodeTypes[i].ID
 			npm.refreshNodeList()
 			npm.refreshPlacementInfo()
 			return true
@@ -153,7 +154,7 @@ func (npm *NodePlacementMode) HandleInput(inputState *framework.InputState) bool
 
 	// Validate on hover for preview feedback (includes resource check)
 	commanderPos := npm.getSelectedCommanderPos()
-	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, logicalPos, commanderPos, npm.Context.PlayerData.PlayerEntityID, string(npm.selectedNodeType))
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, logicalPos, commanderPos, npm.Context.PlayerData.PlayerEntityID, npm.selectedNodeType)
 	npm.lastValidation = &result
 
 	// Left click to place node
@@ -173,7 +174,7 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 
 	playerEntityID := npm.Context.PlayerData.PlayerEntityID
 	commanderPos := npm.getSelectedCommanderPos()
-	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, pos, commanderPos, playerEntityID, string(npm.selectedNodeType))
+	result := node.ValidatePlayerPlacementWithCost(npm.Context.ECSManager, pos, commanderPos, playerEntityID, npm.selectedNodeType)
 	if !result.Valid {
 		npm.setInfo(fmt.Sprintf("Cannot place: %s", result.Reason))
 		return
@@ -186,7 +187,7 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 		return
 	}
 
-	nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
+	nodeDef := core.GetNodeRegistry().GetNodeByID(npm.selectedNodeType)
 	displayName := string(npm.selectedNodeType)
 	if nodeDef != nil {
 		displayName = nodeDef.DisplayName
@@ -200,14 +201,14 @@ func (npm *NodePlacementMode) handlePlaceNode(pos coords.LogicalPosition) {
 func (npm *NodePlacementMode) cycleNodeType() {
 	currentIdx := -1
 	for i, node := range npm.nodeTypes {
-		if node.ID == string(npm.selectedNodeType) {
+		if node.ID == npm.selectedNodeType {
 			currentIdx = i
 			break
 		}
 	}
 
 	nextIdx := (currentIdx + 1) % len(npm.nodeTypes)
-	npm.selectedNodeType = core.NodeTypeID(npm.nodeTypes[nextIdx].ID)
+	npm.selectedNodeType = npm.nodeTypes[nextIdx].ID
 	npm.refreshNodeList()
 	npm.refreshPlacementInfo()
 }
@@ -230,7 +231,7 @@ func (npm *NodePlacementMode) refreshNodeList() {
 
 	for i, nodeDef := range npm.nodeTypes {
 		marker := "  "
-		if nodeDef.ID == string(npm.selectedNodeType) {
+		if nodeDef.ID == npm.selectedNodeType {
 			marker = "> "
 		}
 		costStr := fmt.Sprintf("I:%d W:%d S:%d", nodeDef.Cost.Iron, nodeDef.Cost.Wood, nodeDef.Cost.Stone)
@@ -264,7 +265,7 @@ func (npm *NodePlacementMode) refreshPlacementInfo() {
 	}
 
 	if npm.selectedNodeType != "" {
-		nodeDef := core.GetNodeRegistry().GetNodeByID(string(npm.selectedNodeType))
+		nodeDef := core.GetNodeRegistry().GetNodeByID(npm.selectedNodeType)
 		if nodeDef != nil {
 			text += fmt.Sprintf("Selected: %s\n", nodeDef.DisplayName)
 			text += fmt.Sprintf("Category: %s\n", nodeDef.Category)

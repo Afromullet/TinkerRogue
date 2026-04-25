@@ -27,7 +27,7 @@ func FormatThreatInfo(nodeID ecs.EntityID, queries *framework.GUIQueries, manage
 	}
 
 	nodeDef := core.GetNodeRegistry().GetNodeByID(data.NodeTypeID)
-	displayName := data.NodeTypeID
+	displayName := string(data.NodeTypeID)
 	if nodeDef != nil {
 		displayName = nodeDef.DisplayName
 	}

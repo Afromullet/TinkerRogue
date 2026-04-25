@@ -3,12 +3,13 @@ package guioverworld
 import (
 	"image/color"
 
-	"game_main/core/common"
-	"game_main/gui/framework"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
+	"game_main/core/coords"
+	"game_main/gui/framework"
 	"game_main/tactical/commander"
 	"game_main/visual/maprender"
-	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
@@ -140,9 +141,9 @@ func (r *OverworldRenderer) renderInfluenceZones(screen *ebiten.Image) {
 
 		// Color based on owner type
 		var influenceColor color.RGBA
-		if core.IsHostileOwner(nodeData.OwnerID) {
+		if ids.IsHostileOwner(nodeData.OwnerID) {
 			influenceColor = color.RGBA{255, 200, 100, 50} // warm for hostile
-		} else if nodeData.OwnerID == core.OwnerNeutral {
+		} else if nodeData.OwnerID == ids.OwnerNeutral {
 			influenceColor = color.RGBA{220, 200, 100, 40} // muted yellow for neutral
 		} else {
 			influenceColor = color.RGBA{100, 200, 255, 50} // cool for player
@@ -261,11 +262,11 @@ func (r *OverworldRenderer) renderSelectionHighlight(screen *ebiten.Image) {
 }
 
 // getOwnerBorderColor returns the border color based on node owner.
-func (r *OverworldRenderer) getOwnerBorderColor(ownerID string) color.RGBA {
+func (r *OverworldRenderer) getOwnerBorderColor(ownerID ids.OwnerID) color.RGBA {
 	switch {
-	case ownerID == core.OwnerPlayer:
+	case ownerID == ids.OwnerPlayer:
 		return color.RGBA{R: 255, G: 255, B: 255, A: 180} // white for player
-	case ownerID == core.OwnerNeutral:
+	case ownerID == ids.OwnerNeutral:
 		return color.RGBA{R: 218, G: 165, B: 32, A: 200} // gold for neutral
 	default:
 		return color.RGBA{R: 255, G: 50, B: 50, A: 180} // red for hostile

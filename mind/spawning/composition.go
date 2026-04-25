@@ -1,8 +1,9 @@
 package spawning
 
 import (
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 )
 
 // getSquadComposition returns squad type distribution based on encounter type.
@@ -36,7 +37,7 @@ func generateRandomComposition(count int) []string {
 
 // getSquadPreferences retrieves preferred squad composition for an encounter type.
 // Returns nil if the encounter type is not found, allowing random-composition fallback.
-func getSquadPreferences(encounterTypeID string) []string {
+func getSquadPreferences(encounterTypeID ids.EncounterTypeID) []string {
 	enc := core.GetNodeRegistry().GetEncounterByTypeID(encounterTypeID)
 	if enc != nil && enc.ID != "default" {
 		prefs := make([]string, len(enc.SquadPreferences))

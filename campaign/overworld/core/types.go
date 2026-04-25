@@ -1,5 +1,7 @@
 package core
 
+import "game_main/campaign/overworld/ids"
+
 // NodeCategory represents the type of overworld node
 type NodeCategory string
 
@@ -32,23 +34,18 @@ func (t ThreatType) String() string {
 // EncounterTypeID returns the JSON encounter type ID for this threat.
 // Uses NodeRegistry for data-driven lookup.
 // These IDs match the "encounter.typeId" field in assets/gamedata/encounterdata.json.
-func (t ThreatType) EncounterTypeID() string {
+func (t ThreatType) EncounterTypeID() ids.EncounterTypeID {
 	return GetNodeRegistry().GetEncounterTypeID(t)
 }
 
-// NodeTypeID identifies a placeable node type from nodeDefinitions.json
-type NodeTypeID string
+// AsNodeTypeID returns the threat type encoded as a NodeTypeID for registry lookups.
+func (t ThreatType) AsNodeTypeID() ids.NodeTypeID {
+	return ids.NodeTypeID(t)
+}
 
-const (
-	NodeTypeTown       NodeTypeID = "town"
-	NodeTypeGuildHall  NodeTypeID = "guild_hall"
-	NodeTypeTemple     NodeTypeID = "temple"
-	NodeTypeWatchtower NodeTypeID = "watchtower"
-)
-
-// String returns the display name for this node type.
-func (n NodeTypeID) String() string {
-	node := GetNodeRegistry().GetNodeByID(string(n))
+// NodeTypeDisplayName returns the display name for a node type, falling back to the raw ID.
+func NodeTypeDisplayName(n ids.NodeTypeID) string {
+	node := GetNodeRegistry().GetNodeByID(n)
 	if node != nil {
 		return node.DisplayName
 	}
@@ -96,21 +93,16 @@ func (f FactionType) String() string {
 	}
 }
 
-// --- Owner Constants ---
+// --- Owner / Faction Helpers ---
 
-const (
-	OwnerPlayer  = "player"
-	OwnerNeutral = "Neutral"
-)
-
-// IsHostileOwner returns true if the owner is neither player nor neutral.
-func IsHostileOwner(ownerID string) bool {
-	return ownerID != OwnerPlayer && ownerID != OwnerNeutral
+// OwnerIDFromFaction returns the canonical OwnerID string for a faction type.
+func OwnerIDFromFaction(f FactionType) ids.OwnerID {
+	return ids.OwnerID(f.String())
 }
 
-// IsFriendlyOwner returns true if the owner is the player.
-func IsFriendlyOwner(ownerID string) bool {
-	return ownerID == OwnerPlayer
+// FactionIDFor returns the canonical FactionID string for a faction type.
+func FactionIDFor(f FactionType) ids.FactionID {
+	return ids.FactionID(f.String())
 }
 
 // VictoryCondition represents win/loss state

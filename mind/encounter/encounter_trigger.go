@@ -3,8 +3,9 @@ package encounter
 import (
 	"fmt"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 
 	"github.com/bytearena/ecs"
 )
@@ -19,7 +20,7 @@ func createEncounterEntity(manager *common.EntityManager, data *core.OverworldEn
 
 // getEncounterDisplayName returns the display name for an encounter.
 // Falls back to threat type name if encounter is nil.
-func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID string) string {
+func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID ids.NodeTypeID) string {
 	if encounter != nil && encounter.EncounterTypeName != "" {
 		return encounter.EncounterTypeName
 	}
@@ -28,7 +29,7 @@ func getEncounterDisplayName(encounter *core.EncounterDefinition, nodeTypeID str
 	if nodeDef != nil {
 		return nodeDef.DisplayName
 	}
-	return nodeTypeID
+	return string(nodeTypeID)
 }
 
 // TriggerRandomEncounter creates a debug encounter entity directly, bypassing threat-node lookup.
@@ -82,7 +83,7 @@ func TriggerGarrisonDefense(
 	encounterData := &core.OverworldEncounterData{
 		Name:                 fmt.Sprintf("%s Raid on Garrison", attackingFactionType.String()),
 		Level:                1 + (attackingStrength / 20),
-		EncounterType:        string(core.MapFactionToThreatType(attackingFactionType)),
+		EncounterType:        ids.EncounterTypeID(core.MapFactionToThreatType(attackingFactionType)),
 		IsDefeated:           false,
 		ThreatNodeID:         targetNodeID,
 		IsGarrisonDefense:    true,

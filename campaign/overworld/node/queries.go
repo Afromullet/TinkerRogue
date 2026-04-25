@@ -3,24 +3,25 @@ package node
 import (
 	"math"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
 	"game_main/core/coords"
 )
 
 // CountPlayerNodes returns the total number of player-placed nodes.
 func CountPlayerNodes(manager *common.EntityManager) int {
-	return CountNodesByOwner(manager, core.OwnerPlayer)
+	return CountNodesByOwner(manager, ids.OwnerPlayer)
 }
 
 // GetNearestPlayerNodeDistance returns the distance to the nearest player node from pos.
 // Returns math.MaxFloat64 if no player nodes exist.
 func GetNearestPlayerNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition) float64 {
-	return GetNearestNodeDistance(manager, pos, core.OwnerPlayer)
+	return GetNearestNodeDistance(manager, pos, ids.OwnerPlayer)
 }
 
 // CountNodesByOwner returns the number of nodes owned by a specific owner.
-func CountNodesByOwner(manager *common.EntityManager, ownerID string) int {
+func CountNodesByOwner(manager *common.EntityManager, ownerID ids.OwnerID) int {
 	count := 0
 	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)
@@ -33,7 +34,7 @@ func CountNodesByOwner(manager *common.EntityManager, ownerID string) int {
 
 // GetNearestNodeDistance returns the Euclidean distance to the nearest node owned by ownerID.
 // Returns math.MaxFloat64 if no matching nodes exist.
-func GetNearestNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition, ownerID string) float64 {
+func GetNearestNodeDistance(manager *common.EntityManager, pos coords.LogicalPosition, ownerID ids.OwnerID) float64 {
 	nearest := math.MaxFloat64
 	for _, result := range core.OverworldNodeView.Get() {
 		data := common.GetComponentType[*core.OverworldNodeData](result.Entity, core.OverworldNodeComponent)

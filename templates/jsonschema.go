@@ -1,6 +1,7 @@
 package templates
 
 import (
+	"game_main/campaign/overworld/ids"
 	"game_main/core/common"
 )
 
@@ -300,13 +301,13 @@ type JSONNodeOverworld struct {
 // JSONNodeDefinition is the unified node configuration
 // A single entry defines an overworld node (threat, settlement, fortress, etc.)
 type JSONNodeDefinition struct {
-	ID          string `json:"id"`          // Unique identifier, e.g., "necromancer" - this IS the type
-	Category    string `json:"category"`    // "threat", "settlement", "fortress"
-	DisplayName string `json:"displayName"` // Human-readable name
+	ID          ids.NodeTypeID `json:"id"`          // Unique identifier, e.g., "necromancer" - this IS the type
+	Category    string         `json:"category"`    // "threat", "settlement", "fortress"
+	DisplayName string         `json:"displayName"` // Human-readable name
 
 	Color     JSONColor         `json:"color"`               // Display color on overworld map
 	Overworld JSONNodeOverworld `json:"overworld"`           // Overworld behavior
-	FactionID string            `json:"factionId,omitempty"` // Faction this node belongs to (for threat nodes)
+	FactionID ids.FactionID     `json:"factionId,omitempty"` // Faction this node belongs to (for threat nodes)
 	Cost      *JSONResourceCost `json:"cost,omitempty"`      // Resource cost to place this node
 }
 
@@ -329,13 +330,13 @@ type NodeDefinitionsData struct {
 
 // JSONEncounterDefinition defines combat mechanics for an encounter
 type JSONEncounterDefinition struct {
-	ID                string   `json:"id"`                // Unique identifier
-	EncounterTypeID   string   `json:"encounterTypeId"`   // e.g., "undead_basic"
-	EncounterTypeName string   `json:"encounterTypeName"` // e.g., "Undead Horde"
-	SquadPreferences  []string `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
-	DefaultDifficulty int      `json:"defaultDifficulty"` // Default difficulty level
-	Tags              []string `json:"tags"`              // e.g., ["common", "undead"]
-	FactionID         string   `json:"factionId"`         // Faction mapping
+	ID                ids.EncounterID     `json:"id"`                // Unique identifier
+	EncounterTypeID   ids.EncounterTypeID `json:"encounterTypeId"`   // e.g., "undead_basic"
+	EncounterTypeName string              `json:"encounterTypeName"` // e.g., "Undead Horde"
+	SquadPreferences  []string            `json:"squadPreferences"`  // e.g., ["melee", "melee", "magic"]
+	DefaultDifficulty int                 `json:"defaultDifficulty"` // Default difficulty level
+	Tags              []string            `json:"tags"`              // e.g., ["common", "undead"]
+	FactionID         ids.FactionID       `json:"factionId"`         // Faction mapping
 }
 
 // --- Map Generation Config Structs ---
@@ -457,8 +458,8 @@ type InfluenceCompetitionConfig struct {
 
 // InfluenceSuppressionConfig defines player node suppression parameters
 type InfluenceSuppressionConfig struct {
-	GrowthPenalty       float64            `json:"growthPenalty"`
-	NodeTypeMultipliers map[string]float64 `json:"nodeTypeMultipliers"`
+	GrowthPenalty       float64                    `json:"growthPenalty"`
+	NodeTypeMultipliers map[ids.NodeTypeID]float64 `json:"nodeTypeMultipliers"`
 }
 
 // JSONNamePool defines a pool of syllable parts for name generation

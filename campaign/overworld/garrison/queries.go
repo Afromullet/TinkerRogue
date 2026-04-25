@@ -1,11 +1,12 @@
 package garrison
 
 import (
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/core/common"
+	"game_main/core/coords"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -56,7 +57,7 @@ func FindPlayerNodesNearFaction(manager *common.EntityManager, factionTerritoryT
 	for _, result := range core.OverworldNodeView.Get() {
 		entity := result.Entity
 		nodeData := common.GetComponentType[*core.OverworldNodeData](entity, core.OverworldNodeComponent)
-		if nodeData == nil || !core.IsFriendlyOwner(nodeData.OwnerID) {
+		if nodeData == nil || !ids.IsFriendlyOwner(nodeData.OwnerID) {
 			continue
 		}
 

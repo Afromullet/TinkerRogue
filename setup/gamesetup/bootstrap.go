@@ -5,10 +5,12 @@ import (
 	"log"
 
 	"game_main/campaign/overworld/core"
+	"game_main/campaign/overworld/ids"
+	"game_main/campaign/overworld/node"
 	"game_main/campaign/overworld/tick"
 	"game_main/core/common"
-	"game_main/campaign/overworld/node"
 	"game_main/core/config"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/commander"
 	"game_main/tactical/powers/artifacts"
@@ -17,7 +19,6 @@ import (
 	"game_main/templates"
 	"game_main/testing/bootstrap"
 	"game_main/visual/graphics"
-	"game_main/core/coords"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
 
@@ -192,8 +193,8 @@ func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldm
 	for _, poi := range gm.POIs {
 		nodeID, err := node.CreateNode(em, node.CreateNodeParams{
 			Position:    poi.Position,
-			NodeTypeID:  poi.NodeID,
-			OwnerID:     core.OwnerNeutral,
+			NodeTypeID:  ids.NodeTypeID(poi.NodeID),
+			OwnerID:     ids.OwnerNeutral,
 			CurrentTick: currentTick,
 		})
 		if err != nil {
