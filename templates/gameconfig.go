@@ -42,12 +42,14 @@ type PlayerLimitsConfig struct {
 }
 
 type CommanderConfig struct {
-	MovementSpeed int `json:"movementSpeed"`
-	MaxCommanders int `json:"maxCommanders"`
-	Cost          int `json:"cost"`
-	MaxSquads     int `json:"maxSquads"`
-	StartingMana  int `json:"startingMana"`
-	MaxMana       int `json:"maxMana"`
+	MovementSpeed  int      `json:"movementSpeed"`
+	MaxCommanders  int      `json:"maxCommanders"`
+	Cost           int      `json:"cost"`
+	MaxSquads      int      `json:"maxSquads"`
+	StartingMana   int      `json:"startingMana"`
+	MaxMana        int      `json:"maxMana"`
+	StartingPerks  []string `json:"startingPerks"`
+	StartingSpells []string `json:"startingSpells"`
 }
 
 // FactionAIConfig2 avoids name collision with the existing FactionAIConfig in jsonschema.go.
@@ -131,6 +133,12 @@ func validateGameConfig(cfg *JSONGameConfig) {
 	// Commander
 	if cfg.Commander.MovementSpeed <= 0 || cfg.Commander.MaxCommanders <= 0 {
 		panic("Commander config values must be positive")
+	}
+	if len(cfg.Commander.StartingPerks) == 0 {
+		panic("Commander.startingPerks must not be empty")
+	}
+	if len(cfg.Commander.StartingSpells) == 0 {
+		panic("Commander.startingSpells must not be empty")
 	}
 
 	// Combat

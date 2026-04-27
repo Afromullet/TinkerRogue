@@ -27,7 +27,18 @@
     "cost": 5000,
     "maxSquads": 50,
     "startingMana": 50,
-    "maxMana": 50
+    "maxMana": 50,
+    "startingPerks": [
+      "brace_for_impact",
+      "reckless_assault",
+      "shieldwall_discipline",
+      "field_medic"
+    ],
+    "startingSpells": [
+      "spark",
+      "singe",
+      "frost_snap"
+    ]
   },
   "factionAI": {
     "startingGold": 100000,
