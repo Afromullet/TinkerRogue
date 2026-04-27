@@ -139,3 +139,11 @@ func ReadOverworldConfig() {
 	validateOverworldConfig(&OverworldConfigTemplate)
 	println("Overworld config loaded")
 }
+
+func ReadInitialSetupConfig() {
+	readAndUnmarshal("gamedata/initialsetup.json", &InitialSetupTemplate)
+	validateInitialSetup(&InitialSetupTemplate)
+	println("Initial setup config loaded:",
+		len(InitialSetupTemplate.Commanders), "commanders,",
+		len(InitialSetupTemplate.Factions.Entries), "factions")
+}

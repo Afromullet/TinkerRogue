@@ -21,8 +21,6 @@ import (
 	"game_main/visual/graphics"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
-
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 // GameBootstrap encapsulates game initialization logic with explicit phases.
@@ -88,7 +86,8 @@ func (gb *GameBootstrap) CreateWorld(gm *worldmapcore.GameMap, mapType string) {
 	*gm = worldmapcore.NewGameMap(worldgen.GetGenerator(mapType))
 }
 
-// CreatePlayer initializes the player entity, creates the initial commander, and adds creatures to position system.
+// CreatePlayer initializes the player entity, creates all commanders defined in
+// initialsetup.json, and adds creatures to the position system.
 // Phase 4: Depends on CreateWorld for starting position.
 func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.PlayerData, gm *worldmapcore.GameMap) {
 	InitializePlayerData(em, pd, gm)
@@ -98,53 +97,23 @@ func (gb *GameBootstrap) CreatePlayer(em *common.EntityManager, pd *common.Playe
 		log.Fatalf("Failed to load unit templates: %v", err)
 	}
 
-	// Create initial commander at the player's starting position
-	commanderImage, _, err := ebitenutil.NewImageFromFile(config.PlayerImagePath)
+	primaryID, err := CreateInitialCommanders(em, pd, *pd.Pos)
 	if err != nil {
-		log.Fatalf("Failed to load commander image: %v", err)
+		log.Fatalf("Failed to create initial commanders: %v", err)
 	}
 
-	cfg := templates.GameConfig.Commander
-	commanderID := commander.CreateCommander(
-		em,
-		"Commander",
-		*pd.Pos,
-		cfg.MovementSpeed,
-		cfg.MaxSquads,
-		commanderImage,
-	)
-
-	// Seed starter perks/spells onto the commander's progression before any
-	// squads are created; InitSquadSpellsFromLeader filters against this list.
-	commander.SeedStarters(commanderID, em)
-
-	// Add commander to player's roster
-	roster := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
-	if roster == nil {
-		log.Fatal("Player has no commander roster component")
-	}
-	if err := roster.AddCommander(commanderID); err != nil {
-		log.Fatalf("Failed to add initial commander: %v", err)
-	}
-
-	// Create initial squads on the commander (squad roster) using player's unit roster
-	if err := bootstrap.CreateInitialPlayerSquads(commanderID, pd.PlayerEntityID, em, "Commander"); err != nil {
-		log.Fatalf("Failed to create initial player squads: %v", err)
-	}
-
-	// Seed 5 random unassigned units into the player's roster
-	if err := bootstrap.CreateInitialRosterUnits(pd.PlayerEntityID, em, 5); err != nil {
+	if err := CreateInitialRosterUnits(pd.PlayerEntityID, em); err != nil {
 		log.Fatalf("Failed to create initial roster units: %v", err)
 	}
 
-	fmt.Printf("Created initial commander (ID: %d) at (%d,%d)\n", commanderID, pd.Pos.X, pd.Pos.Y)
+	fmt.Printf("Primary commander ID: %d at (%d,%d)\n", primaryID, pd.Pos.X, pd.Pos.Y)
 }
 
 // SetupDebugContent creates test items and spawns debug content.
 // Debug Phase: Only runs when DEBUG_MODE is enabled.
 func (gb *GameBootstrap) SetupDebugContent(em *common.EntityManager, gm *worldmapcore.GameMap, pd *common.PlayerData) {
 	if config.DEBUG_MODE {
-		SetupTestData(em, gm, pd)
+
 		rosterData := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
 		seedCount := 1
 		if rosterData != nil {
@@ -163,13 +132,6 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize overworld tick state
 	tick.CreateTickStateEntity(em)
 
-	// Create additional starting commanders near player position (debug only)
-	if config.DEBUG_MODE {
-		if err := bootstrap.CreateTestCommanders(em, pd, *pd.Pos); err != nil {
-			fmt.Printf("WARNING: Failed to create test commanders: %v\n", err)
-		}
-	}
-
 	// Initialize commander turn state and action states
 	commander.CreateOverworldTurnState(em)
 	commander.StartNewTurn(em, pd.PlayerEntityID)
@@ -177,9 +139,9 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 	// Initialize walkable grid from map tiles
 	InitWalkableGridFromMap(gm)
 
-	// Create initial overworld factions (they will spawn threats dynamically, debug only)
-	if config.DEBUG_MODE {
-		bootstrap.InitializeOverworldFactions(em, pd, gm)
+	// Create initial overworld factions (they spawn threats dynamically each tick).
+	if err := CreateInitialFactions(em, pd, gm); err != nil {
+		log.Fatalf("Failed to create initial factions: %v", err)
 	}
 
 	// Convert POIs from world generation into neutral overworld nodes

@@ -258,6 +258,9 @@ TinkerRogue/
 │   │   ├── moderegistry.go         # GUI mode registration
 │   │   ├── mapgenconfig.go         # Map generator configuration
 │   │   ├── playerinit.go           # Player seeding
+│   │   ├── initial_commanders.go   # Driven by initialsetup.json
+│   │   ├── initial_squads.go       # Driven by initialsetup.json
+│   │   ├── initial_factions.go     # Driven by initialsetup.json
 │   │   ├── helpers.go, savehelpers.go
 │   └── savesystem/         # Chunk-based save/load
 │       ├── savesystem.go, idmap.go
@@ -269,9 +272,8 @@ TinkerRogue/
 ├── testing/                # Test fixtures and bootstrapping
 │   ├── testingdata.go              # Test item creation (CreateTestItems)
 │   ├── fixtures.go                 # Test fixtures (NewTestEntityManager, InitTestActionManager)
-│   └── bootstrap/                  # Initial game entity seeding (used under DEBUG_MODE)
-│       ├── initial_squads.go, initial_commanders.go
-│       ├── initial_factions.go, initial_artifacts.go
+│   └── bootstrap/                  # Debug-only entity seeding (artifacts only — used under DEBUG_MODE)
+│       └── initial_artifacts.go    # SeedAllArtifacts, EquipPlayerActivatedArtifacts
 │
 ├── tools/                  # Development/analysis tools (separate binaries)
 │   ├── combat_balance/             # Combat balance analysis

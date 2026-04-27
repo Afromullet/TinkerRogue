@@ -848,7 +848,7 @@ This bridges world generation (tile and visual layer) to the overworld systems (
 
 ### Faction Start Positions
 
-`FactionStartPositions` from `GenerationResult` are used by `bootstrap.InitializeOverworldFactions` to place faction entities at generator-chosen positions rather than hardcoded coordinates.
+`FactionStartPositions` from `GenerationResult` are used by `gamesetup.CreateInitialFactions` to place faction entities at generator-chosen positions rather than the JSON-configured fallback coordinates.
 
 ---
 

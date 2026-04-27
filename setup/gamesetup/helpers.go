@@ -6,11 +6,9 @@ import (
 	_ "net/http/pprof" // Blank import to register pprof handlers
 	"runtime"
 
-	"game_main/core/common"
 	"game_main/campaign/overworld/core"
 	"game_main/core/config"
 	"game_main/templates"
-	"game_main/testing"
 	"game_main/world/worldmapcore"
 )
 
@@ -21,12 +19,6 @@ func InitWalkableGridFromMap(gm *worldmapcore.GameMap) {
 	for _, pos := range gm.ValidPositions {
 		core.SetTileWalkable(pos, true)
 	}
-}
-
-// SetupTestData creates test items and content for debugging.
-// Only called when DEBUG_MODE is enabled.
-func SetupTestData(em *common.EntityManager, gm *worldmapcore.GameMap, pd *common.PlayerData) {
-	testing.CreateTestItems(gm)
 }
 
 // SetupBenchmarking initializes performance profiling tools when enabled.

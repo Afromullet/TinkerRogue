@@ -1,0 +1,56 @@
+{
+  "commanders": [
+    {
+      "name": "Commander",
+      "offsetX": 0,
+      "offsetY": 0,
+      "isPrimary": true,
+      "squads": {
+        "count": 2,
+        "namePrefix": "Commander",
+        "typePool": ["balanced", "ranged", "magic", "mixed", "cavalry"]
+      }
+    },
+    {
+      "name": "Vanguard",
+      "offsetX": 2,
+      "offsetY": 0,
+      "isPrimary": false,
+      "squads": {
+        "count": 2,
+        "namePrefix": "Vanguard",
+        "typePool": ["balanced", "ranged", "magic", "mixed", "cavalry"]
+      }
+    },
+    {
+      "name": "Sentinel",
+      "offsetX": -2,
+      "offsetY": 0,
+      "isPrimary": false,
+      "squads": {
+        "count": 2,
+        "namePrefix": "Sentinel",
+        "typePool": ["balanced", "ranged", "magic", "mixed", "cavalry"]
+      }
+    }
+  ],
+  "rosterUnits": {
+    "count": 5
+  },
+  "factions": {
+    "strengthMin": 6,
+    "strengthMax": 10,
+    "fallbackPositions": [
+      { "x": 15,  "y": 15 },
+      { "x": 50,  "y": 65 },
+      { "x": 85,  "y": 15 },
+      { "x": 120, "y": 65 }
+    ],
+    "entries": [
+      { "type": "necromancers" },
+      { "type": "bandits" },
+      { "type": "orcs" },
+      { "type": "cultists" }
+    ]
+  }
+}

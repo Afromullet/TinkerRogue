@@ -371,6 +371,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## setup/gamesetup
 - campaign/overworld/core
+- campaign/overworld/faction
 - campaign/overworld/node
 - campaign/overworld/tick
 - core/common
@@ -395,6 +396,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/commander
 - tactical/powers/artifacts
 - tactical/powers/perks
+- tactical/powers/spells
 - tactical/squads/roster
 - tactical/squads/squadcommands
 - tactical/squads/squadcore
@@ -572,19 +574,11 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - world/worldmapcore
 
 ## testing/bootstrap
-- campaign/overworld/core
-- campaign/overworld/faction
 - core/common
-- core/config
-- core/coords
 - tactical/commander
 - tactical/powers/artifacts
-- tactical/powers/spells
 - tactical/squads/roster
-- tactical/squads/squadcore
-- tactical/squads/unitdefs
 - templates
-- world/worldmapcore
 
 ## tools/combat_balance
 *(no internal dependencies)*

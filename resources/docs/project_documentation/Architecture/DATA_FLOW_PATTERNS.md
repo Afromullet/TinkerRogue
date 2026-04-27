@@ -499,7 +499,7 @@ Key files: `templates/entity_factory.go`, `templates/registry.go`, `templates/re
    │   ├─ tick.CreateTickStateEntity()
    │   ├─ commander.CreateOverworldTurnState()
    │   ├─ InitWalkableGrid()
-   │   ├─ bootstrap.InitializeOverworldFactions()
+   │   ├─ gamesetup.CreateInitialFactions()
    │   └─ ConvertPOIsToNodes()
    │
    ├─ [Roguelike only] Create RaidRunner → inject into RaidMode

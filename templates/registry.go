@@ -25,6 +25,9 @@ var MapGenConfigTemplate *JSONMapGenConfig
 // Name generation configuration
 var NameConfigTemplate JSONNameConfig
 
+// Initial setup configuration (commanders, squads, roster units, factions at game start)
+var InitialSetupTemplate JSONInitialSetup
+
 // SpellDataPath is the relative path within assets to the spell data file.
 const SpellDataPath = "gamedata/spelldata.json"
 
@@ -45,5 +48,6 @@ func ReadGameData() {
 	LoadSpellDefinitions()
 	LoadUnitSpellDefinitions()
 	LoadArtifactDefinitions()
+	ReadInitialSetupConfig()
 }
 

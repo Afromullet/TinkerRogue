@@ -1,105 +1,94 @@
-package bootstrap
+package gamesetup
 
 import (
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/powers/spells"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/core/coords"
+	"game_main/templates"
 
 	"github.com/bytearena/ecs"
 )
 
-// CreateInitialPlayerSquads creates starting squads for a roster owner at game launch.
-// Creates 2 randomly selected squads in reserves (not deployed on map).
-// All squads are marked with IsDeployed = false and added to the owner's SquadRoster.
-// rosterOwnerID is the entity that holds the SquadRosterComponent (commander or player).
-// unitRosterOwnerID is the entity that holds the UnitRosterComponent (always the player).
-// prefix is prepended to squad names (e.g. "Commander" -> "Commander Squad 1").
-func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, prefix ...string) error {
-	// 1. Verify unit templates are loaded
+// squadCreatorFn is the signature for the per-type squad factory funcs below.
+type squadCreatorFn func(*common.EntityManager, string) (ecs.EntityID, error)
+
+// squadCreators maps the JSON squad type ID to its creator. Keep keys in sync
+// with templates.validSquadTypeIDs.
+var squadCreators = map[string]squadCreatorFn{
+	"balanced": createBalancedSquad,
+	"ranged":   createRangedSquad,
+	"magic":    createMagicSquad,
+	"mixed":    createMixedSquad,
+	"cavalry":  createCavalrySquad,
+}
+
+// CreateSquadsForCommander creates cfg.Count starting squads for the given roster
+// owner, randomly picking each squad's type from cfg.TypePool. All squads start in
+// reserves (IsDeployed = false). rosterOwnerID is the entity that holds the
+// SquadRoster (commander or player). unitRosterOwnerID always holds the player's
+// UnitRoster.
+func CreateSquadsForCommander(rosterOwnerID, unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, cfg templates.JSONSquadSetup) error {
+	if cfg.Count <= 0 {
+		return nil
+	}
 	if len(unitdefs.Units) == 0 {
 		return fmt.Errorf("no unit templates available - call InitUnitTemplatesFromJSON() first")
 	}
 
-	// 2. Get squad roster from owner entity
 	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, manager)
 	if roster == nil {
 		return fmt.Errorf("entity %d has no squad roster component", rosterOwnerID)
 	}
-
-	// 3. Get unit roster for tracking unit ownership (from player entity)
 	unitRoster := rstr.GetPlayerRoster(unitRosterOwnerID, manager)
 	if unitRoster == nil {
 		return fmt.Errorf("entity %d has no unit roster component", unitRosterOwnerID)
 	}
 
-	// Determine name prefix
-	namePrefix := "Commander"
-	if len(prefix) > 0 && prefix[0] != "" {
-		namePrefix = prefix[0]
+	namePrefix := cfg.NamePrefix
+	if namePrefix == "" {
+		namePrefix = "Commander"
 	}
 
-	// 4. Randomly select 2 squads from available types
-	type squadType struct {
-		label    string
-		createFn func(*common.EntityManager, string) (ecs.EntityID, error)
-	}
-
-	pool := []squadType{
-		{"Balanced", createBalancedSquad},
-		{"Ranged", createRangedSquad},
-		{"Magic", createMagicSquad},
-		{"Mixed", createMixedSquad},
-		{"Cavalry", createCavalrySquad},
-	}
-
-	squadConfigs := make([]struct {
-		name     string
-		createFn func(*common.EntityManager, string) (ecs.EntityID, error)
-	}, 2)
-
-	for i := 0; i < 2; i++ {
-		pick := pool[common.RandomInt(len(pool))]
-		squadConfigs[i].name = fmt.Sprintf("%s Squad %d", namePrefix, i+1)
-		squadConfigs[i].createFn = pick.createFn
-	}
-
-	for _, config := range squadConfigs {
-		// Create squad
-		squadID, err := config.createFn(manager, config.name)
-		if err != nil {
-			return fmt.Errorf("failed to create %s: %w", config.name, err)
+	for i := 0; i < cfg.Count; i++ {
+		typeID := cfg.TypePool[common.RandomInt(len(cfg.TypePool))]
+		createFn, ok := squadCreators[typeID]
+		if !ok {
+			return fmt.Errorf("unknown squad type %q (validation should have caught this)", typeID)
 		}
 
-		// Mark squad as not deployed (in reserves)
+		squadName := fmt.Sprintf("%s Squad %d", namePrefix, i+1)
+		squadID, err := createFn(manager, squadName)
+		if err != nil {
+			return fmt.Errorf("failed to create %s: %w", squadName, err)
+		}
+
 		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData == nil {
-			return fmt.Errorf("failed to get squad data for %s", config.name)
+			return fmt.Errorf("failed to get squad data for %s", squadName)
 		}
 		squadData.IsDeployed = false
 
 		// Add to owner's squad roster FIRST so FindCommanderForSquad can resolve
 		// the commander inside InitSquadSpellsFromLeader below.
 		if err := roster.AddSquad(squadID); err != nil {
-			return fmt.Errorf("failed to add %s to roster: %w", config.name, err)
+			return fmt.Errorf("failed to add %s to roster: %w", squadName, err)
 		}
 
 		// Attach spell capability now that the squad→commander link exists, so
 		// spell filtering uses the commander's progression library.
 		spells.InitSquadSpellsFromLeader(squadID, manager)
 
-		// Register all units in player's unit roster
 		if err := registerSquadUnitsInRoster(squadID, unitRoster, manager); err != nil {
-			return fmt.Errorf("failed to register units for %s: %w", config.name, err)
+			return fmt.Errorf("failed to register units for %s: %w", squadName, err)
 		}
 	}
 
-	// Verification: Log squad creation details
-	fmt.Printf("\n=== Initial Player Squads Created ===\n")
-	fmt.Printf("Total squads: %d\n", len(squadConfigs))
+	fmt.Printf("\n=== Initial Squads Created for %s ===\n", namePrefix)
+	fmt.Printf("Total squads: %d\n", cfg.Count)
 	for _, squadID := range roster.OwnedSquads {
 		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
 		if squadData != nil {
@@ -114,11 +103,52 @@ func CreateInitialPlayerSquads(rosterOwnerID ecs.EntityID, unitRosterOwnerID ecs
 	return nil
 }
 
+// CreateInitialRosterUnits creates standalone units (not in any squad) and adds
+// them to the player's UnitRoster. Count is read from initialsetup.json.
+func CreateInitialRosterUnits(unitRosterOwnerID ecs.EntityID, manager *common.EntityManager) error {
+	count := templates.InitialSetupTemplate.RosterUnits.Count
+	if count <= 0 {
+		return nil
+	}
+	if len(unitdefs.Units) == 0 {
+		return fmt.Errorf("no unit templates available - call InitUnitTemplatesFromJSON() first")
+	}
+
+	roster := rstr.GetPlayerRoster(unitRosterOwnerID, manager)
+	if roster == nil {
+		return fmt.Errorf("entity %d has no unit roster component", unitRosterOwnerID)
+	}
+
+	for i := 0; i < count; i++ {
+		template := unitdefs.Units[common.RandomInt(len(unitdefs.Units))]
+		unitEntity, err := squadcore.CreateUnitEntity(manager, template)
+		if err != nil {
+			return fmt.Errorf("failed to create roster unit %d: %w", i, err)
+		}
+		unitID := unitEntity.GetID()
+		if err := roster.AddUnit(unitID, template.UnitType); err != nil {
+			return fmt.Errorf("failed to add unit %d to roster: %w", unitID, err)
+		}
+	}
+
+	fmt.Printf("Created %d initial roster units for player (entity %d)\n", count, unitRosterOwnerID)
+	return nil
+}
+
+func registerSquadUnitsInRoster(squadID ecs.EntityID, roster *rstr.UnitRoster, manager *common.EntityManager) error {
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
+	for _, unitID := range unitIDs {
+		if err := rstr.RegisterSquadUnitInRoster(roster, unitID, squadID, manager); err != nil {
+			return fmt.Errorf("failed to register unit %d: %w", unitID, err)
+		}
+	}
+	return nil
+}
+
 // createBalancedSquad creates a balanced squad with mixed unit types
 func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
 	unitsToCreate := []unitdefs.UnitTemplate{}
 
-	// Create 5 units with balanced formation
 	positions := [][2]int{
 		{0, 0}, // Front left
 		{0, 1}, // Front center
@@ -132,27 +162,19 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 		maxUnits = len(unitdefs.Units)
 	}
 
-	// Randomly select leader
 	leaderIndex := common.RandomInt(maxUnits)
 
 	for i := 0; i < maxUnits && i < len(positions); i++ {
-		// Create a copy of the unit template
 		unit := unitdefs.Units[i%len(unitdefs.Units)]
-
-		// Set grid position
 		unit.GridRow = positions[i][0]
 		unit.GridCol = positions[i][1]
-
-		// Make the randomly selected unit the leader
 		if i == leaderIndex {
 			unit.IsLeader = true
 			unit.Attributes.Leadership = 20
 		}
-
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	// Create squad at position (0,0) - not deployed
 	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
@@ -160,48 +182,38 @@ func createBalancedSquad(manager *common.EntityManager, squadName string) (ecs.E
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-
 	return squadID, nil
 }
 
-// createRangedSquad creates a squad with only ranged units
 func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
-	// Filter ranged units (AttackRange >= 3)
 	rangedUnits := unitdefs.FilterByAttackRange(3)
 	if len(rangedUnits) == 0 {
 		return 0, fmt.Errorf("no ranged units available (AttackRange >= 3)")
 	}
 
-	// Create squad with 3-5 ranged units
 	unitCount := common.GetRandomBetween(3, 5)
 	unitsToCreate := []unitdefs.UnitTemplate{}
 
-	// Spread units across rows
 	gridPositions := [][2]int{
-		{0, 0}, // Row 0 - Front left
-		{1, 1}, // Row 1 - Middle center
-		{2, 2}, // Row 2 - Back right
-		{0, 2}, // Row 0 - Front right
-		{1, 0}, // Row 1 - Middle left
+		{0, 0},
+		{1, 1},
+		{2, 2},
+		{0, 2},
+		{1, 0},
 	}
 
 	for i := 0; i < unitCount; i++ {
-		randomIdx := common.RandomInt(len(rangedUnits))
-		unit := rangedUnits[randomIdx]
-
+		unit := rangedUnits[common.RandomInt(len(rangedUnits))]
 		unit.GridRow = gridPositions[i][0]
 		unit.GridCol = gridPositions[i][1]
 		unit.IsLeader = false
-
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	// Set random leader
 	leaderIndex := common.RandomInt(unitCount)
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	// Create squad at position (0,0) - not deployed
 	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
@@ -209,45 +221,36 @@ func createRangedSquad(manager *common.EntityManager, squadName string) (ecs.Ent
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-
 	return squadID, nil
 }
 
-// createMagicSquad creates a squad with magic units
 func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
-	// Filter magic units (AttackType == Magic)
 	magicUnits := unitdefs.FilterByAttackType(unitdefs.AttackTypeMagic)
 	if len(magicUnits) == 0 {
 		return 0, fmt.Errorf("no magic units available (AttackType == Magic)")
 	}
 
-	// Create squad with exactly 3 magic units
 	unitCount := 3
 	unitsToCreate := []unitdefs.UnitTemplate{}
 
 	gridPositions := [][2]int{
-		{0, 1}, // Row 0 - Front center
-		{1, 0}, // Row 1 - Middle left
-		{2, 1}, // Row 2 - Back center
+		{0, 1},
+		{1, 0},
+		{2, 1},
 	}
 
 	for i := 0; i < unitCount; i++ {
-		randomIdx := common.RandomInt(len(magicUnits))
-		unit := magicUnits[randomIdx]
-
+		unit := magicUnits[common.RandomInt(len(magicUnits))]
 		unit.GridRow = gridPositions[i][0]
 		unit.GridCol = gridPositions[i][1]
 		unit.IsLeader = false
-
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	// Set random leader
 	leaderIndex := common.RandomInt(unitCount)
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	// Create squad at position (0,0) - not deployed
 	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
@@ -255,60 +258,47 @@ func createMagicSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-
 	return squadID, nil
 }
 
-// createMixedSquad creates a squad with mixed ranged and magic units
 func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
 	rangedUnits := unitdefs.FilterByAttackRange(3)
 	magicUnits := unitdefs.FilterByAttackType(unitdefs.AttackTypeMagic)
 
 	if len(rangedUnits) == 0 || len(magicUnits) == 0 {
-		// Fallback to balanced squad if we don't have both types
 		return createBalancedSquad(manager, squadName)
 	}
 
-	// Create squad with 4-5 units (mix of ranged and magic)
 	unitCount := common.GetRandomBetween(4, 5)
 	unitsToCreate := []unitdefs.UnitTemplate{}
 
 	gridPositions := [][2]int{
-		{0, 0}, // Row 0 - Front left
-		{1, 1}, // Row 1 - Middle center
-		{2, 2}, // Row 2 - Back right
-		{1, 2}, // Row 1 - Middle right
-		{2, 0}, // Row 2 - Back left
+		{0, 0},
+		{1, 1},
+		{2, 2},
+		{1, 2},
+		{2, 0},
 	}
 
 	for i := 0; i < unitCount; i++ {
 		var unit unitdefs.UnitTemplate
-
-		// Alternate between ranged and magic
 		if i%2 == 0 && len(rangedUnits) > 0 {
-			randomIdx := common.RandomInt(len(rangedUnits))
-			unit = rangedUnits[randomIdx]
+			unit = rangedUnits[common.RandomInt(len(rangedUnits))]
 		} else if len(magicUnits) > 0 {
-			randomIdx := common.RandomInt(len(magicUnits))
-			unit = magicUnits[randomIdx]
+			unit = magicUnits[common.RandomInt(len(magicUnits))]
 		} else if len(rangedUnits) > 0 {
-			randomIdx := common.RandomInt(len(rangedUnits))
-			unit = rangedUnits[randomIdx]
+			unit = rangedUnits[common.RandomInt(len(rangedUnits))]
 		}
-
 		unit.GridRow = gridPositions[i][0]
 		unit.GridCol = gridPositions[i][1]
 		unit.IsLeader = false
-
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	// Set random leader
 	leaderIndex := common.RandomInt(unitCount)
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	// Create squad at position (0,0) - not deployed
 	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
@@ -316,47 +306,38 @@ func createMixedSquad(manager *common.EntityManager, squadName string) (ecs.Enti
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-
 	return squadID, nil
 }
 
-// createCavalrySquad creates a squad with fast cavalry units (movementSpeed >= 6)
 func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.EntityID, error) {
-	// Filter cavalry units by high movement speed
 	cavalryUnits := unitdefs.FilterByMinMovementSpeed(6)
 	if len(cavalryUnits) == 0 {
 		return 0, fmt.Errorf("no cavalry units available (MovementSpeed >= 6)")
 	}
 
-	// Create squad with 4-5 cavalry units
 	unitCount := common.GetRandomBetween(4, 5)
 	unitsToCreate := []unitdefs.UnitTemplate{}
 
 	gridPositions := [][2]int{
-		{0, 0}, // Row 0 - Front left
-		{0, 2}, // Row 0 - Front right
-		{1, 1}, // Row 1 - Middle center
-		{1, 0}, // Row 1 - Middle left
-		{2, 1}, // Row 2 - Back center
+		{0, 0},
+		{0, 2},
+		{1, 1},
+		{1, 0},
+		{2, 1},
 	}
 
 	for i := 0; i < unitCount; i++ {
-		randomIdx := common.RandomInt(len(cavalryUnits))
-		unit := cavalryUnits[randomIdx]
-
+		unit := cavalryUnits[common.RandomInt(len(cavalryUnits))]
 		unit.GridRow = gridPositions[i][0]
 		unit.GridCol = gridPositions[i][1]
 		unit.IsLeader = false
-
 		unitsToCreate = append(unitsToCreate, unit)
 	}
 
-	// Set random leader
 	leaderIndex := common.RandomInt(unitCount)
 	unitsToCreate[leaderIndex].IsLeader = true
 	unitsToCreate[leaderIndex].Attributes.Leadership = 20
 
-	// Create squad at position (0,0) - not deployed
 	squadID := squadcore.CreateSquadFromTemplate(
 		manager,
 		squadName,
@@ -364,55 +345,5 @@ func createCavalrySquad(manager *common.EntityManager, squadName string) (ecs.En
 		coords.LogicalPosition{X: 0, Y: 0},
 		unitsToCreate,
 	)
-
 	return squadID, nil
-}
-
-// CreateInitialRosterUnits creates standalone units (not in any squad) and adds them
-// to the player's UnitRoster. These show up as "available" in GetAvailableUnits().
-func CreateInitialRosterUnits(unitRosterOwnerID ecs.EntityID, manager *common.EntityManager, count int) error {
-	if len(unitdefs.Units) == 0 {
-		return fmt.Errorf("no unit templates available - call InitUnitTemplatesFromJSON() first")
-	}
-
-	roster := rstr.GetPlayerRoster(unitRosterOwnerID, manager)
-	if roster == nil {
-		return fmt.Errorf("entity %d has no unit roster component", unitRosterOwnerID)
-	}
-
-	for i := 0; i < count; i++ {
-		// Pick a random unit template
-		template := unitdefs.Units[common.RandomInt(len(unitdefs.Units))]
-
-		// Create the unit entity (no SquadMemberComponent added)
-		unitEntity, err := squadcore.CreateUnitEntity(manager, template)
-		if err != nil {
-			return fmt.Errorf("failed to create roster unit %d: %w", i, err)
-		}
-
-		unitID := unitEntity.GetID()
-
-		// Add to roster without marking as in-squad
-		if err := roster.AddUnit(unitID, template.UnitType); err != nil {
-			return fmt.Errorf("failed to add unit %d to roster: %w", unitID, err)
-		}
-	}
-
-	fmt.Printf("Created %d initial roster units for player (entity %d)\n", count, unitRosterOwnerID)
-	return nil
-}
-
-// registerSquadUnitsInRoster registers all units in a squad with the player's unit roster
-func registerSquadUnitsInRoster(squadID ecs.EntityID, roster *rstr.UnitRoster, manager *common.EntityManager) error {
-	// Get all unit IDs in the squad
-	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
-
-	for _, unitID := range unitIDs {
-		// Register unit in roster
-		if err := rstr.RegisterSquadUnitInRoster(roster, unitID, squadID, manager); err != nil {
-			return fmt.Errorf("failed to register unit %d: %w", unitID, err)
-		}
-	}
-
-	return nil
 }
