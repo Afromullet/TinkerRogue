@@ -283,17 +283,17 @@ This runs all three steps: simulate, generate balance report, compress report. T
 
 Run simulations (from project root):
 ```cmd
-go run ./tools/combat_simulator
+go run game_main/tools sim
 ```
 
 Generate balance CSV:
 ```cmd
-go run ./tools/combat_balance --dir ./simulation_logs --output ./docs/combat_balance_report.csv
+go run game_main/tools balance --dir ./simulation_logs --output ./docs/combat_balance_report.csv
 ```
 
 Compress report:
 ```cmd
-go run ./tools/report_compressor --input ./docs/combat_balance_report.csv --output ./docs/combat_balance_compressed.csv
+go run game_main/tools compress --input ./docs/combat_balance_report.csv --output ./docs/combat_balance_compressed.csv
 ```
 
 ---

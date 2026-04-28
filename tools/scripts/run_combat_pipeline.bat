@@ -15,7 +15,7 @@ echo === Cleaning old simulation logs ===
 if exist "%SIM_LOGS%\*.json" del /Q "%SIM_LOGS%\*.json"
 
 echo === Step 1/3: Running Combat Simulator ===
-go run ./tools/combat_simulator %*
+go run game_main/tools sim %*
 if %errorlevel% neq 0 (
     echo ERROR: Combat simulator failed
     exit /b %errorlevel%
@@ -23,7 +23,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo === Step 2/3: Generating Balance Report ===
-go run ./tools/combat_balance --dir "%SIM_LOGS%" --output "%BALANCE_REPORT%"
+go run game_main/tools balance --dir "%SIM_LOGS%" --output "%BALANCE_REPORT%"
 if %errorlevel% neq 0 (
     echo ERROR: Balance report generation failed
     exit /b %errorlevel%
@@ -31,7 +31,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo === Step 3/3: Compressing Report ===
-go run ./tools/report_compressor --input "%BALANCE_REPORT%" --output "%COMPRESSED_REPORT%"
+go run game_main/tools compress --input "%BALANCE_REPORT%" --output "%COMPRESSED_REPORT%"
 if %errorlevel% neq 0 (
     echo ERROR: Report compression failed
     exit /b %errorlevel%

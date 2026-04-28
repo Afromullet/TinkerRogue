@@ -47,25 +47,27 @@ golangci-lint run
 
 ## Combat Simulation Tools
 
-### Building the Combat Simulator
+### Building the Combat Tools
 
-Run from the TinkerRogue root directory:
+All four tools (`sim`, `balance`, `viz`, `compress`) are combined into a single binary. Run from the TinkerRogue root directory:
 
 ```bash
-go build -o combatsim.exe ./tools/combat_simulator/cmd
+go build -o combat_tools.exe game_main/tools
 ```
 
 ### Running the Simulator Directly
 
 ```bash
-cd game_main && go run ../tools/combat_simulator/
+go run game_main/tools sim                    # Run all suites
+go run game_main/tools sim --suite duels      # Run a specific suite
+go run game_main/tools sim --list             # List available suites
 ```
 
 ### Combat Visualizer
 
 Generates ASCII visualizations of combat battles from exported JSON logs, showing squad formations, attack flows, and statistics.
 
-**Location:** `tools/combat_visualizer/`
+**Location:** `tools/combat_analysis/combat_visualizer/`
 
 First, enable combat log export in `config/config.go`:
 
@@ -76,29 +78,30 @@ ENABLE_COMBAT_LOG_EXPORT = true
 Then run the visualizer against a battle log:
 
 ```bash
-tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\<battle_log>.json >> all_battles.txt
-
-tools\combat_visualizer\combat_visualizer.exe game_main\simulation_logs\battle_20260421_155214.624.json >> all_battles.txt
+go run game_main/tools viz <battle_log>.json >> all_battles.txt
+go run game_main/tools viz --latest
+go run game_main/tools viz --all >> all_battles.txt
 ```
 
 ### Combat Balance Report
 
 Generates balance analysis reports from combat simulation logs. Requires simulation logs from the combat simulator.
 
-**Location:** `tools/combat_balance/`
+**Location:** `tools/combat_analysis/combat_balance/`
 
 ```bash
-cd tools/combat_balance && go run .
+go run game_main/tools balance
+go run game_main/tools balance --dir ./simulation_logs --output ./docs/combat_balance_report.csv
 ```
 
 ### Full Pipeline Script
 
-Runs the complete simulation pipeline. Execute from the `game_main` directory:
+Runs the complete simulation pipeline (simulate → balance → compress). Execute from the TinkerRogue root directory:
 
 ```bash
-scripts\run_combat_pipeline.bat
+tools\scripts\run_combat_pipeline.bat
 
-scripts\run_combat_pipeline.bat --suite duels   # Extra args forwarded to the simulator
+tools\scripts\run_combat_pipeline.bat --suite duels   # Extra args forwarded to the simulator
 ```
 
 ---
