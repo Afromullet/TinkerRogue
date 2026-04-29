@@ -1,6 +1,17 @@
 package visualizer
 
-import "time"
+import (
+	"time"
+
+	sharedtypes "game_main/tools/combat_analysis/shared"
+)
+
+// Type aliases for the data fields the visualizer doesn't customize.
+// BattleRecord and EngagementRecord are defined locally because the
+// visualizer's EngagementRecord adds a Summary field, and BattleRecord
+// must reference the local EngagementRecord slice.
+type UnitSnapshot = sharedtypes.UnitSnapshot
+type HealEvent = sharedtypes.HealEvent
 
 // BattleRecord is the root structure for exported combat JSON files.
 // It aggregates all combat engagements from a single battle.
@@ -15,41 +26,12 @@ type BattleRecord struct {
 
 // EngagementRecord wraps a CombatLog with battle metadata.
 // Each engagement represents a single squad-vs-squad attack.
+// The visualizer adds a Summary field on top of the shared shape.
 type EngagementRecord struct {
-	Index     int                `json:"index"`
-	Round     int                `json:"round"`
-	CombatLog *CombatLog         `json:"combat_log"`
-	Summary   *EngagementSummary `json:"summary"`
-}
-
-// CombatLog contains the core combat data for an engagement.
-type CombatLog struct {
-	AttackerSquadName string         `json:"AttackerSquadName"`
-	DefenderSquadName string         `json:"DefenderSquadName"`
-	SquadDistance     int            `json:"SquadDistance"`
-	AttackingUnits    []UnitSnapshot `json:"AttackingUnits"`
-	DefendingUnits    []UnitSnapshot `json:"DefendingUnits"`
-	HealEvents        []HealEvent    `json:"HealEvents"`
-	TotalHealing      int            `json:"TotalHealing"`
-}
-
-// HealEvent captures a single unit-to-unit heal.
-type HealEvent struct {
-	HealerID       int64 `json:"HealerID"`
-	TargetID       int64 `json:"TargetID"`
-	HealAmount     int   `json:"HealAmount"`
-	TargetHPBefore int   `json:"TargetHPBefore"`
-	TargetHPAfter  int   `json:"TargetHPAfter"`
-	AttackIndex    int   `json:"AttackIndex"`
-}
-
-// UnitSnapshot captures a unit's state during combat.
-type UnitSnapshot struct {
-	UnitID   int64  `json:"UnitID"`
-	UnitName string `json:"UnitName"`
-	GridRow  int    `json:"GridRow"`
-	GridCol  int    `json:"GridCol"`
-	RoleName string `json:"RoleName"`
+	Index     int                    `json:"index"`
+	Round     int                    `json:"round"`
+	CombatLog *sharedtypes.CombatLog `json:"combat_log"`
+	Summary   *EngagementSummary     `json:"summary"`
 }
 
 // EngagementSummary contains per-unit summaries for both squads.

@@ -3,6 +3,7 @@ package balance
 import (
 	"encoding/csv"
 	"fmt"
+	"game_main/tools/combat_analysis/shared"
 	"os"
 )
 
@@ -42,11 +43,11 @@ func WriteCSV(path string, result *AggregateResult) error {
 		totalAttacks := stats.TotalAttacks
 		successfulHits := stats.Hits + stats.Criticals
 
-		hitRate := safeRate(successfulHits, totalAttacks)
-		dodgeRate := safeRate(stats.Dodges, totalAttacks)
-		critRate := safeRate(stats.Criticals, totalAttacks)
-		avgDmgPerAttack := safeAvg(stats.TotalDamage, totalAttacks)
-		avgDmgPerHit := safeAvg(stats.TotalDamage, successfulHits)
+		hitRate := shared.SafeDiv(float64(successfulHits), float64(totalAttacks))
+		dodgeRate := shared.SafeDiv(float64(stats.Dodges), float64(totalAttacks))
+		critRate := shared.SafeDiv(float64(stats.Criticals), float64(totalAttacks))
+		avgDmgPerAttack := shared.SafeDiv(float64(stats.TotalDamage), float64(totalAttacks))
+		avgDmgPerHit := shared.SafeDiv(float64(stats.TotalDamage), float64(successfulHits))
 
 		row := []string{
 			key.AttackerName,
@@ -92,7 +93,7 @@ func WriteCSV(path string, result *AggregateResult) error {
 		healKeys := SortedHealKeys(result.HealMatchups)
 		for _, key := range healKeys {
 			hstats := result.HealMatchups[key]
-			avgHeal := safeAvg(hstats.TotalAmount, hstats.TotalHeals)
+			avgHeal := shared.SafeDiv(float64(hstats.TotalAmount), float64(hstats.TotalHeals))
 
 			row := []string{
 				"",
@@ -110,20 +111,4 @@ func WriteCSV(path string, result *AggregateResult) error {
 	}
 
 	return nil
-}
-
-// safeRate computes numerator/denominator, returning 0.0 on division by zero.
-func safeRate(numerator, denominator int) float64 {
-	if denominator == 0 {
-		return 0.0
-	}
-	return float64(numerator) / float64(denominator)
-}
-
-// safeAvg computes numerator/denominator as float64, returning 0.0 on division by zero.
-func safeAvg(numerator, denominator int) float64 {
-	if denominator == 0 {
-		return 0.0
-	}
-	return float64(numerator) / float64(denominator)
 }

@@ -3,10 +3,10 @@ package simulator
 import (
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -104,6 +104,49 @@ func createSimSquad(
 }
 
 // ========================================
+// SQUAD BUILDER
+// Shared scaffolding for the squad factory functions below. Each factory
+// supplies a formation, position list, unit count, and a per-slot selector;
+// buildSquad assembles the unit templates, picks a leader, and delegates to
+// createSimSquad.
+// ========================================
+
+type squadConfig struct {
+	formation  squadcore.FormationType
+	positions  [][2]int
+	unitCount  int
+	selectUnit func(i int) unitdefs.UnitTemplate
+}
+
+func buildSquad(manager *common.EntityManager, name string, pos coords.LogicalPosition, cfg squadConfig) ecs.EntityID {
+	leaderIdx := common.RandomInt(cfg.unitCount)
+	var units []unitdefs.UnitTemplate
+	for i := 0; i < cfg.unitCount && i < len(cfg.positions); i++ {
+		unit := cfg.selectUnit(i)
+		unit.GridRow = cfg.positions[i][0]
+		unit.GridCol = cfg.positions[i][1]
+		unit.IsLeader = (i == leaderIdx)
+		if unit.IsLeader {
+			unit.Attributes.Leadership = 20
+		}
+		units = append(units, unit)
+	}
+	return createSimSquad(manager, name, cfg.formation, pos, units)
+}
+
+// filterUnits returns all unit templates from unitdefs.Units that satisfy the predicate.
+// Replaces the prior per-attribute filterUnitsByAttackRange/filterUnitsByAttackType/filterUnitsByRole helpers.
+func filterUnits(predicate func(unitdefs.UnitTemplate) bool) []unitdefs.UnitTemplate {
+	var filtered []unitdefs.UnitTemplate
+	for _, unit := range unitdefs.Units {
+		if predicate(unit) {
+			filtered = append(filtered, unit)
+		}
+	}
+	return filtered
+}
+
+// ========================================
 // SQUAD FACTORY FUNCTIONS
 // Headless mirrors of initialplayersquads.go factory functions.
 // Same unit selection logic, same grid positions, same leader assignment.
@@ -113,214 +156,86 @@ func createSimSquad(
 // createBalancedSquad mirrors initialplayersquads.go:createBalancedSquad.
 // Picks from Units[i%len(Units)] with balanced formation positions.
 func createBalancedSquad(manager *common.EntityManager, squadName string, worldPos coords.LogicalPosition) ecs.EntityID {
-	positions := [][2]int{
-		{0, 0}, {0, 1}, {0, 2},
-		{1, 1},
-		{2, 1},
-	}
-
+	pool := unitdefs.Units
 	maxUnits := 5
-	if len(unitdefs.Units) < maxUnits {
-		maxUnits = len(unitdefs.Units)
+	if len(pool) < maxUnits {
+		maxUnits = len(pool)
 	}
-
-	leaderIndex := common.RandomInt(maxUnits)
-
-	var unitsToCreate []unitdefs.UnitTemplate
-	for i := 0; i < maxUnits && i < len(positions); i++ {
-		unit := unitdefs.Units[i%len(unitdefs.Units)]
-		unit.GridRow = positions[i][0]
-		unit.GridCol = positions[i][1]
-
-		if i == leaderIndex {
-			unit.IsLeader = true
-			unit.Attributes.Leadership = 20
-		}
-
-		unitsToCreate = append(unitsToCreate, unit)
-	}
-
-	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
+	return buildSquad(manager, squadName, worldPos, squadConfig{
+		formation: squadcore.FormationBalanced,
+		positions: [][2]int{{0, 0}, {0, 1}, {0, 2}, {1, 1}, {2, 1}},
+		unitCount: maxUnits,
+		selectUnit: func(i int) unitdefs.UnitTemplate { return pool[i%len(pool)] },
+	})
 }
 
 // createRangedSquad mirrors initialplayersquads.go:createRangedSquad.
 // Filters units by AttackRange >= 3, random selection, 3-5 units.
 func createRangedSquad(manager *common.EntityManager, squadName string, worldPos coords.LogicalPosition) ecs.EntityID {
-	rangedUnits := filterUnitsByAttackRange(3)
-	if len(rangedUnits) == 0 {
-		// Fallback to balanced if no ranged units
+	pool := filterUnits(func(u unitdefs.UnitTemplate) bool { return u.AttackRange >= 3 })
+	if len(pool) == 0 {
 		return createBalancedSquad(manager, squadName, worldPos)
 	}
-
-	unitCount := common.GetRandomBetween(3, 5)
-
-	gridPositions := [][2]int{
-		{0, 0}, {1, 1}, {2, 2},
-		{0, 2}, {1, 0},
-	}
-
-	var unitsToCreate []unitdefs.UnitTemplate
-	for i := 0; i < unitCount; i++ {
-		randomIdx := common.RandomInt(len(rangedUnits))
-		unit := rangedUnits[randomIdx]
-		unit.GridRow = gridPositions[i][0]
-		unit.GridCol = gridPositions[i][1]
-		unit.IsLeader = false
-		unitsToCreate = append(unitsToCreate, unit)
-	}
-
-	leaderIndex := common.RandomInt(unitCount)
-	unitsToCreate[leaderIndex].IsLeader = true
-	unitsToCreate[leaderIndex].Attributes.Leadership = 20
-
-	return createSimSquad(manager, squadName, squadcore.FormationRanged, worldPos, unitsToCreate)
+	count := common.GetRandomBetween(3, 5)
+	return buildSquad(manager, squadName, worldPos, squadConfig{
+		formation: squadcore.FormationRanged,
+		positions: [][2]int{{0, 0}, {1, 1}, {2, 2}, {0, 2}, {1, 0}},
+		unitCount: count,
+		selectUnit: func(i int) unitdefs.UnitTemplate { return pool[common.RandomInt(len(pool))] },
+	})
 }
 
 // createMagicSquad mirrors initialplayersquads.go:createMagicSquad.
 // Filters units by AttackType == Magic, exactly 3 units.
 func createMagicSquad(manager *common.EntityManager, squadName string, worldPos coords.LogicalPosition) ecs.EntityID {
-	magicUnits := filterUnitsByAttackType(unitdefs.AttackTypeMagic)
-	if len(magicUnits) == 0 {
+	pool := filterUnits(func(u unitdefs.UnitTemplate) bool { return u.AttackType == unitdefs.AttackTypeMagic })
+	if len(pool) == 0 {
 		return createBalancedSquad(manager, squadName, worldPos)
 	}
-
-	unitCount := 3
-
-	gridPositions := [][2]int{
-		{0, 1}, {1, 0}, {2, 1},
-	}
-
-	var unitsToCreate []unitdefs.UnitTemplate
-	for i := 0; i < unitCount; i++ {
-		randomIdx := common.RandomInt(len(magicUnits))
-		unit := magicUnits[randomIdx]
-		unit.GridRow = gridPositions[i][0]
-		unit.GridCol = gridPositions[i][1]
-		unit.IsLeader = false
-		unitsToCreate = append(unitsToCreate, unit)
-	}
-
-	leaderIndex := common.RandomInt(unitCount)
-	unitsToCreate[leaderIndex].IsLeader = true
-	unitsToCreate[leaderIndex].Attributes.Leadership = 20
-
-	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
+	return buildSquad(manager, squadName, worldPos, squadConfig{
+		formation: squadcore.FormationBalanced,
+		positions: [][2]int{{0, 1}, {1, 0}, {2, 1}},
+		unitCount: 3,
+		selectUnit: func(i int) unitdefs.UnitTemplate { return pool[common.RandomInt(len(pool))] },
+	})
 }
 
 // createMixedSquad mirrors initialplayersquads.go:createMixedSquad.
 // Alternates between ranged and magic units, 4-5 units.
 func createMixedSquad(manager *common.EntityManager, squadName string, worldPos coords.LogicalPosition) ecs.EntityID {
-	rangedUnits := filterUnitsByAttackRange(3)
-	magicUnits := filterUnitsByAttackType(unitdefs.AttackTypeMagic)
-
-	if len(rangedUnits) == 0 || len(magicUnits) == 0 {
+	ranged := filterUnits(func(u unitdefs.UnitTemplate) bool { return u.AttackRange >= 3 })
+	magic := filterUnits(func(u unitdefs.UnitTemplate) bool { return u.AttackType == unitdefs.AttackTypeMagic })
+	if len(ranged) == 0 || len(magic) == 0 {
 		return createBalancedSquad(manager, squadName, worldPos)
 	}
-
-	unitCount := common.GetRandomBetween(4, 5)
-
-	gridPositions := [][2]int{
-		{0, 0}, {1, 1}, {2, 2},
-		{1, 2}, {2, 0},
-	}
-
-	var unitsToCreate []unitdefs.UnitTemplate
-	for i := 0; i < unitCount; i++ {
-		var unit unitdefs.UnitTemplate
-
-		if i%2 == 0 && len(rangedUnits) > 0 {
-			randomIdx := common.RandomInt(len(rangedUnits))
-			unit = rangedUnits[randomIdx]
-		} else if len(magicUnits) > 0 {
-			randomIdx := common.RandomInt(len(magicUnits))
-			unit = magicUnits[randomIdx]
-		} else if len(rangedUnits) > 0 {
-			randomIdx := common.RandomInt(len(rangedUnits))
-			unit = rangedUnits[randomIdx]
-		}
-
-		unit.GridRow = gridPositions[i][0]
-		unit.GridCol = gridPositions[i][1]
-		unit.IsLeader = false
-		unitsToCreate = append(unitsToCreate, unit)
-	}
-
-	leaderIndex := common.RandomInt(unitCount)
-	unitsToCreate[leaderIndex].IsLeader = true
-	unitsToCreate[leaderIndex].Attributes.Leadership = 20
-
-	return createSimSquad(manager, squadName, squadcore.FormationBalanced, worldPos, unitsToCreate)
+	count := common.GetRandomBetween(4, 5)
+	return buildSquad(manager, squadName, worldPos, squadConfig{
+		formation: squadcore.FormationBalanced,
+		positions: [][2]int{{0, 0}, {1, 1}, {2, 2}, {1, 2}, {2, 0}},
+		unitCount: count,
+		selectUnit: func(i int) unitdefs.UnitTemplate {
+			if i%2 == 0 {
+				return ranged[common.RandomInt(len(ranged))]
+			}
+			return magic[common.RandomInt(len(magic))]
+		},
+	})
 }
 
 // createMeleeSquad creates an all-melee squad using MeleeRow attack type units.
 func createMeleeSquad(manager *common.EntityManager, squadName string, worldPos coords.LogicalPosition) ecs.EntityID {
-	meleeUnits := filterUnitsByAttackType(unitdefs.AttackTypeMeleeRow)
-	if len(meleeUnits) == 0 {
+	pool := filterUnits(func(u unitdefs.UnitTemplate) bool { return u.AttackType == unitdefs.AttackTypeMeleeRow })
+	if len(pool) == 0 {
 		return createBalancedSquad(manager, squadName, worldPos)
 	}
-
-	positions := [][2]int{
-		{0, 0}, {0, 1}, {0, 2},
-		{1, 1},
-		{2, 1},
+	count := 5
+	if len(pool) < count {
+		count = len(pool)
 	}
-
-	unitCount := 5
-	if len(meleeUnits) < unitCount {
-		unitCount = len(meleeUnits)
-	}
-
-	leaderIndex := common.RandomInt(unitCount)
-
-	var unitsToCreate []unitdefs.UnitTemplate
-	for i := 0; i < unitCount && i < len(positions); i++ {
-		randomIdx := common.RandomInt(len(meleeUnits))
-		unit := meleeUnits[randomIdx]
-		unit.GridRow = positions[i][0]
-		unit.GridCol = positions[i][1]
-
-		if i == leaderIndex {
-			unit.IsLeader = true
-			unit.Attributes.Leadership = 20
-		}
-
-		unitsToCreate = append(unitsToCreate, unit)
-	}
-
-	return createSimSquad(manager, squadName, squadcore.FormationOffensive, worldPos, unitsToCreate)
-}
-
-// ========================================
-// FILTER HELPERS
-// Mirrors of the unexported filter functions in initialplayersquads.go.
-// ========================================
-
-func filterUnitsByAttackRange(minRange int) []unitdefs.UnitTemplate {
-	var filtered []unitdefs.UnitTemplate
-	for _, unit := range unitdefs.Units {
-		if unit.AttackRange >= minRange {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
-}
-
-func filterUnitsByAttackType(attackType unitdefs.AttackType) []unitdefs.UnitTemplate {
-	var filtered []unitdefs.UnitTemplate
-	for _, unit := range unitdefs.Units {
-		if unit.AttackType == attackType {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
-}
-
-func filterUnitsByRole(role unitdefs.UnitRole) []unitdefs.UnitTemplate {
-	var filtered []unitdefs.UnitTemplate
-	for _, unit := range unitdefs.Units {
-		if unit.Role == role {
-			filtered = append(filtered, unit)
-		}
-	}
-	return filtered
+	return buildSquad(manager, squadName, worldPos, squadConfig{
+		formation: squadcore.FormationOffensive,
+		positions: [][2]int{{0, 0}, {0, 1}, {0, 2}, {1, 1}, {2, 1}},
+		unitCount: count,
+		selectUnit: func(i int) unitdefs.UnitTemplate { return pool[common.RandomInt(len(pool))] },
+	})
 }

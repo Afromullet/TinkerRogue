@@ -3,6 +3,7 @@ package compressor
 import (
 	"encoding/csv"
 	"fmt"
+	"game_main/tools/combat_analysis/shared"
 	"os"
 )
 
@@ -55,11 +56,11 @@ func writeUnitOverview(w *csv.Writer, units []UnitStats) error {
 	}
 
 	for _, u := range units {
-		offHitRate := safeDiv(float64(u.OffHits), float64(u.AttacksMade))
-		defDodgeRate := safeDiv(float64(u.DefDodges), float64(u.AttacksReceived))
-		offCritRate := safeDiv(float64(u.OffCrits), float64(u.AttacksMade))
-		avgDmgDealt := safeDiv(float64(u.DmgDealt), float64(u.AttacksMade))
-		avgDmgTaken := safeDiv(float64(u.DmgTaken), float64(u.AttacksReceived))
+		offHitRate := shared.SafeDiv(float64(u.OffHits), float64(u.AttacksMade))
+		defDodgeRate := shared.SafeDiv(float64(u.DefDodges), float64(u.AttacksReceived))
+		offCritRate := shared.SafeDiv(float64(u.OffCrits), float64(u.AttacksMade))
+		avgDmgDealt := shared.SafeDiv(float64(u.DmgDealt), float64(u.AttacksMade))
+		avgDmgTaken := shared.SafeDiv(float64(u.DmgTaken), float64(u.AttacksReceived))
 
 		kdRatio := 0.0
 		if u.Deaths > 0 {
@@ -106,10 +107,10 @@ func writeCompressedMatchups(w *csv.Writer, matchups []CompressedMatchup) error 
 	}
 
 	for _, m := range matchups {
-		hitRate := safeDiv(float64(m.Hits), float64(m.TotalAttacks))
-		critRate := safeDiv(float64(m.Crits), float64(m.TotalAttacks))
-		dodgeRate := safeDiv(float64(m.Dodges), float64(m.TotalAttacks))
-		avgDmg := safeDiv(float64(m.TotalDamage), float64(m.TotalAttacks))
+		hitRate := shared.SafeDiv(float64(m.Hits), float64(m.TotalAttacks))
+		critRate := shared.SafeDiv(float64(m.Crits), float64(m.TotalAttacks))
+		dodgeRate := shared.SafeDiv(float64(m.Dodges), float64(m.TotalAttacks))
+		avgDmg := shared.SafeDiv(float64(m.TotalDamage), float64(m.TotalAttacks))
 
 		row := []string{
 			m.Attacker,
@@ -154,11 +155,4 @@ func writeBlankRow(w *csv.Writer) error {
 		return fmt.Errorf("failed to write blank row: %w", err)
 	}
 	return nil
-}
-
-func safeDiv(num, denom float64) float64 {
-	if denom == 0 {
-		return 0.0
-	}
-	return num / denom
 }

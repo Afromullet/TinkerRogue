@@ -2,6 +2,7 @@ package visualizer
 
 import (
 	"fmt"
+	"game_main/tools/combat_analysis/shared"
 	"log"
 	"os"
 )
@@ -23,7 +24,7 @@ func Run(args []string) {
 	switch arg {
 	case "--latest":
 		// Find most recent battle
-		file, err := FindLatestBattle(defaultCombatLogsDir)
+		file, err := shared.FindLatestBattle(defaultCombatLogsDir)
 		if err != nil {
 			log.Fatalf("Error finding latest battle: %v", err)
 		}
@@ -31,7 +32,7 @@ func Run(args []string) {
 
 	case "--all":
 		// Find all battles
-		files, err = FindAllBattles(defaultCombatLogsDir)
+		files, err = shared.FindAllBattles(defaultCombatLogsDir)
 		if err != nil {
 			log.Fatalf("Error finding battles: %v", err)
 		}

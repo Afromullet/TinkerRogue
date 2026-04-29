@@ -2,6 +2,7 @@ package balance
 
 import (
 	"fmt"
+	"game_main/tools/combat_analysis/shared"
 	"log"
 	"os"
 )
@@ -36,7 +37,7 @@ func Run(args []string) {
 	}
 
 	// Find all battle files
-	files, err := FindAllBattles(logsDir)
+	files, err := shared.FindAllBattles(logsDir)
 	if err != nil {
 		log.Fatalf("Error finding battles: %v", err)
 	}
@@ -49,7 +50,7 @@ func Run(args []string) {
 	// Load all records
 	var records []*BattleRecord
 	for _, file := range files {
-		record, err := LoadBattleRecord(file)
+		record, err := shared.LoadBattleRecord(file)
 		if err != nil {
 			fmt.Printf("Warning: skipping %s: %v\n", file, err)
 			continue
