@@ -13,6 +13,7 @@ Quick reference for development commands, analysis tools, profiling, and asset p
 - [Performance Profiling (pprof)](#performance-profiling-pprof)
 - [Measuring Cyclomatic Complexity](#measuring-cyclomatic-complexity)
 - [Complexity Hotspots Report](#complexity-hotspots-report)
+- [Claude Code Slash Commands](#claude-code-slash-commands)
 - [Asset Preparation (GIMP)](#asset-preparation-gimp)
 
 ---
@@ -235,6 +236,37 @@ bash tools/scripts/complexity_report.sh --output report.txt       # custom outpu
 | `--skip-lint` | off | Skip the golangci-lint pass (fastest path) |
 | `--output PATH` | `resources/docs/complexity_report.txt` | Output file |
 | `--stdout` | off | Print to stdout instead of writing to a file |
+
+---
+
+## Claude Code Slash Commands
+
+Custom slash commands are stored in `.claude/commands/` and invoked by typing `/<command-name>` in the Claude Code prompt.
+
+### /refactor
+
+Runs a pragmatic Staff Engineer refactor pass on a directory. Focuses on long-term maintainability: reducing duplication only where the underlying business reason is identical (AHA over DRY), removing dead code, improving naming, and ensuring single-responsibility functions. Runs existing tests after changes and presents work in logical chunks.
+
+```
+/refactor <directory>
+```
+
+**Examples:**
+
+```
+/refactor tactical/combat
+/refactor tactical/powers/spells
+/refactor mind/ai
+```
+
+**What it does:**
+- Reduces blatant duplication, but avoids hasty abstractions
+- Removes dead code and redundant logic; leaves complex-but-reliable patterns alone
+- Improves naming and function responsibilities
+- Summarizes why each major change adds value
+- Runs `go test ./...` after changes to verify zero regressions
+
+**Command file:** `.claude/commands/refactor.md`
 
 ---
 
