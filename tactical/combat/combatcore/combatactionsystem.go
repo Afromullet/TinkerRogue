@@ -116,7 +116,7 @@ func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.E
 
 	// Build counterattack modifiers (may be modified by perk hooks)
 	counterModifiers := combattypes.DamageModifiers{
-		HitPenalty:       counterattackHitPenalty(),
+		HitModifier:      counterattackHitPenalty(),
 		DamageMultiplier: counterattackDamageMultiplier(),
 		IsCounterattack:  true,
 	}

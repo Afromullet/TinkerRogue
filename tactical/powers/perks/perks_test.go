@@ -2,8 +2,12 @@ package perks
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
+	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combattypes"
 	"game_main/tactical/powers/powercore"
+	"game_main/tactical/squads/squadcore"
+	"game_main/tactical/squads/unitdefs"
 	testfx "game_main/testing"
 	"testing"
 
@@ -29,18 +33,30 @@ func createTestSquadWithPerks(manager *common.EntityManager, perkIDs ...PerkID) 
 	return squadID
 }
 
-// setupTestBalance sets minimal balance values for testing.
+// setupTestBalance sets balance values for testing. Includes all perks so behavior
+// tests never read zero multipliers.
 func setupTestBalance() {
 	PerkBalance = PerkBalanceConfig{
+		// Stateless perks
+		BraceForImpact:       BraceForImpactBalance{CoverBonus: 0.3},
+		ExecutionersInstinct: ExecutionersInstinctBalance{HPThreshold: 0.3, CritBonus: 15},
+		ShieldwallDiscipline: ShieldwallDisciplineBalance{MaxTanks: 2, PerTankReduction: 0.1},
+		IsolatedPredator:     IsolatedPredatorBalance{Range: 3, DamageMult: 1.25},
+		FieldMedic:           FieldMedicBalance{HealDivisor: 10},
+		LastLine:             LastLineBalance{DamageMult: 1.3, HitBonus: 10},
+		Cleave:               CleaveBalance{DamageMult: 0.7},
+		GuardianProtocol:     GuardianProtocolBalance{RedirectFraction: 4},
+		// Per-round stateful perks
 		RecklessAssault:   RecklessAssaultBalance{AttackerMult: 1.3, DefenderMult: 1.2},
 		Counterpunch:      CounterpunchBalance{DamageMult: 1.4},
 		DeadshotsPatience: DeadshotsPatienceBalance{DamageMult: 1.5, AccuracyBonus: 20},
 		AdaptiveArmor:     AdaptiveArmorBalance{MaxHits: 3, PerHitReduction: 0.1},
-		Bloodlust:         BloodlustBalance{PerKillBonus: 0.15},
 		Fortify:           FortifyBalance{MaxStationaryTurns: 3, PerTurnCoverBonus: 0.05},
-		OpeningSalvo:      OpeningSalvoBalance{DamageMult: 1.35},
-		Resolute:          ResoluteBalance{HPThreshold: 0.5},
-		GrudgeBearer:      GrudgeBearerBalance{MaxStacks: 2, PerStackBonus: 0.2},
+		// Per-battle stateful perks
+		Bloodlust:    BloodlustBalance{PerKillBonus: 0.15},
+		OpeningSalvo: OpeningSalvoBalance{DamageMult: 1.35},
+		Resolute:     ResoluteBalance{HPThreshold: 0.5},
+		GrudgeBearer: GrudgeBearerBalance{MaxStacks: 2, PerStackBonus: 0.2},
 	}
 }
 
@@ -825,12 +841,11 @@ func TestMultiPerk_ExclusionPreventsCleaveAndPrecisionStrike(t *testing.T) {
 // ========================================
 
 func TestValidatePerkBalance_ZeroMultipliersWarn(t *testing.T) {
-	// validatePerkBalance should detect zero/negative multipliers.
-	// We can't easily capture stdout warnings, but we can verify the function
-	// doesn't panic and that a zero-valued config is clearly invalid.
-	cfg := &PerkBalanceConfig{} // All zero values
-	// Should not panic
-	validatePerkBalance(cfg)
+	cfg := &PerkBalanceConfig{} // All zero values — every field should produce an error
+	errs := validatePerkBalance(cfg)
+	if len(errs) == 0 {
+		t.Error("expected validation errors for zero-valued config, got none")
+	}
 }
 
 func TestValidatePerkBalance_ValidConfig(t *testing.T) {
@@ -876,5 +891,131 @@ func TestPerkBalanceConfig_ZeroFieldsAreDetectable(t *testing.T) {
 	(&RecklessAssaultBehavior{}).AttackerDamageMod(ctx,mods)
 	if mods.DamageMultiplier != 0.0 {
 		t.Errorf("Expected 0.0 with zero balance mult, got %v", mods.DamageMultiplier)
+	}
+}
+
+// ========================================
+// Cleave Behavior Tests
+// ========================================
+
+func TestCleave_TargetOverride_NonMeleeReturnsDefaults(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+	// AttackerID 0 has no TargetRowComponent → targetData == nil → returns defaultTargets unchanged
+	defaults := []ecs.EntityID{42}
+	ctx := &HookContext{PowerContext: powercore.PowerContext{Manager: manager}, AttackerID: 0}
+	result := (&CleaveBehavior{}).TargetOverride(ctx, defaults)
+	if len(result) != 1 || result[0] != 42 {
+		t.Errorf("expected default targets returned, got %v", result)
+	}
+}
+
+func TestCleave_AttackerDamageMod_NonMeleeNoChange(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
+	ctx := &HookContext{PowerContext: powercore.PowerContext{Manager: manager}, AttackerID: 0} // no TargetRowComponent
+	(&CleaveBehavior{}).AttackerDamageMod(ctx, mods)
+	if mods.DamageMultiplier != 1.0 {
+		t.Errorf("expected multiplier unchanged at 1.0, got %v", mods.DamageMultiplier)
+	}
+}
+
+func TestCleave_AttackerDamageMod_MeleeRowAppliesMult(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+	attacker := manager.World.NewEntity()
+	attacker.AddComponent(squadcore.TargetRowComponent, &squadcore.TargetRowData{
+		AttackType: unitdefs.AttackTypeMeleeRow,
+	})
+	mods := &combattypes.DamageModifiers{DamageMultiplier: 1.0}
+	ctx := &HookContext{PowerContext: powercore.PowerContext{Manager: manager}, AttackerID: attacker.GetID()}
+	(&CleaveBehavior{}).AttackerDamageMod(ctx, mods)
+	if mods.DamageMultiplier != PerkBalance.Cleave.DamageMult {
+		t.Errorf("expected DamageMultiplier=%v, got %v", PerkBalance.Cleave.DamageMult, mods.DamageMultiplier)
+	}
+}
+
+// ========================================
+// GuardianProtocol Behavior Tests
+// ========================================
+
+func TestGuardianProtocol_NoPosition_NoRedirect(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+	// Squad with no PositionComponent → defenderPos == nil → immediate no-op return
+	squad := manager.World.NewEntity()
+	ctx := &HookContext{
+		PowerContext: powercore.PowerContext{Manager: manager},
+		SquadID:      squad.GetID(),
+		DamageAmount: 100,
+	}
+	reducedDmg, redirectTarget, redirectAmt := (&GuardianProtocolBehavior{}).DamageRedirect(ctx)
+	if reducedDmg != 100 || redirectTarget != 0 || redirectAmt != 0 {
+		t.Errorf("expected no redirect, got (%d, %v, %d)", reducedDmg, redirectTarget, redirectAmt)
+	}
+}
+
+func TestGuardianProtocol_NoFriendlySquad_NoRedirect(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+	// CreateEmptySquad adds PositionComponent; no FactionMembershipComponent → ForEachFriendlySquad no-ops
+	defenderSquadID := squadcore.CreateEmptySquad(manager, "Defender")
+	ctx := &HookContext{
+		PowerContext: powercore.PowerContext{Manager: manager},
+		SquadID:      defenderSquadID,
+		DamageAmount: 100,
+	}
+	reducedDmg, redirectTarget, redirectAmt := (&GuardianProtocolBehavior{}).DamageRedirect(ctx)
+	if reducedDmg != 100 || redirectTarget != 0 || redirectAmt != 0 {
+		t.Errorf("expected no redirect, got (%d, %v, %d)", reducedDmg, redirectTarget, redirectAmt)
+	}
+}
+
+func TestGuardianProtocol_AdjacentTankRedirects(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+
+	defenderSquadID := squadcore.CreateEmptySquad(manager, "Defender")
+	guardianSquadID := squadcore.CreateEmptySquad(manager, "Guardian")
+
+	// Both squads in the same faction so ForEachFriendlySquad finds the guardian
+	factionID := ecs.EntityID(999)
+	defenderEntity := manager.FindEntityByID(defenderSquadID)
+	defenderEntity.AddComponent(combatstate.FactionMembershipComponent, &combatstate.CombatFactionData{FactionID: factionID})
+	guardianEntity := manager.FindEntityByID(guardianSquadID)
+	guardianEntity.AddComponent(combatstate.FactionMembershipComponent, &combatstate.CombatFactionData{FactionID: factionID})
+
+	// Guardian squad has the perk
+	guardianEntity.AddComponent(PerkSlotComponent, &PerkSlotData{PerkIDs: []PerkID{PerkGuardianProtocol}})
+
+	// Defender (5,5), guardian (5,6) → Chebyshev distance = 1 (adjacent)
+	defenderPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, defenderSquadID, common.PositionComponent)
+	defenderPos.X, defenderPos.Y = 5, 5
+	guardianPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, guardianSquadID, common.PositionComponent)
+	guardianPos.X, guardianPos.Y = 5, 6
+
+	// Tank unit in guardian squad
+	tankEntity := manager.World.NewEntity()
+	tankID := tankEntity.GetID()
+	tankEntity.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: guardianSquadID})
+	tankEntity.AddComponent(squadcore.UnitRoleComponent, &squadcore.UnitRoleData{Role: unitdefs.RoleTank})
+	tankEntity.AddComponent(common.AttributeComponent, &common.Attributes{CurrentHealth: 100})
+
+	ctx := &HookContext{
+		PowerContext: powercore.PowerContext{Manager: manager},
+		SquadID:      defenderSquadID,
+		DamageAmount: 40,
+	}
+	reducedDmg, redirectTarget, redirectAmt := (&GuardianProtocolBehavior{}).DamageRedirect(ctx)
+	// RedirectFraction=4: guardianDmg = 40/4 = 10, reducedDmg = 40-10 = 30
+	if reducedDmg != 30 {
+		t.Errorf("expected reducedDmg=30, got %d", reducedDmg)
+	}
+	if redirectTarget != tankID {
+		t.Errorf("expected redirectTarget=%d, got %d", tankID, redirectTarget)
+	}
+	if redirectAmt != 10 {
+		t.Errorf("expected redirectAmt=10, got %d", redirectAmt)
 	}
 }

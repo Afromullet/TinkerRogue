@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/config"
+	"game_main/tactical/squads/unitdefs"
 	"os"
 )
 
@@ -143,8 +144,8 @@ func LoadPerkDefinitions() {
 
 		// Validate roles
 		for _, role := range perk.Roles {
-			if role != "Tank" && role != "DPS" && role != "Support" {
-				fmt.Printf("WARNING: Perk %q has invalid role %q\n", perk.ID, role)
+			if _, err := unitdefs.GetRole(role); err != nil {
+				fmt.Printf("WARNING: Perk %q has invalid role %q: %v\n", perk.ID, role, err)
 			}
 		}
 

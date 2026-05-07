@@ -61,7 +61,7 @@ func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.
 // resolveHitAndDodge performs hit and dodge rolls. Returns true if the attack missed or was dodged.
 func resolveHitAndDodge(attackerAttr, defenderAttr *common.Attributes, modifiers combattypes.DamageModifiers, event *combattypes.AttackEvent) bool {
 	// Hit roll with optional penalty
-	hitThreshold := attackerAttr.GetHitRate() - modifiers.HitPenalty
+	hitThreshold := attackerAttr.GetHitRate() - modifiers.HitModifier
 	if hitThreshold < 0 {
 		hitThreshold = 0
 	}

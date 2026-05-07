@@ -56,7 +56,7 @@ func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *c
 // calculateTestDamage replaces calculateUnitDamageByID with zero modifiers.
 func calculateTestDamage(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) (int, *combattypes.AttackEvent) {
 	modifiers := combattypes.DamageModifiers{
-		HitPenalty:       0,
+		HitModifier:      0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}

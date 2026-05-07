@@ -160,7 +160,7 @@ type UnitIdentity struct {
 
 // DamageModifiers holds modifiers for damage calculation
 type DamageModifiers struct {
-	HitPenalty       int
+	HitModifier      int     // Subtracted from attacker's hit threshold. Positive = penalty; negative = accuracy bonus.
 	DamageMultiplier float64
 	IsCounterattack  bool
 

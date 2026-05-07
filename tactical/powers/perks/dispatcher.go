@@ -200,13 +200,14 @@ func (d *SquadPerkDispatcher) DispatchRoundEnd(manager *common.EntityManager) {
 }
 
 // DispatchAttackTracking updates perk round state after an attack resolves.
-func (d *SquadPerkDispatcher) DispatchAttackTracking(attackerID, defenderID ecs.EntityID, manager *common.EntityManager) {
-	attackerState := GetRoundState(attackerID, manager)
+// attackerSquadID and defenderSquadID must be squad entity IDs; PerkRoundStateComponent is on squads, not units.
+func (d *SquadPerkDispatcher) DispatchAttackTracking(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) {
+	attackerState := GetRoundState(attackerSquadID, manager)
 	if attackerState != nil {
 		attackerState.AttackedThisTurn = true
 	}
 
-	defenderState := GetRoundState(defenderID, manager)
+	defenderState := GetRoundState(defenderSquadID, manager)
 	if defenderState != nil {
 		defenderState.WasAttackedThisTurn = true
 	}

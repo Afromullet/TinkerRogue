@@ -138,7 +138,7 @@ func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityI
 	log *combattypes.CombatLog, attackIndex int, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
 	modifiers := combattypes.DamageModifiers{
-		HitPenalty:       0,
+		HitModifier:      0,
 		DamageMultiplier: 1.0,
 		IsCounterattack:  false,
 	}

@@ -205,7 +205,7 @@ func (b *LastLineBehavior) AttackerDamageMod(ctx *HookContext, modifiers *combat
 		return
 	}
 	modifiers.DamageMultiplier *= PerkBalance.LastLine.DamageMult
-	modifiers.HitPenalty -= PerkBalance.LastLine.HitBonus
+	modifiers.HitModifier -= PerkBalance.LastLine.HitBonus
 	ctx.LogPerk(PerkLastLine, ctx.AttackerSquadID, "last squad standing bonus")
 }
 
@@ -258,7 +258,7 @@ type RiposteBehavior struct{ BasePerkBehavior }
 func (b *RiposteBehavior) PerkID() PerkID { return PerkRiposte }
 
 func (b *RiposteBehavior) CounterMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) bool {
-	modifiers.HitPenalty = 0
+	modifiers.HitModifier = 0
 	ctx.LogPerk(PerkRiposte, ctx.DefenderSquadID, "counter hit penalty removed")
 	return false
 }
@@ -471,7 +471,7 @@ func (b *DeadshotsPatienceBehavior) AttackerDamageMod(ctx *HookContext, modifier
 	}
 	if targetData.AttackType == unitdefs.AttackTypeRanged || targetData.AttackType == unitdefs.AttackTypeMagic {
 		modifiers.DamageMultiplier *= PerkBalance.DeadshotsPatience.DamageMult
-		modifiers.HitPenalty -= PerkBalance.DeadshotsPatience.AccuracyBonus
+		modifiers.HitModifier -= PerkBalance.DeadshotsPatience.AccuracyBonus
 		state.Ready = false
 		ctx.LogPerk(PerkDeadshotsPatience, ctx.AttackerSquadID, fmt.Sprintf("+%d%% damage, +%d accuracy (patient shot)", int((PerkBalance.DeadshotsPatience.DamageMult-1)*100), PerkBalance.DeadshotsPatience.AccuracyBonus))
 	}

@@ -123,74 +123,81 @@ func LoadPerkBalanceConfig() {
 		return
 	}
 
-	validatePerkBalance(&PerkBalance)
+	if errs := validatePerkBalance(&PerkBalance); len(errs) > 0 {
+		for _, e := range errs {
+			fmt.Printf("WARNING: perk balance config: %v\n", e)
+		}
+		if config.DEBUG_MODE {
+			panic("perk balance config invalid — fix gamedata/perkbalanceconfig.json before running")
+		}
+	}
 	fmt.Println("Perk balance config loaded")
 }
 
-func validatePerkBalance(cfg *PerkBalanceConfig) {
-	// Existing checks
+func validatePerkBalance(cfg *PerkBalanceConfig) []error {
+	var errs []error
 	if cfg.BraceForImpact.CoverBonus <= 0 {
-		fmt.Println("WARNING: braceForImpact.coverBonus should be positive")
+		errs = append(errs, fmt.Errorf("braceForImpact.coverBonus must be positive"))
 	}
 	if cfg.ExecutionersInstinct.HPThreshold <= 0 || cfg.ExecutionersInstinct.HPThreshold >= 1.0 {
-		fmt.Println("WARNING: executionersInstinct.hpThreshold should be between 0 and 1")
+		errs = append(errs, fmt.Errorf("executionersInstinct.hpThreshold must be between 0 and 1"))
 	}
 	if cfg.ShieldwallDiscipline.MaxTanks <= 0 {
-		fmt.Println("WARNING: shieldwallDiscipline.maxTanks should be positive")
+		errs = append(errs, fmt.Errorf("shieldwallDiscipline.maxTanks must be positive"))
 	}
 	if cfg.FieldMedic.HealDivisor <= 0 {
-		fmt.Println("WARNING: fieldMedic.healDivisor should be positive")
+		errs = append(errs, fmt.Errorf("fieldMedic.healDivisor must be positive"))
 	}
 	if cfg.GuardianProtocol.RedirectFraction <= 0 {
-		fmt.Println("WARNING: guardianProtocol.redirectFraction should be positive")
+		errs = append(errs, fmt.Errorf("guardianProtocol.redirectFraction must be positive"))
 	}
 	if cfg.Resolute.HPThreshold <= 0 || cfg.Resolute.HPThreshold >= 1.0 {
-		fmt.Println("WARNING: resolute.hpThreshold should be between 0 and 1")
+		errs = append(errs, fmt.Errorf("resolute.hpThreshold must be between 0 and 1"))
 	}
 	if cfg.GrudgeBearer.MaxStacks <= 0 {
-		fmt.Println("WARNING: grudgeBearer.maxStacks should be positive")
+		errs = append(errs, fmt.Errorf("grudgeBearer.maxStacks must be positive"))
 	}
-	// Previously missing checks — multipliers that would zero damage if missing from JSON
 	if cfg.IsolatedPredator.DamageMult <= 0 {
-		fmt.Println("WARNING: isolatedPredator.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("isolatedPredator.damageMult must be positive"))
 	}
 	if cfg.IsolatedPredator.Range <= 0 {
-		fmt.Println("WARNING: isolatedPredator.range should be positive")
+		errs = append(errs, fmt.Errorf("isolatedPredator.range must be positive"))
 	}
 	if cfg.LastLine.DamageMult <= 0 {
-		fmt.Println("WARNING: lastLine.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("lastLine.damageMult must be positive"))
 	}
 	if cfg.Cleave.DamageMult <= 0 {
-		fmt.Println("WARNING: cleave.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("cleave.damageMult must be positive"))
 	}
 	if cfg.RecklessAssault.AttackerMult <= 0 {
-		fmt.Println("WARNING: recklessAssault.attackerMult should be positive")
+		errs = append(errs, fmt.Errorf("recklessAssault.attackerMult must be positive"))
 	}
 	if cfg.RecklessAssault.DefenderMult <= 0 {
-		fmt.Println("WARNING: recklessAssault.defenderMult should be positive")
+		errs = append(errs, fmt.Errorf("recklessAssault.defenderMult must be positive"))
 	}
 	if cfg.Fortify.MaxStationaryTurns <= 0 {
-		fmt.Println("WARNING: fortify.maxStationaryTurns should be positive")
+		errs = append(errs, fmt.Errorf("fortify.maxStationaryTurns must be positive"))
 	}
 	if cfg.Fortify.PerTurnCoverBonus <= 0 {
-		fmt.Println("WARNING: fortify.perTurnCoverBonus should be positive")
+		errs = append(errs, fmt.Errorf("fortify.perTurnCoverBonus must be positive"))
 	}
 	if cfg.Counterpunch.DamageMult <= 0 {
-		fmt.Println("WARNING: counterpunch.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("counterpunch.damageMult must be positive"))
 	}
 	if cfg.DeadshotsPatience.DamageMult <= 0 {
-		fmt.Println("WARNING: deadshotsPatience.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("deadshotsPatience.damageMult must be positive"))
 	}
 	if cfg.AdaptiveArmor.MaxHits <= 0 {
-		fmt.Println("WARNING: adaptiveArmor.maxHits should be positive")
+		errs = append(errs, fmt.Errorf("adaptiveArmor.maxHits must be positive"))
 	}
 	if cfg.AdaptiveArmor.PerHitReduction <= 0 {
-		fmt.Println("WARNING: adaptiveArmor.perHitReduction should be positive")
+		errs = append(errs, fmt.Errorf("adaptiveArmor.perHitReduction must be positive"))
 	}
 	if cfg.Bloodlust.PerKillBonus <= 0 {
-		fmt.Println("WARNING: bloodlust.perKillBonus should be positive")
+		errs = append(errs, fmt.Errorf("bloodlust.perKillBonus must be positive"))
 	}
 	if cfg.OpeningSalvo.DamageMult <= 0 {
-		fmt.Println("WARNING: openingSalvo.damageMult should be positive")
+		errs = append(errs, fmt.Errorf("openingSalvo.damageMult must be positive"))
 	}
+	return errs
 }
