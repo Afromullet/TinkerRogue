@@ -43,6 +43,7 @@ func (t BehaviorTargetType) String() string {
 type ArtifactBehavior interface {
 	BehaviorKey() string
 	TargetType() BehaviorTargetType
+	ChargeType() ChargeType
 	OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID)
 	OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult)
 	OnTurnEnd(ctx *BehaviorContext, round int)
@@ -55,6 +56,7 @@ type ArtifactBehavior interface {
 type BaseBehavior struct{}
 
 func (BaseBehavior) TargetType() BehaviorTargetType                             { return TargetNone }
+func (BaseBehavior) ChargeType() ChargeType                                     { return ChargeOncePerBattle }
 func (BaseBehavior) OnPostReset(*BehaviorContext, ecs.EntityID, []ecs.EntityID) {}
 func (BaseBehavior) OnAttackComplete(*BehaviorContext, ecs.EntityID, ecs.EntityID, *combattypes.CombatResult) {
 }

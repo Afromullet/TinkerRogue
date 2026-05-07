@@ -1,6 +1,8 @@
 package artifacts
 
 import (
+	"sort"
+
 	"game_main/core/common"
 	"game_main/templates"
 
@@ -31,18 +33,12 @@ func GetArtifactDefinitions(squadID ecs.EntityID, manager *common.EntityManager)
 // GetEquippedBehaviors returns the ArtifactBehavior instances for all equipped
 // artifacts on a squad that have a registered behavior.
 func GetEquippedBehaviors(squadID ecs.EntityID, manager *common.EntityManager) []ArtifactBehavior {
-	data := GetEquipmentData(squadID, manager)
-	if data == nil {
-		return nil
-	}
 	var behaviors []ArtifactBehavior
-	for _, id := range data.EquippedArtifacts {
-		def := templates.GetArtifactDefinition(id)
-		if def == nil || def.Behavior == "" {
+	for _, def := range GetArtifactDefinitions(squadID, manager) {
+		if def.Behavior == "" {
 			continue
 		}
-		b := GetBehavior(def.Behavior)
-		if b != nil {
+		if b := GetBehavior(def.Behavior); b != nil {
 			behaviors = append(behaviors, b)
 		}
 	}
@@ -51,13 +47,8 @@ func GetEquippedBehaviors(squadID ecs.EntityID, manager *common.EntityManager) [
 
 // HasArtifactBehavior returns true if any equipped artifact on the squad has the given behavior.
 func HasArtifactBehavior(squadID ecs.EntityID, behavior string, manager *common.EntityManager) bool {
-	data := GetEquipmentData(squadID, manager)
-	if data == nil {
-		return false
-	}
-	for _, id := range data.EquippedArtifacts {
-		def := templates.GetArtifactDefinition(id)
-		if def != nil && def.Behavior == behavior {
+	for _, def := range GetArtifactDefinitions(squadID, manager) {
+		if def.Behavior == behavior {
 			return true
 		}
 	}
@@ -106,7 +97,8 @@ func GetArtifactCount(inv *ArtifactInventoryData) (int, int) {
 	return totalInstanceCount(inv), inv.MaxArtifacts
 }
 
-// GetAllInstances returns a flat list of all artifact instances for GUI display.
+// GetAllInstances returns a flat list of all artifact instances for GUI display,
+// sorted by DefinitionID then InstanceIndex for stable ordering.
 func GetAllInstances(inv *ArtifactInventoryData) []ArtifactInstanceInfo {
 	var result []ArtifactInstanceInfo
 	for defID, instances := range inv.OwnedArtifacts {
@@ -118,6 +110,12 @@ func GetAllInstances(inv *ArtifactInventoryData) []ArtifactInstanceInfo {
 			})
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].DefinitionID != result[j].DefinitionID {
+			return result[i].DefinitionID < result[j].DefinitionID
+		}
+		return result[i].InstanceIndex < result[j].InstanceIndex
+	})
 	return result
 }
 

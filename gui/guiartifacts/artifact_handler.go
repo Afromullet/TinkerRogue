@@ -1,11 +1,12 @@
 package guiartifacts
 
 import (
+	"fmt"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/powercore"
 	"game_main/visual/graphics"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -35,21 +36,6 @@ func NewArtifactActivationHandler(deps *ArtifactActivationDeps) *ArtifactActivat
 // SetPlayerPosition sets the player position for viewport calculations.
 func (h *ArtifactActivationHandler) SetPlayerPosition(pos *coords.LogicalPosition) {
 	h.playerPos = pos
-}
-
-// ToggleArtifactMode opens the artifact list or cancels artifact mode.
-func (h *ArtifactActivationHandler) ToggleArtifactMode() {
-	if h.deps.BattleState.InArtifactMode {
-		h.CancelArtifactMode()
-		return
-	}
-
-	available := h.GetAvailableArtifacts()
-	if len(available) == 0 {
-		return
-	}
-
-	h.deps.BattleState.InArtifactMode = true
 }
 
 // SelectArtifact stores the selected artifact and enters targeting mode
@@ -183,7 +169,9 @@ func (h *ArtifactActivationHandler) executeArtifact(behaviorKey string, targetSq
 		h.deps.CombatService.GetChargeTracker(),
 	)
 
-	artifacts.ActivateArtifact(behaviorKey, targetSquadID, ctx)
+	if err := artifacts.ActivateArtifact(behaviorKey, targetSquadID, ctx); err != nil {
+		fmt.Printf("[ARTIFACT] activation failed: %v\n", err)
+	}
 
 	// Clear artifact state regardless of success
 	h.deps.BattleState.InArtifactMode = false

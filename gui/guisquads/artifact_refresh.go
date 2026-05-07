@@ -2,7 +2,6 @@ package guisquads
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"game_main/gui/builders"
@@ -71,14 +70,7 @@ func (am *ArtifactMode) refreshInventory() {
 	current, max := artifacts.GetArtifactCount(inv)
 	am.inventoryTitle.Label = fmt.Sprintf("Artifacts (%d/%d)", current, max)
 
-	// Get flat list of all instances and sort by definition ID + instance index
 	allInstances := artifacts.GetAllInstances(inv)
-	sort.Slice(allInstances, func(i, j int) bool {
-		if allInstances[i].DefinitionID != allInstances[j].DefinitionID {
-			return allInstances[i].DefinitionID < allInstances[j].DefinitionID
-		}
-		return allInstances[i].InstanceIndex < allInstances[j].InstanceIndex
-	})
 
 	// Build display entries; track artifact IDs for selection
 	entries := make([]string, 0, len(allInstances))

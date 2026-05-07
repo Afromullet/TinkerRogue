@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"game_main/gui/framework"
 	"game_main/gui/widgets"
+	"game_main/tactical/powers/artifacts"
 
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -63,7 +64,12 @@ func (ap *ArtifactPanelController) UpdateDetailPanel() {
 		option.Name, targetLabel, option.Description)
 
 	if !option.Available {
-		detail += "\n\n[Charge spent this battle]"
+		b := artifacts.GetBehavior(option.BehaviorKey)
+		if b != nil && b.ChargeType() == artifacts.ChargeOncePerRound {
+			detail += "\n\n[Charge refreshes each round]"
+		} else {
+			detail += "\n\n[Charge spent this battle]"
+		}
 	}
 
 	ap.detailArea.SetText(detail)

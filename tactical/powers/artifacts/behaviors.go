@@ -206,6 +206,7 @@ type ChainOfCommandBehavior struct{ BaseBehavior }
 func (ChainOfCommandBehavior) BehaviorKey() string            { return BehaviorChainOfCommand }
 func (ChainOfCommandBehavior) IsPlayerActivated() bool        { return true }
 func (ChainOfCommandBehavior) TargetType() BehaviorTargetType { return TargetFriendly }
+func (ChainOfCommandBehavior) ChargeType() ChargeType         { return ChargeOncePerRound }
 
 func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorChainOfCommand); err != nil {
@@ -268,6 +269,7 @@ type EchoDrumsBehavior struct{ BaseBehavior }
 func (EchoDrumsBehavior) BehaviorKey() string            { return BehaviorEchoDrums }
 func (EchoDrumsBehavior) IsPlayerActivated() bool        { return true }
 func (EchoDrumsBehavior) TargetType() BehaviorTargetType { return TargetFriendly }
+func (EchoDrumsBehavior) ChargeType() ChargeType         { return ChargeOncePerRound }
 
 func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, BehaviorEchoDrums); err != nil {
