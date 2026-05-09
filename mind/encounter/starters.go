@@ -49,15 +49,29 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 		}
 		return nil, fmt.Errorf("failed to spawn enemies: %w", err)
 	}
+	threatNodeID := encounterData.ThreatNodeID
+	enemySquadIDs := spawnResult.EnemySquadIDs
 	return &combatlifecycle.CombatSetup{
 		PlayerFactionID: spawnResult.PlayerFactionID,
 		EnemyFactionID:  spawnResult.EnemyFactionID,
-		EnemySquadIDs:   spawnResult.EnemySquadIDs,
+		EnemySquadIDs:   enemySquadIDs,
 		CombatPosition:  s.PlayerPos,
 		EncounterID:     s.EncounterID,
 		ThreatID:        s.ThreatID,
 		ThreatName:      s.ThreatName,
 		RosterOwnerID:   s.RosterOwnerID,
+		BuildResolver: func(playerVictory bool, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID) combatlifecycle.CombatResolver {
+			if threatNodeID == 0 {
+				return nil // CombatTypeDebug: no resolution needed
+			}
+			return &OverworldCombatResolver{
+				ThreatNodeID:   threatNodeID,
+				PlayerVictory:  playerVictory,
+				PlayerEntityID: playerEntityID,
+				PlayerSquadIDs: playerSquadIDs,
+				EnemySquadIDs:  enemySquadIDs,
+			}
+		},
 	}, nil
 }
 
@@ -115,6 +129,8 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, err
 	}
 
+	attackingFactionType := encounterData.AttackingFactionType
+	defendedNodeID := s.TargetNodeID
 	return &combatlifecycle.CombatSetup{
 		PlayerFactionID: spawnResult.PlayerFactionID,
 		EnemyFactionID:  spawnResult.EnemyFactionID,
@@ -125,6 +141,13 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		ThreatName:      encounterData.Name,
 		RosterOwnerID:   0,
 		Type:            combatlifecycle.CombatTypeGarrisonDefense,
-		DefendedNodeID:  s.TargetNodeID,
+		DefendedNodeID:  defendedNodeID,
+		BuildResolver: func(playerVictory bool, _ ecs.EntityID, _ []ecs.EntityID) combatlifecycle.CombatResolver {
+			return &GarrisonDefenseResolver{
+				PlayerVictory:        playerVictory,
+				DefendedNodeID:       defendedNodeID,
+				AttackingFactionType: attackingFactionType,
+			}
+		},
 	}, nil
 }

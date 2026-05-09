@@ -119,28 +119,13 @@ func (es *EncounterService) ExitCombat(
 	// SkipServiceResolution so EncounterService stays agnostic of which types those are.
 	switch reason {
 	case combatlifecycle.ExitVictory, combatlifecycle.ExitDefeat:
-		if !enc.SkipServiceResolution {
+		if !enc.SkipServiceResolution && enc.BuildResolver != nil {
 			if encounterData == nil {
 				fmt.Printf("WARNING: Encounter entity %d not found during resolution\n", enc.EncounterID)
 			} else {
-				switch enc.Type {
-				case combatlifecycle.CombatTypeGarrisonDefense:
-					combatlifecycle.ExecuteResolution(es.manager, &GarrisonDefenseResolver{
-						PlayerVictory:        result.IsPlayerVictory,
-						DefendedNodeID:       enc.DefendedNodeID,
-						AttackingFactionType: encounterData.AttackingFactionType,
-					})
-				case combatlifecycle.CombatTypeOverworld:
-					if encounterData.ThreatNodeID != 0 {
-						combatlifecycle.ExecuteResolution(es.manager, &OverworldCombatResolver{
-							ThreatNodeID:   encounterData.ThreatNodeID,
-							PlayerVictory:  result.IsPlayerVictory,
-							PlayerEntityID: enc.PlayerEntityID,
-							PlayerSquadIDs: es.getAllPlayerSquadIDs(),
-							EnemySquadIDs:  enc.EnemySquadIDs,
-						})
-					}
-					// CombatTypeDebug: no resolution needed
+				resolver := enc.BuildResolver(result.IsPlayerVictory, enc.PlayerEntityID, es.getAllPlayerSquadIDs())
+				if resolver != nil {
+					combatlifecycle.ExecuteResolution(es.manager, resolver)
 				}
 			}
 		}
@@ -168,7 +153,7 @@ func (es *EncounterService) ExitCombat(
 		EncounterID:     enc.EncounterID,
 		ThreatID:        enc.ThreatID,
 		ThreatName:      enc.ThreatName,
-		PlayerPosition:  enc.PlayerPosition,
+		PlayerPosition:  enc.CombatPosition,
 		StartTime:       enc.StartTime,
 		EndTime:         time.Now(),
 		Duration:        time.Since(enc.StartTime),
@@ -265,18 +250,10 @@ func (es *EncounterService) TransitionToCombat(setup *combatlifecycle.CombatSetu
 	playerEntityID := es.modeCoordinator.GetPlayerEntityID()
 
 	es.activeEncounter = &ActiveEncounter{
-		EncounterID:            setup.EncounterID,
-		ThreatID:               setup.ThreatID,
-		ThreatName:             setup.ThreatName,
-		PlayerPosition:         setup.CombatPosition,
+		CombatSetup:            *setup,
 		OriginalPlayerPosition: originalPlayerPos,
 		StartTime:              time.Now(),
-		EnemySquadIDs:          setup.EnemySquadIDs,
-		RosterOwnerID:          setup.RosterOwnerID,
 		PlayerEntityID:         playerEntityID,
-		Type:                   setup.Type,
-		DefendedNodeID:         setup.DefendedNodeID,
-		SkipServiceResolution:  setup.SkipServiceResolution,
 	}
 
 	return nil

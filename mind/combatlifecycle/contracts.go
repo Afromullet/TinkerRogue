@@ -71,9 +71,15 @@ type CombatSetup struct {
 
 	// SkipServiceResolution indicates the starter's domain handles resolution
 	// via its own post-combat callback (e.g., RaidRunner). When true,
-	// EncounterService.ExitCombat skips the type-switch that dispatches to the
-	// CombatResolver and also skips markEncounterDefeated.
+	// EncounterService.ExitCombat skips the BuildResolver call and also skips
+	// markEncounterDefeated.
 	SkipServiceResolution bool
+
+	// BuildResolver constructs the type-appropriate resolver for victory/defeat.
+	// Set by the starter's Prepare(). Nil means no resolution needed (e.g., debug).
+	// playerEntityID and playerSquadIDs are only known at exit time, so they are
+	// passed in rather than captured in the closure.
+	BuildResolver func(playerVictory bool, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID) CombatResolver
 }
 
 // PostCombatReturnMode constants for compile-time safety.

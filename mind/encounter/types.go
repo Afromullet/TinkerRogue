@@ -26,32 +26,22 @@ type ModeCoordinator interface {
 	GetPlayerPosition() *coords.LogicalPosition
 }
 
-// ActiveEncounter holds context for the currently active encounter
+// ActiveEncounter holds context for the currently active encounter.
+// CombatSetup fields (EncounterID, ThreatID, ThreatName, EnemySquadIDs, RosterOwnerID,
+// Type, DefendedNodeID, SkipServiceResolution, BuildResolver, etc.) are promoted.
+// CombatPosition (promoted) is the encounter location where combat takes place.
 type ActiveEncounter struct {
-	// Core identification
-	EncounterID ecs.EntityID
-	ThreatID    ecs.EntityID
-	ThreatName  string
+	combatlifecycle.CombatSetup
 
-	// Positioning
-	PlayerPosition         coords.LogicalPosition // Encounter location (where combat happens)
-	OriginalPlayerPosition coords.LogicalPosition // Player's original location (to restore after combat)
+	// Player's original location before teleporting to the encounter (restored after combat).
+	OriginalPlayerPosition coords.LogicalPosition
 
 	// Timing
 	StartTime time.Time
 
-	// Combat tracking (for cleanup coordination)
-	EnemySquadIDs  []ecs.EntityID
-	RosterOwnerID  ecs.EntityID // Commander entity (owns squad roster)
-	PlayerEntityID ecs.EntityID // Player entity (owns resource stockpile)
-
-	// Combat type (overworld, garrison defense, raid, debug)
-	Type           combatlifecycle.CombatType
-	DefendedNodeID ecs.EntityID // Node being defended (0 if not garrison defense)
-
-	// SkipServiceResolution is true when resolution is handled by an external callback
-	// (e.g., RaidRunner) rather than EncounterService itself.
-	SkipServiceResolution bool
+	// PlayerEntityID is the player entity (owns resource stockpile).
+	// Populated by TransitionToCombat after the mode coordinator provides it.
+	PlayerEntityID ecs.EntityID
 }
 
 // CompletedEncounter represents a finished encounter for history tracking
