@@ -8,24 +8,13 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
 	"game_main/gui/guiinspect"
+	combatpanels "game_main/gui/guicombat/combatbase"
 	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
 	"game_main/gui/widgets"
 	"game_main/templates"
 
 	"github.com/ebitenui/ebitenui/widget"
-)
-
-// Panel type constants for combat mode
-const (
-	CombatPanelTurnOrder   framework.PanelType = "combat_turn_order"
-	CombatPanelFactionInfo framework.PanelType = "combat_faction_info"
-	CombatPanelSquadDetail framework.PanelType = "combat_squad_detail"
-	CombatPanelLayerStatus framework.PanelType = "combat_layer_status"
-	CombatPanelDebugMenu            framework.PanelType = "combat_debug_menu"
-	CombatPanelMagicMenu            framework.PanelType = "combat_magic_menu"
-	CombatPanelSpellSelection       framework.PanelType = "combat_spell_selection"
-	CombatPanelArtifactSelection    framework.PanelType = "combat_artifact_selection"
 )
 
 // createCombatSubMenu creates a vertical sub-menu panel, registers it with the controller, and returns it.
@@ -52,7 +41,7 @@ func createCombatSubMenu(cm *CombatMode, name string, buttons []builders.ButtonC
 
 func init() {
 	// Register debug sub-menu panel
-	framework.RegisterPanel(CombatPanelDebugMenu, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelDebugMenu, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)
@@ -68,7 +57,7 @@ func init() {
 	})
 
 	// Register magic sub-menu panel (groups Cast Spell + Artifact)
-	framework.RegisterPanel(CombatPanelMagicMenu, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelMagicMenu, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)
@@ -87,7 +76,7 @@ func init() {
 	})
 
 	// Register all combat panels
-	framework.RegisterPanel(CombatPanelTurnOrder, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelTurnOrder, framework.PanelDescriptor{
 		Content: framework.ContentText,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			bm := mode.(*CombatMode)
@@ -118,7 +107,7 @@ func init() {
 		},
 	})
 
-	framework.RegisterPanel(CombatPanelFactionInfo, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelFactionInfo, framework.PanelDescriptor{
 		Content: framework.ContentText,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			bm := mode.(*CombatMode)
@@ -149,7 +138,7 @@ func init() {
 		},
 	})
 
-	framework.RegisterPanel(CombatPanelSquadDetail, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelSquadDetail, framework.PanelDescriptor{
 		Content: framework.ContentText,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			bm := mode.(*CombatMode)
@@ -180,7 +169,7 @@ func init() {
 		},
 	})
 
-	framework.RegisterPanel(CombatPanelLayerStatus, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelLayerStatus, framework.PanelDescriptor{
 		Content: framework.ContentText,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			bm := mode.(*CombatMode)
@@ -215,7 +204,7 @@ func init() {
 	})
 
 	// Register spell selection panel (right side, shown during spell mode)
-	framework.RegisterPanel(CombatPanelSpellSelection, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelSpellSelection, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)
@@ -248,9 +237,9 @@ func init() {
 			listHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellListHeight)
 
 			spellList := builders.CreateListWithConfig(builders.ListConfig{
-				Entries:    []interface{}{},
-				MinWidth:   listWidth,
-				MinHeight:  listHeight,
+				Entries:  []interface{}{},
+				MinWidth: listWidth,
+				MinHeight: listHeight,
 				EntryLabelFunc: func(e interface{}) string {
 					if spell, ok := e.(*templates.SpellDefinition); ok {
 						return fmt.Sprintf("%s (%d MP)", spell.Name, spell.ManaCost)
@@ -310,7 +299,7 @@ func init() {
 	})
 
 	// Register artifact activation panel (right side, shown during artifact mode)
-	framework.RegisterPanel(CombatPanelArtifactSelection, framework.PanelDescriptor{
+	framework.RegisterPanel(combatpanels.CombatPanelArtifactSelection, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)

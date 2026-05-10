@@ -1,5 +1,4 @@
-- Testing package has some functions which create initial player commanders and squads. move them to another package. We need to rely less on the testing package by initializing
-the player with what they really need to start with
+
 
 # GUI Updates
 

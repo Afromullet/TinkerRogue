@@ -6,6 +6,7 @@ import (
 	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guicombat"
+	"game_main/gui/guicombat/combatanimation"
 	"game_main/gui/guiexploration"
 	"game_main/gui/guinodeplacement"
 	"game_main/gui/guioverworld"
@@ -26,7 +27,7 @@ func RegisterTacticalModes(coordinator *framework.GameModeCoordinator, manager *
 	modes := []framework.UIMode{
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService, combatServiceFactory),
-		guicombat.NewCombatAnimationMode(manager),
+		combatanimation.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
 	}
 
@@ -76,7 +77,7 @@ func RegisterRoguelikeTacticalModes(coordinator *framework.GameModeCoordinator, 
 		guiunitview.NewUnitViewMode(manager),
 		guiexploration.NewExplorationMode(manager),
 		guicombat.NewCombatMode(manager, encounterService, newCombatServiceFactory()),
-		guicombat.NewCombatAnimationMode(manager),
+		combatanimation.NewCombatAnimationMode(manager),
 		guisquads.NewSquadDeploymentMode(manager),
 		raidMode,
 	}

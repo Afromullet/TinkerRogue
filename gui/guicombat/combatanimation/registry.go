@@ -1,4 +1,4 @@
-package guicombat
+package combatanimation
 
 import (
 	"game_main/gui/builders"
@@ -8,24 +8,20 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 )
 
-// Panel type constants for combat animation mode
 const (
 	CombatAnimationPanelPrompt framework.PanelType = "combat_animation_prompt"
 )
 
 func init() {
-	// Register prompt panel
 	framework.RegisterPanel(CombatAnimationPanelPrompt, framework.PanelDescriptor{
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cam := mode.(*CombatAnimationMode)
 
-			// Create squad renderer (needs Queries which is set by ModeBuilder)
 			if cam.squadRenderer == nil {
 				cam.squadRenderer = combatrender.NewSquadCombatRenderer(cam.Queries)
 			}
 
-			// Create prompt label (centered at bottom)
 			promptLabel := builders.CreateLargeLabel("")
 
 			result.Container = widget.NewContainer(

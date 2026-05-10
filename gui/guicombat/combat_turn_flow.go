@@ -2,6 +2,9 @@ package guicombat
 
 import (
 	"game_main/gui/framework"
+	"game_main/gui/guicombat/combatbase"
+	"game_main/gui/guicombat/combatanimation"
+	"game_main/gui/guicombat/combatvisualization"
 	"game_main/gui/guisquads"
 	"game_main/gui/widgets"
 	"game_main/tactical/combat/combatservices"
@@ -11,8 +14,8 @@ import (
 // chaining AI attack animations, and checking victory conditions.
 type CombatTurnFlow struct {
 	combatService *combatservices.CombatService
-	visualization *CombatVisualizationManager
-	actionHandler *CombatActionHandler
+	visualization *combatvisualization.CombatVisualizationManager
+	actionHandler *combatbase.CombatActionHandler
 	queries       *framework.GUIQueries
 	modeManager   *framework.UIModeManager
 	panels        *framework.PanelRegistry
@@ -27,8 +30,8 @@ type CombatTurnFlow struct {
 // NewCombatTurnFlow creates a new turn flow manager
 func NewCombatTurnFlow(
 	combatService *combatservices.CombatService,
-	visualization *CombatVisualizationManager,
-	actionHandler *CombatActionHandler,
+	visualization *combatvisualization.CombatVisualizationManager,
+	actionHandler *combatbase.CombatActionHandler,
 	queries *framework.GUIQueries,
 	modeManager *framework.UIModeManager,
 	panels *framework.PanelRegistry,
@@ -162,7 +165,7 @@ func (tf *CombatTurnFlow) playNextAIAttack(attacks []combatservices.QueuedAttack
 	isFirstAttack := (index == 0)
 
 	if animMode, exists := tf.modeManager.GetMode("combat_animation"); exists {
-		if caMode, ok := animMode.(*CombatAnimationMode); ok {
+		if caMode, ok := animMode.(*combatanimation.CombatAnimationMode); ok {
 			caMode.SetCombatants(attack.AttackerID, attack.DefenderID)
 			caMode.SetAutoPlay(true)
 

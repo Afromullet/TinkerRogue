@@ -1,12 +1,11 @@
-package guicombat
+package combatvisualization
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/gui/framework"
 	"game_main/tactical/combat/combatservices"
 	"game_main/visual/combatrender"
-
-	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/bytearena/ecs"
@@ -34,7 +33,6 @@ type CombatVisualizationManager struct {
 }
 
 // NewCombatVisualizationManager creates and initializes all visualization systems.
-// Uses CombatService's existing threat systems instead of creating its own.
 func NewCombatVisualizationManager(
 	ctx *framework.UIContext,
 	queries *framework.GUIQueries,
@@ -51,7 +49,6 @@ func NewCombatVisualizationManager(
 		combatService:     combatService,
 	}
 
-	// Use CombatService's threat provider via interface
 	cvm.threatProvider = combatService.GetThreatProvider()
 	allFactions := queries.GetAllFactions()
 	if cvm.threatProvider != nil {
@@ -60,7 +57,6 @@ func NewCombatVisualizationManager(
 		}
 	}
 
-	// Get evaluators from CombatService via interface
 	cvm.layerEvaluators = make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator)
 	for _, factionID := range allFactions {
 		eval := combatService.GetThreatEvaluator(factionID)
@@ -69,19 +65,14 @@ func NewCombatVisualizationManager(
 		}
 	}
 
-	// Initialize unified threat visualizer (supports both danger and layer modes)
-	cvm.threatVisualizer = NewThreatVisualizer(
-		ctx.ECSManager,
-		gameMap,
-		cvm.threatProvider,
-	)
+	cvm.threatVisualizer = NewThreatVisualizer(ctx.ECSManager, gameMap, cvm.threatProvider)
 	cvm.threatVisualizer.SetFactions(allFactions)
 	cvm.threatVisualizer.SetEvaluators(cvm.layerEvaluators)
 
 	return cvm
 }
 
-// RenderAll renders all combat visualization layers: squad highlights, movement tiles, and health bars
+// RenderAll renders all combat visualization layers
 func (cvm *CombatVisualizationManager) RenderAll(
 	screen *ebiten.Image,
 	playerPos coords.LogicalPosition,
@@ -126,19 +117,16 @@ func (cvm *CombatVisualizationManager) GetThreatVisualizer() *ThreatVisualizer {
 }
 
 // RefreshFactions adds any new factions to the threat manager.
-// Should be called when combat starts and factions are created.
 func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQueries) {
 	if cvm.threatProvider == nil {
 		return
 	}
 
-	// Add all factions to threat manager via interface
 	allFactions := queries.GetAllFactions()
 	for _, factionID := range allFactions {
 		cvm.threatProvider.AddFaction(factionID)
 	}
 
-	// Create evaluators for any new factions via CombatService
 	if cvm.layerEvaluators == nil {
 		cvm.layerEvaluators = make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator)
 	}
@@ -151,16 +139,10 @@ func (cvm *CombatVisualizationManager) RefreshFactions(queries *framework.GUIQue
 		}
 	}
 
-	// If threat visualizer was nil, create it now
 	if cvm.threatVisualizer == nil {
-		cvm.threatVisualizer = NewThreatVisualizer(
-			cvm.ecsManager,
-			cvm.gameMap,
-			cvm.threatProvider,
-		)
+		cvm.threatVisualizer = NewThreatVisualizer(cvm.ecsManager, cvm.gameMap, cvm.threatProvider)
 	}
 
-	// Always refresh factions and evaluators on the visualizer
 	cvm.threatVisualizer.SetFactions(allFactions)
 	cvm.threatVisualizer.SetEvaluators(cvm.layerEvaluators)
 }

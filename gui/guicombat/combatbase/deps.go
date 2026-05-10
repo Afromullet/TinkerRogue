@@ -1,4 +1,4 @@
-package guicombat
+package combatbase
 
 import (
 	"game_main/gui/framework"
@@ -7,30 +7,14 @@ import (
 )
 
 // CombatModeDeps consolidates all dependencies for combat mode components.
-// Instead of passing 6+ parameters to each handler, pass this single struct.
-//
-// Benefits:
-//   - Add new dependency? One place to update.
-//   - Constructor signatures stay stable.
-//   - Easier to mock for testing.
 type CombatModeDeps struct {
-	// State (shared across all handlers)
-	BattleState *framework.TacticalState
-
-	// Services (game logic)
+	BattleState   *framework.TacticalState
 	CombatService *combatservices.CombatService
-
-	// Queries (read access to ECS)
-	Queries *framework.GUIQueries
-
-	// Mode management
-	ModeManager *framework.UIModeManager
-
-	// GUI's narrow command/query port onto EncounterService
-	Encounter encounter.EncounterController
+	Queries       *framework.GUIQueries
+	ModeManager   *framework.UIModeManager
+	Encounter     encounter.EncounterController
 }
 
-// NewCombatModeDeps creates a new dependencies container
 func NewCombatModeDeps(
 	battleState *framework.TacticalState,
 	combatService *combatservices.CombatService,
