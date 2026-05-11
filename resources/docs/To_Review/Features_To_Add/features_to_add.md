@@ -1,3 +1,31 @@
+# Combat Environment
+
+- Biome Determines Map 
+
+
+- Cover and destroyable cover
+- Hazard Tiles
+
+-Elevation
+
+- Weather/terrain effects. 
+-- Fire Propagation
+-- Mud/Rain
+-- Storms reducing visibility
+
+- Terrain Hazards
+--Swamps, ice. Change to lose movement, slip, etc
+--Tiles that drain mana/hp, etc
+
+- Terrain advantage
+--Temples to heal, watchtowers for more range, 
+
+# Other
+
+- Unit promotions
+- Objectives
+
+
 # Faction Differences
 
 - Different factions use different unit compositions

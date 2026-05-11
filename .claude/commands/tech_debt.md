@@ -1,4 +1,6 @@
-
+---
+model: claude-opus-4-7
+---
 
 # Technical Debt Analysis and Remediation
 
@@ -223,46 +225,85 @@ Week 1-2:
 
 ### 5. Implementation Strategy
 
-**Incremental Refactoring (Go patterns)**
+**Incremental Refactoring**
+```python
+# Phase 1: Add facade over legacy code
+class PaymentFacade:
+    def __init__(self):
+        self.legacy_processor = LegacyPaymentProcessor()
+    
+    def process_payment(self, order):
+        # New clean interface
+        return self.legacy_processor.doPayment(order.to_legacy())
 
-Phase 1 — Add a clean interface over the messy code without breaking callers:
-```go
-// Wrap legacy behaviour behind a clear function signature
-func ProcessPayment(order Order) error {
-    return legacyDoPayment(order.ToLegacyFormat())
-}
+# Phase 2: Implement new service alongside
+class PaymentService:
+    def process_payment(self, order):
+        # Clean implementation
+        pass
+
+# Phase 3: Gradual migration
+class PaymentFacade:
+    def __init__(self):
+        self.new_service = PaymentService()
+        self.legacy = LegacyPaymentProcessor()
+        
+    def process_payment(self, order):
+        if feature_flag("use_new_payment"):
+            return self.new_service.process_payment(order)
+        return self.legacy.doPayment(order.to_legacy())
 ```
 
-Phase 2 — Implement the replacement alongside the old code:
-```go
-func processPaymentV2(order Order) error {
-    // Clean implementation
-}
+**Team Allocation**
+```yaml
+Debt_Reduction_Team:
+  dedicated_time: "20% sprint capacity"
+  
+  roles:
+    - tech_lead: "Architecture decisions"
+    - senior_dev: "Complex refactoring"  
+    - dev: "Testing and documentation"
+    
+  sprint_goals:
+    - sprint_1: "Quick wins completed"
+    - sprint_2: "God class refactoring started"
+    - sprint_3: "Test coverage >60%"
 ```
-
-Phase 3 — Migrate call sites incrementally, delete the old code when done. Prefer small commits per call site so each step is independently revertable.
-
-**Solo Dev Sequencing**
-
-Prioritize by: highest drag on current development first, not theoretical ROI. Ask:
-- What slows me down every session I touch this area?
-- What do I dread opening?
-- What causes the most bugs per change?
-
-Fix those first. Ignore debt in stable code you rarely touch.
 
 ### 6. Prevention Strategy
 
-**Coding habits that prevent accumulation**
-- Before adding to a file over ~300 lines, check whether it should be split first
-- When you copy code a second time, stop and extract it instead
-- When a function needs a comment to explain what it does, consider renaming or splitting it
-- Run `go vet ./...` and `go test ./...` before committing to any package you touched
+Implement gates to prevent new debt:
 
-**Staying honest about debt**
-- If you take a shortcut, add a `// TODO:` with enough context to act on it later
-- Revisit `grep -r "TODO" .` periodically as part of debt review sessions
-- Use `go test -cover ./...` to spot packages with no tests — prioritize those when adding new behaviour nearby
+**Automated Quality Gates**
+```yaml
+pre_commit_hooks:
+  - complexity_check: "max 10"
+  - duplication_check: "max 5%"
+  - test_coverage: "min 80% for new code"
+  
+ci_pipeline:
+  - dependency_audit: "no high vulnerabilities"
+  - performance_test: "no regression >10%"
+  - architecture_check: "no new violations"
+  
+code_review:
+  - requires_two_approvals: true
+  - must_include_tests: true
+  - documentation_required: true
+```
+
+**Debt Budget**
+```python
+debt_budget = {
+    "allowed_monthly_increase": "2%",
+    "mandatory_reduction": "5% per quarter",
+    "tracking": {
+        "complexity": "sonarqube",
+        "dependencies": "dependabot",
+        "coverage": "codecov"
+    }
+}
+```
 
 ### 7. Communication Plan
 

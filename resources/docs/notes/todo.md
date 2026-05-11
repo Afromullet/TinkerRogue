@@ -1,3 +1,9 @@
+# Control Improvements
+
+-The squad grid in squad edit mode needs to be moved up. It overlaps with the menu that appears when pressing the Squad Info buton
+- We should be able to Right Click on a unit in Unit Purchase mode to purchase it
+- View Stats in Unit Purchase mode does not work
+
 
 
 # GUI Updates
@@ -7,10 +13,6 @@
 
 
 
-# Documentation cleanup after perks are wrapped up
-
-
-- DOCUMENTATION.md
 
 
 
