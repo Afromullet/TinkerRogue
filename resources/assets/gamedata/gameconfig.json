@@ -66,5 +66,14 @@
     "rightPadding": 500,
     "zoomSquares": 30,
     "staticUIOffset": 1000
+  },
+  "encounter": {
+    "baseGold": 100,
+    "goldPerIntensity": 50,
+    "baseXP": 50,
+    "xpPerIntensity": 25,
+    "basePoints": 1,
+    "pointsPerIntensity": 1,
+    "intensityMultiplierStep": 0.1
   }
 }

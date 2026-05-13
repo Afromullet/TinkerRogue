@@ -656,7 +656,9 @@ Inside ExitCombat:
         └─ Mark threat node as defeated (or retreat)
     → RecordEncounterCompletion()
         (restores player position)
-    → combatService.TeardownCombat(enemySquadIDs) → returns player squad IDs
+    → combatService.TeardownCombat(enemySquadIDs)
+        (strips combat-only state from player squads: faction membership,
+         perk round state, positions, IsDeployed)
     → PostCombatCallback (if set, e.g., RaidRunner)
     ↓
 Returns to "exploration" mode (or PostCombatReturnMode)
@@ -706,12 +708,13 @@ CombatMode.Exit()
         │   (restore player position, clear ActiveEncounter)
         ├─ CombatService.TeardownCombat(enemySquadIDs)
         │   ├─ Clear callbacks + effects
-        │   ├─ Collect player squad IDs (returned to caller)
+        │   ├─ For each player squad:
+        │   │     combatstate.RemoveCombatMembership(entity)
+        │   │     perks.RemovePerkRoundState(entity)
+        │   │     squadcore.ResetSquadDeployment(manager, entity)
+        │   │   (squads NOT disposed — they survive into the next battle)
         │   └─ Dispose enemy squads, factions, action state,
         │     turn state entities
-        ├─ StripCombatComponents(playerSquadIDs)
-        │   (strip player squads: position, faction membership,
-        │    IsDeployed=false — squads NOT disposed)
         └─ postCombatCallback (e.g. RaidRunner)
             ↓
 Return to previous mode (exploration / raid / overworld)

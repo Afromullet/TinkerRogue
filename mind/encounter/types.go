@@ -28,7 +28,7 @@ type ModeCoordinator interface {
 
 // ActiveEncounter holds context for the currently active encounter.
 // CombatSetup fields (EncounterID, ThreatID, ThreatName, EnemySquadIDs, RosterOwnerID,
-// Type, DefendedNodeID, SkipServiceResolution, BuildResolver, etc.) are promoted.
+// Type, DefendedNodeID, Resolver, etc.) are promoted.
 // CombatPosition (promoted) is the encounter location where combat takes place.
 type ActiveEncounter struct {
 	combatlifecycle.CombatSetup

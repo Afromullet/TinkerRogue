@@ -1,15 +1,26 @@
 package encounter
 
-import "game_main/mind/combatlifecycle"
+import (
+	"game_main/mind/combatlifecycle"
+	"game_main/templates"
+)
 
 // CalculateIntensityReward determines loot from defeating a threat.
-// Reward multiplier is derived from intensity: 1.0 + (intensity x 0.1) gives 1.1x-1.5x for intensity 1-5.
+// Reward multiplier is derived from intensity:
+//
+//	1.0 + (intensity * IntensityMultiplierStep)
+//
+// With the default step of 0.1, this yields 1.1x–1.5x for intensity 1–5.
+// All tunables live in templates.GameConfig.Encounter, loaded from
+// gamedata/gameconfig.json.
 func CalculateIntensityReward(intensity int) combatlifecycle.Reward {
-	baseGold := 100 + (intensity * 50)
-	baseXP := 50 + (intensity * 25)
-	basePoints := 1 + intensity
+	cfg := templates.GameConfig.Encounter
 
-	typeMultiplier := 1.0 + (float64(intensity) * 0.1)
+	baseGold := cfg.BaseGold + (intensity * cfg.GoldPerIntensity)
+	baseXP := cfg.BaseXP + (intensity * cfg.XPPerIntensity)
+	basePoints := cfg.BasePoints + (intensity * cfg.PointsPerIntensity)
+
+	typeMultiplier := 1.0 + (float64(intensity) * cfg.IntensityMultiplierStep)
 
 	return combatlifecycle.Reward{
 		Gold:       int(float64(baseGold) * typeMultiplier),

@@ -54,7 +54,7 @@ TinkerRogue has five distinct combat entry points, but they all funnel into one 
 2. `combatlifecycle.ExecuteCombatStart` calls `starter.Prepare()` (which sets up ECS factions and squad positions), then calls `encounterService.TransitionToCombat()` (which saves player state, moves the camera, and switches the UI to combat mode).
 3. `CombatMode.Enter()` initializes the turn manager and begins the battle.
 4. When the battle ends, `CombatMode.Exit()` calls `encounterService.ExitCombat()` with the outcome.
-5. `ExitCombat` dispatches to a type-specific **CombatResolver** (via `resolveEncounterOutcome` → `combatlifecycle.ExecuteResolution`), records history, calls `CombatService.TeardownCombat()` for entity disposal (which returns the player squad IDs for a follow-up `StripCombatComponents` call), and fires the post-combat listener for any registered systems (e.g., `RaidRunner`).
+5. `ExitCombat` runs the setup's resolver via `combatlifecycle.ExecuteResolution`, records history, calls `CombatService.TeardownCombat()` for entity disposal (which internally strips combat-only state from player squads — faction membership, perk round state, positions, IsDeployed), and fires the post-combat listener for any registered systems (e.g., `RaidRunner`).
 
 The key design decision is that all type-specific behavior is encoded in small, stateless structs (`CombatStarter` for entry, `CombatResolver` for exit), while the shared infrastructure (`ExecuteCombatStart`, `EncounterService.ExitCombat`, `CombatService.TeardownCombat`) is invariant across all combat types.
 
@@ -179,26 +179,36 @@ The GUI's narrow view of `EncounterService`. `CombatMode` holds this as an inter
 
 ```go
 type CombatTeardown interface {
-    TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
+    TeardownCombat(enemySquadIDs []ecs.EntityID)
 }
 ```
 
-Satisfied by `CombatService` via structural typing. Called inside `ExitCombat` to dispose enemy entities. The method **returns the player squad IDs** so the caller (`EncounterService`) can strip their combat components separately — this return value exists to avoid an import cycle where `CombatService` would otherwise need to know about `combatlifecycle.StripCombatComponents`.
+Satisfied by `CombatService` via structural typing. Called inside `ExitCombat` to dispose enemy entities and strip combat-only state from player squads. The implementation calls `combatstate.RemoveCombatMembership`, `perks.RemovePerkRoundState`, and `squadcore.ResetSquadDeployment` for each player squad before disposing faction entities. Each owning package exports its own cleanup helper; `CombatService` invokes them directly — no upward import into `mind/combatlifecycle` is needed because `combat_service.go` already imports `combatstate`, `perks`, and `squadcore`.
 
 ### CombatResolver
 
 ```go
 type CombatResolver interface {
-    Resolve(manager *common.EntityManager) *ResolutionPlan
+    Resolve(manager *common.EntityManager, ctx ResolutionContext) *ResolutionPlan
+}
+
+type ResolutionContext struct {
+    Reason         CombatExitReason
+    PlayerVictory  bool
+    PlayerEntityID ecs.EntityID
+    PlayerSquadIDs []ecs.EntityID
 }
 ```
 
+Resolvers are constructed eagerly by `CombatStarter.Prepare()` and attached to the `CombatSetup.Resolver` field. Runtime information (victory, player entity, player squads, exit reason) is supplied via `ResolutionContext` at exit time so resolvers don't need to capture it in closures.
+
 Implemented by:
-- `encounter.OverworldCombatResolver` (threat node damage + rewards)
+- `encounter.OverworldCombatResolver` (threat node damage + rewards; delegates to `FleeResolver` on `ExitFlee`)
 - `encounter.GarrisonDefenseResolver` (node capture or defense success)
-- `encounter.FleeResolver` (logs the retreat event)
-- `raid.RaidRoomResolver` (marks room cleared, grants rewards) — in `campaign/raid/resolvers.go`
-- `raid.RaidDefeatResolver` (sets raid status to defeat) — in `campaign/raid/resolvers.go`
+- `encounter.FleeResolver` (logs the retreat event; invoked from `OverworldCombatResolver`)
+- `raid.RaidEncounterResolver` (dispatches on victory/defeat to the helpers below) — in `campaign/raid/resolvers.go`
+- `raid.RaidRoomResolver` (marks room cleared, grants rewards)
+- `raid.RaidDefeatResolver` (sets raid status to defeat)
 
 ---
 
@@ -267,18 +277,17 @@ This 3-line sequence appeared in 4 places (overworld setup, garrison encounter, 
 
 **File:** `mind/combatlifecycle/enrollment.go`
 
-The public batch enrollment helper used by all starters. For each squad/position pair, it performs the full 4-step enrollment:
+The public batch enrollment helper used by all starters. For each squad/position pair, it performs the 3-step enrollment:
 
 1. `fm.AddSquadToFaction(factionID, squadID, pos)` — faction membership + position
 2. `EnsureUnitPositions(manager, squadID, pos)` — all units get positions at squad location
 3. `combatstate.CreateActionStateForSquad(manager, squadID)` — combat action tracking
-4. Optionally marks the squad as deployed (`squadData.IsDeployed = true`)
 
 ```go
-func EnrollSquadsAtPositions(fm, manager, factionID, squadIDs, positions, markDeployed) error
+func EnrollSquadsAtPositions(fm, manager, factionID, squadIDs, positions) error
 ```
 
-Replaces the repeated 4-step enrollment loops that previously appeared across all setup paths.
+Deployment status (`SquadData.IsDeployed`) is the caller's policy — use `MarkSquadsDeployed(manager, squadIDs)` separately for squads that weren't already deployed (garrison defenders, raid player squads).
 
 ### EnsureUnitPositions
 
@@ -351,7 +360,7 @@ gui/guioverworld/overworld_action_handler.go       EndTurn()
 
 **Step-by-step:**
 
-1. `TriggerGarrisonDefense` creates an `OverworldEncounterData` entity with `IsGarrisonDefense = true` and `AttackingFactionType` set.
+1. `TriggerGarrisonDefense` creates an `OverworldEncounterData` entity with `AttackingFactionType` set. (The combat path is discriminated by `CombatSetup.Type == CombatTypeGarrisonDefense`, set by `GarrisonDefenseStarter` rather than by a field on the encounter data.)
 2. `GarrisonDefenseStarter.Prepare`:
    - Validates the encounter entity via `encounter.ValidateEncounterEntity`.
    - Reads the garrison's squad IDs from `garrison.GetGarrisonAtNode` (in `campaign/overworld/garrison`).
@@ -394,7 +403,7 @@ gui/guiraid/raidmode.go                     OnDeployConfirmed()
 - `RosterOwnerID = commanderID`
 - `EncounterID = raidEntityID` (the raid entity, not an OverworldEncounterData entity)
 
-`RaidCombatStarter` sets `SkipServiceResolution = true` on its `CombatSetup`, which flows through to `ActiveEncounter`. When `EncounterService.ExitCombat` sees that flag it skips overworld resolution and defeat-marking — raid resolution is handled separately by `RaidRunner.ResolveEncounter` via the post-combat listener callback. EncounterService does not check `CombatType` by name for this, so any future combat type with its own resolver can opt into the same behavior just by setting the flag.
+`RaidCombatStarter` attaches a `RaidEncounterResolver` to `CombatSetup.Resolver`, just like every other starter. `EncounterService.ExitCombat` runs the resolver via the standard `ExecuteResolution` pipeline regardless of combat type. The post-combat callback (`SetPostCombatCallback`) is now a **notification hook only**: `RaidRunner.ResolveEncounter` receives the `*ResolutionResult` produced by the resolver and uses it to build the GUI summary (`RewardText`, units lost, alert level) and run raid-specific state updates (`PostEncounterProcessing`).
 
 ### Pathway 4: Debug "Start Raid" (Roguelike Mode)
 
@@ -536,29 +545,33 @@ Combat ends in one of three ways. All three routes pass through `CombatMode.Exit
 
 ## Type-Specific Resolution
 
-`EncounterService.ExitCombat` is the single unified exit point. It makes a value copy of the entire `ActiveEncounter` struct (`enc := *es.activeEncounter`) so that all cleanup steps reference a stable snapshot even after `RecordEncounterCompletion` clears `activeEncounter`. It then dispatches resolution via `resolveEncounterOutcome()` using a `switch` on `CombatType`:
+`EncounterService.ExitCombat` is the single unified exit point. It makes a value copy of the entire `ActiveEncounter` struct (`enc := *es.activeEncounter`) so that all cleanup steps reference a stable snapshot even after `RecordEncounterCompletion` clears `activeEncounter`. Resolution dispatch is a single line — there is no per-type switch:
 
 ```go
 // Simplified from ExitCombat
-switch reason {
-case ExitVictory, ExitDefeat:
-    if combatType != CombatTypeRaid {
-        es.resolveEncounterOutcome(encounter, result.IsPlayerVictory)
-        // → switch encounter.Type:
-        //     CombatTypeGarrisonDefense → GarrisonDefenseResolver
-        //     CombatTypeOverworld       → OverworldCombatResolver (if ThreatNodeID != 0)
-        //     CombatTypeDebug           → no-op
+var resolution *ResolutionResult
+if enc.Resolver != nil {
+    ctx := ResolutionContext{
+        Reason:         reason,
+        PlayerVictory:  result.IsPlayerVictory,
+        PlayerEntityID: enc.PlayerEntityID,
+        PlayerSquadIDs: es.getAllPlayerSquadIDs(),
     }
-    if result.IsPlayerVictory && combatType != CombatTypeRaid {
-        es.markEncounterDefeated(encounterID)
-    }
-case ExitFlee:
-    es.restoreEncounterSprite(encounterID)
-    // dispatches FleeResolver ONLY if ThreatNodeID != 0
+    resolution = ExecuteResolution(es.manager, enc.Resolver, ctx)
+}
+
+// Flee restores the overworld encounter sprite (no-op for other types).
+if reason == ExitFlee {
+    restoreEncounterSprite(encounterEntity, encounterData)
+}
+
+// Overworld + garrison victory marks the encounter defeated (no-op for raid).
+if result.IsPlayerVictory && enc.Type != CombatTypeRaid {
+    markEncounterDefeated(encounterEntity, encounterData)
 }
 ```
 
-Raid resolution is NOT dispatched here. Instead, the post-combat callback (set by `RaidRunner` via `SetPostCombatCallback`) is fired in the final step of `ExitCombat`, and `RaidRunner.ResolveEncounter` handles the raid-specific dispatch.
+Resolvers themselves decide what to do based on the `ResolutionContext`. `OverworldCombatResolver.Resolve` delegates to `FleeResolver` when `ctx.Reason == ExitFlee`; `RaidEncounterResolver.Resolve` dispatches between `RaidRoomResolver` (victory) and `RaidDefeatResolver` (defeat/flee). Raid resolution flows through the same path as overworld; the post-combat callback survives only as a notification hook that receives the `*ResolutionResult` for GUI summary use.
 
 ### Overworld Combat Resolution
 
@@ -628,7 +641,7 @@ In `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterDa
 
 ## Combat Cleanup
 
-`EncounterService.ExitCombat` calls `teardown.TeardownCombat(enemySquadIDs)` where `teardown` is the `CombatTeardown` interface satisfied by `CombatService`. The method **returns the player squad IDs**, which `EncounterService` then passes to `combatlifecycle.StripCombatComponents` (calling across the package boundary on the way back to avoid a circular import).
+`EncounterService.ExitCombat` calls `teardown.TeardownCombat(enemySquadIDs)` where `teardown` is the `CombatTeardown` interface satisfied by `CombatService`. The method strips combat-only state from player squads (via direct calls to `combatstate.RemoveCombatMembership`, `perks.RemovePerkRoundState`, and `squadcore.ResetSquadDeployment`) before disposing faction entities, so the caller does not need to follow up.
 
 ### CombatService.TeardownCombat
 
@@ -638,7 +651,7 @@ Executed in this order:
 
 1. **Cleanup effects**: `cleanupEffects()` removes all active spell/artifact effects from all units tagged `SquadMemberTag`. Prevents buffs and debuffs from persisting into the next battle.
 
-2. **Collect player squad IDs**: `collectPlayerSquadIDs()` walks the player faction's squads and records their IDs. This list is returned to the caller; it is NOT stripped here (see the import-cycle note above).
+2. **Strip player squad combat state**: `collectPlayerSquadIDs()` walks the player faction's squads, and for each one calls `combatstate.RemoveCombatMembership(entity)`, `perks.RemovePerkRoundState(entity)`, and `squadcore.ResetSquadDeployment(manager, entity)`. This removes `FactionMembershipComponent`, `PerkRoundStateComponent`, the squad and unit positions, and resets `IsDeployed = false`. Must happen before step 4 (which disposes the faction entities the membership component points to).
 
 3. **Build enemy set**: Enemy IDs are converted to a set for fast lookup during unit disposal.
 
@@ -652,10 +665,6 @@ Executed in this order:
 
 8. **Dispose enemy units**: Iterates all `SquadMemberTag` entities, checks if their `SquadMemberData.SquadID` is in the enemy set, and disposes them.
 
-9. **Return**: the player squad ID slice.
-
-After `TeardownCombat` returns, `EncounterService.ExitCombat` calls `combatlifecycle.StripCombatComponents` on those IDs, completing the player-squad teardown (position removal, faction membership removal, `IsDeployed = false`).
-
 GUI callback clearing (attack-complete / move-complete / turn-end) happens separately on combat-mode exit, ensuring stale GUI closures cannot fire against torn-down widgets.
 
 ### Enemy Cleanup (Dispose)
@@ -666,19 +675,17 @@ Enemy squads and their units are permanently disposed from the ECS world. They w
 
 For raid defeats, garrison squads in the room being fought are pre-created by `GenerateGarrison` and stored in `RoomData.GarrisonSquadIDs`. These ARE disposed by `TeardownCombat` after a defeat or flee (the room's garrison is treated as an enemy squad list). On victory, `RaidRoomResolver` marks them as `IsDestroyed = true` but they remain in ECS until `TeardownCombat` disposes them.
 
-### Player Squad Cleanup (Strip and Return)
+### Player Squad Cleanup
 
-`combatlifecycle.StripCombatComponents` in `mind/combatlifecycle/cleanup.go`:
+Combat-only state is stripped from player squads via direct calls to package-exported helpers. Each owning package exports its own cleanup helper:
 
-```go
-func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityID)
-```
+- `tactical/combat/combatstate.RemoveCombatMembership(entity)` — removes `FactionMembershipComponent`.
+- `tactical/powers/perks.RemovePerkRoundState(entity)` — removes `PerkRoundStateComponent`.
+- `tactical/squads/squadcore.ResetSquadDeployment(manager, entity)` — unregisters squad and unit positions, resets `IsDeployed = false`.
 
-For each squad:
-1. Removes `FactionMembershipComponent` from the squad entity.
-2. Calls `manager.UnregisterEntityPosition(entity)` on the squad, which atomically removes the `PositionComponent` and removes the entity from `GlobalPositionSystem`.
-3. Does the same for each unit in the squad via `squadcore.GetUnitIDsInSquad`.
-4. Resets `SquadData.IsDeployed = false`.
+`combatlifecycle.StripCombatComponents(manager, squadIDs)` calls all three in sequence for each squad ID. Both consumers — `CombatService.TeardownCombat` (for player squads at combat exit) and `returnGarrisonSquadsToNode` (for garrison defenders returning to their node) — do the same three calls. `CombatService` invokes them inline because it cannot import `mind/combatlifecycle` (upward layering); the three helpers are in packages it already imports.
+
+Adding a new combat-only component to the cleanup set: export a `RemoveX` helper from the owning package, then add one call site in both `combatlifecycle/cleanup.go::StripCombatComponents` and `combat_service.go::TeardownCombat`.
 
 Player squad entities are NOT disposed. They return to their pre-combat state: no position, no faction membership, not deployed. They remain in the player's roster and can be deployed in subsequent battles.
 
@@ -687,8 +694,8 @@ Player squad entities are NOT disposed. They return to their pre-combat state: n
 For garrison defense victories specifically, `ExitCombat` calls `returnGarrisonSquadsToNode(defendedNodeID)` **before** passing `enemySquadIDs` to `TeardownCombat`. In this pathway:
 
 - In `GarrisonDefenseStarter.Prepare`, the garrison squads join the **player faction** and the generated attackers join the **enemy faction**. So `CombatSetup.EnemySquadIDs` contains the generated attacker squads. The garrison squads are in the player faction.
-- `TeardownCombat(enemySquadIDs)` disposes the generated attacker squads (the enemies in this context) and returns the player faction's squad IDs (which includes the garrison squads).
-- But garrison squads must survive for future use. So before `TeardownCombat`, `returnGarrisonSquadsToNode` calls `StripCombatComponents` on the garrison squads, removing their position and faction membership. When `EncounterService` later calls `StripCombatComponents` on the returned player squad IDs, the garrison squads have no `FactionMembershipComponent` left to strip and are safely skipped.
+- `TeardownCombat(enemySquadIDs)` disposes the generated attacker squads (the enemies in this context) and runs the cleanup-hook registry against the player faction's squads.
+- But garrison squads must survive for future use. `returnGarrisonSquadsToNode` runs first and calls `StripCombatComponents` on the garrison squads, stripping their combat state (position, faction membership, deployment flag) via the same hook registry. When `TeardownCombat` later runs the hooks again on the player faction's squads, the garrison squads have no `FactionMembershipComponent` left to strip and the hooks are safely idempotent.
 
 The garrison squads end up alive in ECS with no position and `IsDeployed = false`, which is exactly the state needed for them to remain in `garrison.GarrisonData.SquadIDs` for future defense.
 
@@ -846,19 +853,25 @@ Determine reason (ExitVictory / ExitDefeat / ExitFlee)
      ▼
 EncounterService.ExitCombat(reason, outcome, combatService)
      │
-     ├─── Step 1: Resolve outcome (resolveEncounterOutcome)
-     │       │   switch encounter.Type:
+     ├─── Step 1: ExecuteResolution(manager, enc.Resolver, ctx) — if Resolver != nil
+     │       │   resolver decides what to do based on ctx.Reason / ctx.PlayerVictory:
      │       │
-     │       ├─→ [Not raid, not flee] resolveEncounterOutcome()
-     │       │      ├─→ [CombatTypeGarrisonDefense] GarrisonDefenseResolver.Resolve()
-     │       │      │      └─→ Victory: log event
-     │       │      │      └─→ Defeat: TransferNodeOwnership()
-     │       │      ├─→ [CombatTypeOverworld] OverworldCombatResolver.Resolve()
-     │       │      │      └─→ Victory: DestroyThreatNode() or weaken + rewards
-     │       │      │      └─→ Defeat: grow threat intensity
-     │       │      └─→ [CombatTypeDebug] no-op
+     │       ├─→ OverworldCombatResolver
+     │       │      ├─→ Victory: DestroyThreatNode() or weaken + rewards
+     │       │      ├─→ Defeat: grow threat intensity
+     │       │      └─→ Flee: delegate to FleeResolver (log event)
      │       │
-     │       └─→ [Flee] restoreEncounterSprite() + FleeResolver.Resolve()
+     │       ├─→ GarrisonDefenseResolver
+     │       │      ├─→ Victory: log event
+     │       │      └─→ Defeat: TransferNodeOwnership()
+     │       │
+     │       ├─→ RaidEncounterResolver
+     │       │      ├─→ Victory: RaidRoomResolver — MarkRoomCleared + rewards
+     │       │      └─→ Defeat/Flee: RaidDefeatResolver — set raidState.Status
+     │       │
+     │       └─→ (debug encounter, nil resolver) no-op
+     │
+     ├─── Step 1b: [Flee only] restoreEncounterSprite()
      │
      ├─── Step 2: Mark encounter defeated (victory, non-raid)
      │       └─→ markEncounterDefeated(): IsDefeated=true, hide sprite
@@ -868,28 +881,26 @@ EncounterService.ExitCombat(reason, outcome, combatService)
      ├─── Step 4: RecordEncounterCompletion()
      │       └─→ Clear activeEncounter
      │
-     ├─── Step 5: playerSquadIDs := combatService.TeardownCombat(enemySquadIDs)
+     ├─── Step 5: combatService.TeardownCombat(enemySquadIDs)
      │       ├─→ cleanupEffects()
-     │       ├─→ collectPlayerSquadIDs() — returned to caller
+     │       ├─→ For each playerSquad in collectPlayerSquadIDs():
+     │       │      ├─ combatstate.RemoveCombatMembership(entity)
+     │       │      ├─ perks.RemovePerkRoundState(entity)
+     │       │      └─ squadcore.ResetSquadDeployment(manager, entity)
      │       ├─→ disposeEntitiesByTag(FactionTag)
      │       ├─→ disposeEntitiesByTag(ActionStateTag)
      │       ├─→ disposeEntitiesByTag(TurnStateTag)
      │       ├─→ disposeEnemySquads(enemySquadIDs)
      │       └─→ disposeEnemyUnits(enemySquadSet)
      │
-     ├─── Step 6: combatlifecycle.StripCombatComponents(playerSquadIDs)
-     │       (removes position + faction membership, resets IsDeployed)
-     │
-     └─── Step 7: postCombatCallback(reason, result)
+     └─── Step 6: postCombatCallback(reason, result, resolution)
              └─→ [Raid only] RaidRunner.ResolveEncounter()
-                    ├─→ Victory: RaidRoomResolver.Resolve()
-                    │      └─→ MarkRoomCleared()
-                    │      └─→ Grant rewards
-                    ├─→ Defeat/Flee: RaidDefeatResolver.Resolve()
-                    └─→ PostEncounterProcessing()
-                           ├─→ ApplyPostEncounterRecovery()
-                           ├─→ IncrementAlert()
-                           └─→ CheckRaidEndConditions()
+                    ├─→ Read RewardText from resolution (already granted in Step 1)
+                    ├─→ PostEncounterProcessing()
+                    │      ├─→ ApplyPostEncounterRecovery()
+                    │      ├─→ IncrementAlert()
+                    │      └─→ CheckRaidEndConditions()
+                    └─→ Build LastEncounterResult for GUI summary
 ```
 
 ---
@@ -980,7 +991,7 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `campaign/raid/raidencounter.go` | `SetupRaidFactions`: positions squads for raid combat |
 | `campaign/raid/raidrunner.go` | `RaidRunner`: orchestrates the full raid loop, registered as post-combat listener |
 | `campaign/raid/resolvers.go` | `RaidRoomResolver`, `RaidDefeatResolver` |
-| `tactical/combat/combatservices/combat_service.go` | `CombatService.TeardownCombat` (satisfies `combatlifecycle.CombatTeardown`, returns `[]ecs.EntityID`), `InitializeCombat`, `CheckVictoryCondition` |
+| `tactical/combat/combatservices/combat_service.go` | `CombatService.TeardownCombat` (satisfies `combatlifecycle.CombatTeardown`; strips player squads via `combatstate.RemoveCombatMembership` + `perks.RemovePerkRoundState` + `squadcore.ResetSquadDeployment`), `InitializeCombat`, `CheckVictoryCondition` |
 | `tactical/combat/combatservices/combat_power_dispatch.go` | Logger wiring and perk dispatcher injection into `CombatActionSystem` |
 | `tactical/combat/combatstate/combatfactionmanager.go` | `CombatFactionManager.CreateStandardFactions`, `CreateFactionWithPlayer`, `AddSquadToFaction` |
 | `tactical/combat/combatstate/combatqueries.go` | `CreateActionStateForSquad`, `RemoveSquadFromMap`, `GetAllFactions`, `GetSquadsForFaction` |

@@ -112,10 +112,13 @@ func assembleCombatFactions(
 ) (*SpawnResult, error) {
 	fm, playerFactionID, enemyFactionID := combatlifecycle.CreateFactionPair(manager, playerFactionName, enemyFactionName, encounterID)
 
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, playerSquadIDs, playerPositions, markPlayerDeployed); err != nil {
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, playerSquadIDs, playerPositions); err != nil {
 		return nil, fmt.Errorf("failed to add player squads: %w", err)
 	}
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, enemySquadIDs, enemyPositions, false); err != nil {
+	if markPlayerDeployed {
+		combatlifecycle.MarkSquadsDeployed(manager, playerSquadIDs)
+	}
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, enemySquadIDs, enemyPositions); err != nil {
 		return nil, fmt.Errorf("failed to add enemy squads: %w", err)
 	}
 

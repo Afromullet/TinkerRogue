@@ -69,17 +69,10 @@ type CombatSetup struct {
 	DefendedNodeID       ecs.EntityID
 	PostCombatReturnMode string // "" = default, PostCombatReturnRaid = return to raid mode
 
-	// SkipServiceResolution indicates the starter's domain handles resolution
-	// via its own post-combat callback (e.g., RaidRunner). When true,
-	// EncounterService.ExitCombat skips the BuildResolver call and also skips
-	// markEncounterDefeated.
-	SkipServiceResolution bool
-
-	// BuildResolver constructs the type-appropriate resolver for victory/defeat.
-	// Set by the starter's Prepare(). Nil means no resolution needed (e.g., debug).
-	// playerEntityID and playerSquadIDs are only known at exit time, so they are
-	// passed in rather than captured in the closure.
-	BuildResolver func(playerVictory bool, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID) CombatResolver
+	// Resolver is the type-appropriate resolver, built eagerly by the starter's Prepare().
+	// Runtime information (PlayerVictory, PlayerEntityID, PlayerSquadIDs) is passed to
+	// Resolve via ResolutionContext at exit time. Nil means no resolution needed (e.g., debug).
+	Resolver CombatResolver
 }
 
 // PostCombatReturnMode constants for compile-time safety.
@@ -150,11 +143,11 @@ type EncounterOutcome struct {
 
 // CombatTeardown handles tactical-side entity disposal when exiting combat.
 // Implemented by CombatService (satisfies via Go structural typing, no import needed).
-// Returns the player squad IDs that were in combat so the caller can finish
-// cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
-// StripCombatComponents) without tactical/combat depending on mind/.
+// The implementation strips combat-only components from player squads internally
+// (faction membership, perk round state, positions, IsDeployed) — the caller
+// does not need to follow up.
 // Invoked by EncounterService.ExitCombat as one step in the exit orchestration —
 // it is NOT the full combat-exit flow.
 type CombatTeardown interface {
-	TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID
+	TeardownCombat(enemySquadIDs []ecs.EntityID)
 }

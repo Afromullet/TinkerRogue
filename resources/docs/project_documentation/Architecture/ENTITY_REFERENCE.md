@@ -702,7 +702,7 @@ Metadata for a single combat encounter, created when a player engages a threat n
 
 | Component Variable | Query Tag | Data Type | Key Fields | Notes |
 |---|---|---|---|---|
-| `core.OverworldEncounterComponent` | `core.OverworldEncounterTag` | `*core.OverworldEncounterData` | `Name`, `Level`, `EncounterType`, `IsDefeated`, `ThreatNodeID`, `IsGarrisonDefense`, `AttackingFactionType` | `ThreatNodeID = 0` for debug/random encounters; `IsGarrisonDefense` and `AttackingFactionType` only set for garrison defense scenarios |
+| `core.OverworldEncounterComponent` | `core.OverworldEncounterTag` | `*core.OverworldEncounterData` | `Name`, `Level`, `EncounterType`, `IsDefeated`, `ThreatNodeID`, `AttackingFactionType` | `ThreatNodeID = 0` for debug/random encounters; `AttackingFactionType` only set for garrison defense scenarios. Combat type discrimination lives on `CombatSetup.Type`, not on this component. |
 
 **`core.OverworldEncounterData` detail:**
 ```go
@@ -714,7 +714,6 @@ type OverworldEncounterData struct {
     ThreatNodeID  ecs.EntityID // Originating threat node (0 = none)
 
     // Garrison defense only:
-    IsGarrisonDefense    bool
     AttackingFactionType FactionType
 }
 ```

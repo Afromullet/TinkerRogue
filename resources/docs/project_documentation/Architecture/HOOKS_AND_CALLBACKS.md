@@ -549,14 +549,14 @@ func (d *ArtifactDispatcher) DispatchOnTurnEnd(round)                     // bro
 ```go
 type EncounterService struct {
     // ...
-    postCombatCallback func(combatlifecycle.CombatExitReason, *combattypes.EncounterOutcome)
+    postCombatCallback func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome, *combatlifecycle.ResolutionResult)
 }
 
-func (es *EncounterService) SetPostCombatCallback(fn func(combatlifecycle.CombatExitReason, *combattypes.EncounterOutcome))
+func (es *EncounterService) SetPostCombatCallback(fn func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome, *combatlifecycle.ResolutionResult))
 func (es *EncounterService) ClearPostCombatCallback()
 ```
 
-Single-subscriber field. The last `SetPostCombatCallback` call wins. It fires at the end of `ExitCombat`, after all cleanup steps (outcome resolution, history recording, entity disposal, player squad stripping) have completed. The only current subscriber is `RaidRunner`, which registers at construction time and clears on `finishRaid`.
+Single-subscriber field. The last `SetPostCombatCallback` call wins. It fires at the end of `ExitCombat`, after all cleanup steps (outcome resolution via `setup.Resolver`, history recording, entity disposal, player squad stripping) have completed. The `*ResolutionResult` argument is the output of `setup.Resolver.Resolve` — consumers (e.g., `RaidRunner`) use it to read `RewardText` for GUI summaries. The only current subscriber is `RaidRunner`, which registers at construction time and clears on `finishRaid`; with resolution now part of the standard pipeline, the callback is a notification hook only (not a dispatch path).
 
 `ExitCombat` is the single exit point for all combat endings (victory, defeat, flee). Any system that needs to respond to combat completion should use this callback rather than hooking directly into `CombatService`.
 

@@ -55,9 +55,10 @@ func SetupRaidFactions(
 			Y: combatPos.Y + playerOffsetY,
 		}
 	}
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, playerDeployedIDs, playerPositions, true); err != nil {
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, playerFactionID, playerDeployedIDs, playerPositions); err != nil {
 		return 0, 0, fmt.Errorf("failed to add player squads: %w", err)
 	}
+	combatlifecycle.MarkSquadsDeployed(manager, playerDeployedIDs)
 
 	// Pre-compute garrison squad positions
 	garrisonPositions := make([]coords.LogicalPosition, len(garrisonSquadIDs))
@@ -67,7 +68,7 @@ func SetupRaidFactions(
 			Y: combatPos.Y + enemyOffsetY,
 		}
 	}
-	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, garrisonSquadIDs, garrisonPositions, false); err != nil {
+	if err := combatlifecycle.EnrollSquadsAtPositions(fm, manager, enemyFactionID, garrisonSquadIDs, garrisonPositions); err != nil {
 		return 0, 0, fmt.Errorf("failed to add garrison squads: %w", err)
 	}
 

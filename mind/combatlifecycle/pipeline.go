@@ -1,13 +1,28 @@
 package combatlifecycle
 
-import "game_main/core/common"
+import (
+	"game_main/core/common"
+
+	"github.com/bytearena/ecs"
+)
+
+// ResolutionContext carries runtime information that resolvers need at exit time.
+// Built by EncounterService.ExitCombat (or any other exit orchestrator) and
+// passed into CombatResolver.Resolve so resolvers can be constructed eagerly
+// in CombatStarter.Prepare without capturing runtime state in closures.
+type ResolutionContext struct {
+	Reason         CombatExitReason
+	PlayerVictory  bool
+	PlayerEntityID ecs.EntityID
+	PlayerSquadIDs []ecs.EntityID
+}
 
 // CombatResolver handles context-specific combat resolution.
-// Each combat type implements this: overworld, raid, garrison defense, flee.
+// Each combat type implements this: overworld, raid, garrison defense.
 // Resolve() applies domain-specific state changes (threat damage, room clearing, etc.)
 // and returns a ResolutionPlan describing rewards to grant.
 type CombatResolver interface {
-	Resolve(manager *common.EntityManager) *ResolutionPlan
+	Resolve(manager *common.EntityManager, ctx ResolutionContext) *ResolutionPlan
 }
 
 // ResolutionPlan describes what to grant after resolution.
@@ -27,8 +42,8 @@ type ResolutionResult struct {
 
 // ExecuteResolution is THE single entry point for all combat resolution.
 // All combat types call this. All rewards flow through here.
-func ExecuteResolution(manager *common.EntityManager, resolver CombatResolver) *ResolutionResult {
-	plan := resolver.Resolve(manager)
+func ExecuteResolution(manager *common.EntityManager, resolver CombatResolver, ctx ResolutionContext) *ResolutionResult {
+	plan := resolver.Resolve(manager, ctx)
 	if plan == nil {
 		return &ResolutionResult{}
 	}

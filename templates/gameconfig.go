@@ -5,11 +5,12 @@ import "game_main/core/config"
 // JSONGameConfig is the root container for game balance configuration.
 // Loaded from gamedata/gameconfig.json at startup.
 type JSONGameConfig struct {
-	Player    PlayerConfig    `json:"player"`
-	Commander CommanderConfig `json:"commander"`
-	FactionAI FactionAIConfig2 `json:"factionAI"`
-	Combat    CombatConfig    `json:"combat"`
-	Display   DisplayConfig   `json:"display"`
+	Player    PlayerConfig            `json:"player"`
+	Commander CommanderConfig         `json:"commander"`
+	FactionAI FactionAIConfig2        `json:"factionAI"`
+	Combat    CombatConfig            `json:"combat"`
+	Display   DisplayConfig           `json:"display"`
+	Encounter EncounterRewardsConfig  `json:"encounter"`
 }
 
 type PlayerConfig struct {
@@ -81,6 +82,20 @@ type DisplayConfig struct {
 	RightPadding   int `json:"rightPadding"`
 	ZoomSquares    int `json:"zoomSquares"`
 	StaticUIOffset int `json:"staticUIOffset"`
+}
+
+// EncounterRewardsConfig holds the tunables for overworld threat-encounter reward
+// scaling. Consumed by mind/encounter.CalculateIntensityReward.
+//
+// Formula: reward = (Base + PerIntensity * intensity) * (1.0 + MultiplierStep * intensity)
+type EncounterRewardsConfig struct {
+	BaseGold                int     `json:"baseGold"`
+	GoldPerIntensity        int     `json:"goldPerIntensity"`
+	BaseXP                  int     `json:"baseXP"`
+	XPPerIntensity          int     `json:"xpPerIntensity"`
+	BasePoints              int     `json:"basePoints"`
+	PointsPerIntensity      int     `json:"pointsPerIntensity"`
+	IntensityMultiplierStep float64 `json:"intensityMultiplierStep"`
 }
 
 // GameConfig holds the loaded game configuration. Initialized by ReadGameConfig().
@@ -161,5 +176,19 @@ func validateGameConfig(cfg *JSONGameConfig) {
 	}
 	if cfg.Display.TilePixels <= 0 || cfg.Display.ScaleFactor <= 0 {
 		panic("Display tile/scale values must be positive")
+	}
+
+	// Encounter rewards
+	if cfg.Encounter.BaseGold < 0 || cfg.Encounter.GoldPerIntensity < 0 {
+		panic("Encounter gold values must be non-negative")
+	}
+	if cfg.Encounter.BaseXP < 0 || cfg.Encounter.XPPerIntensity < 0 {
+		panic("Encounter XP values must be non-negative")
+	}
+	if cfg.Encounter.BasePoints < 0 || cfg.Encounter.PointsPerIntensity < 0 {
+		panic("Encounter point values must be non-negative")
+	}
+	if cfg.Encounter.IntensityMultiplierStep < 0 {
+		panic("Encounter intensityMultiplierStep must be non-negative")
 	}
 }

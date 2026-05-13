@@ -413,9 +413,8 @@ type OverworldEncounterData struct {
     Level                int          // Difficulty level
     EncounterType        string       // Encounter type ID for spawn logic
     IsDefeated           bool         // Set to true after combat victory
-    ThreatNodeID         ecs.EntityID // Link to overworld threat node (0 if garrison defense)
-    IsGarrisonDefense    bool         // True if this is a garrison raid encounter
-    AttackingFactionType FactionType  // Faction that initiated the raid
+    ThreatNodeID         ecs.EntityID // Link to overworld threat node (0 if garrison defense or debug)
+    AttackingFactionType FactionType  // Faction that initiated the raid (garrison defense only)
 }
 ```
 
@@ -1249,7 +1248,8 @@ tick.AdvanceTick returns TickResult{PendingRaid: raid}
     ↓
 OverworldActionHandler.EndTurn → HandleRaid(raid)
     ├─ encounter.TriggerGarrisonDefense(manager, nodeID, factionType, strength)
-    │   └─ Creates OverworldEncounterData{IsGarrisonDefense=true, AttackingFactionType=...}
+    │   └─ Creates OverworldEncounterData{AttackingFactionType=...}
+    │      (combat type discrimination via GarrisonDefenseStarter setting CombatTypeGarrisonDefense)
     └─ encounterService.StartGarrisonDefense(encounterID, nodeID)
         └─ Switches to combat mode with garrison squads vs. faction units
             ↓

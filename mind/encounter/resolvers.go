@@ -14,16 +14,20 @@ import (
 )
 
 // OverworldCombatResolver resolves standard overworld threat encounters.
-// Replaces resolveCombatToOverworld, applyCombatOutcome, createCombatOutcome, combatOutcome.
+// Runtime information (victory, player entity, player squads) is supplied via
+// ResolutionContext at exit time, so this resolver can be built eagerly in
+// OverworldCombatStarter.Prepare.
 type OverworldCombatResolver struct {
-	ThreatNodeID   ecs.EntityID
-	PlayerVictory  bool
-	PlayerEntityID ecs.EntityID
-	PlayerSquadIDs []ecs.EntityID
-	EnemySquadIDs  []ecs.EntityID
+	ThreatNodeID  ecs.EntityID
+	EnemySquadIDs []ecs.EntityID
 }
 
-func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
+func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
+	// Flee delegates to the FleeResolver; no rewards, just a log entry.
+	if ctx.Reason == combatlifecycle.ExitFlee {
+		return (&FleeResolver{ThreatNodeID: r.ThreatNodeID}).Resolve(manager, ctx)
+	}
+
 	// Count casualties
 	enemyUnitsKilled := combatlifecycle.CountDeadUnits(manager, r.EnemySquadIDs)
 
@@ -40,8 +44,8 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager) *combat
 		return nil
 	}
 
-	if r.PlayerVictory {
-		return r.resolveVictory(manager, threatEntity, nodeData, enemyUnitsKilled)
+	if ctx.PlayerVictory {
+		return r.resolveVictory(manager, threatEntity, nodeData, ctx, enemyUnitsKilled)
 	}
 	return r.resolveDefeat(manager, threatEntity, nodeData)
 }
@@ -50,6 +54,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
 	nodeData *core.OverworldNodeData,
+	ctx combatlifecycle.ResolutionContext,
 	enemyUnitsKilled int,
 ) *combatlifecycle.ResolutionPlan {
 	damageDealt := enemyUnitsKilled / EnemiesPerIntensityPoint
@@ -60,8 +65,8 @@ func (r *OverworldCombatResolver) resolveVictory(
 	rewards := CalculateIntensityReward(oldIntensity)
 
 	target := combatlifecycle.GrantTarget{
-		PlayerEntityID: r.PlayerEntityID,
-		SquadIDs:       r.PlayerSquadIDs,
+		PlayerEntityID: ctx.PlayerEntityID,
+		SquadIDs:       ctx.PlayerSquadIDs,
 	}
 
 	if nodeData.Intensity <= 0 {
@@ -145,17 +150,16 @@ func (r *OverworldCombatResolver) resolveDefeat(
 }
 
 // GarrisonDefenseResolver resolves garrison defense encounters.
-// Replaces resolveGarrisonDefense.
+// PlayerVictory is read from ResolutionContext at exit time.
 type GarrisonDefenseResolver struct {
-	PlayerVictory        bool
 	DefendedNodeID       ecs.EntityID
 	AttackingFactionType core.FactionType
 }
 
-func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
+func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
 	currentTick := core.GetCurrentTick(manager)
 
-	if r.PlayerVictory {
+	if ctx.PlayerVictory {
 		core.LogEvent(core.EventGarrisonDefended, currentTick, r.DefendedNodeID,
 			fmt.Sprintf("Garrison at node %d successfully defended against %s",
 				r.DefendedNodeID, r.AttackingFactionType.String()), nil)
@@ -180,12 +184,16 @@ func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager) *combat
 }
 
 // FleeResolver resolves flee/retreat from combat.
-// Replaces resolveFleeToOverworld.
+// Invoked by OverworldCombatResolver when ctx.Reason == ExitFlee.
 type FleeResolver struct {
 	ThreatNodeID ecs.EntityID
 }
 
-func (r *FleeResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
+func (r *FleeResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
+	if r.ThreatNodeID == 0 {
+		return nil
+	}
+
 	currentTick := core.GetCurrentTick(manager)
 
 	core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,

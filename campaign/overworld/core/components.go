@@ -92,7 +92,6 @@ type OverworldEncounterData struct {
 	ThreatNodeID  ecs.EntityID        // Link to overworld threat node (0 if not from threat)
 
 	// Garrison defense fields
-	IsGarrisonDefense    bool        // True if this is a garrison defense encounter
 	AttackingFactionType FactionType // Faction attacking the garrisoned node
 }
 

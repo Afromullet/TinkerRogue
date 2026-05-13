@@ -51,28 +51,27 @@ func (s *OverworldCombatStarter) Prepare(manager *common.EntityManager) (*combat
 	}
 	threatNodeID := encounterData.ThreatNodeID
 	enemySquadIDs := spawnResult.EnemySquadIDs
-	return &combatlifecycle.CombatSetup{
-		PlayerFactionID: spawnResult.PlayerFactionID,
-		EnemyFactionID:  spawnResult.EnemyFactionID,
-		EnemySquadIDs:   enemySquadIDs,
-		CombatPosition:  s.PlayerPos,
-		EncounterID:     s.EncounterID,
-		ThreatID:        s.ThreatID,
-		ThreatName:      s.ThreatName,
-		RosterOwnerID:   s.RosterOwnerID,
-		BuildResolver: func(playerVictory bool, playerEntityID ecs.EntityID, playerSquadIDs []ecs.EntityID) combatlifecycle.CombatResolver {
-			if threatNodeID == 0 {
-				return nil // CombatTypeDebug: no resolution needed
-			}
-			return &OverworldCombatResolver{
-				ThreatNodeID:   threatNodeID,
-				PlayerVictory:  playerVictory,
-				PlayerEntityID: playerEntityID,
-				PlayerSquadIDs: playerSquadIDs,
-				EnemySquadIDs:  enemySquadIDs,
-			}
-		},
-	}, nil
+
+	// Debug encounters (no threat node) get a nil resolver — no resolution needed.
+	var resolver combatlifecycle.CombatResolver
+	if threatNodeID != 0 {
+		resolver = &OverworldCombatResolver{
+			ThreatNodeID:  threatNodeID,
+			EnemySquadIDs: enemySquadIDs,
+		}
+	}
+
+	return combatlifecycle.NewOverworldSetup(
+		spawnResult.PlayerFactionID,
+		spawnResult.EnemyFactionID,
+		enemySquadIDs,
+		s.PlayerPos,
+		s.EncounterID,
+		s.ThreatID,
+		s.ThreatName,
+		s.RosterOwnerID,
+		resolver,
+	), nil
 }
 
 // Rollback restores sprite visibility if TransitionToCombat fails after Prepare.
@@ -129,25 +128,20 @@ func (s *GarrisonDefenseStarter) Prepare(manager *common.EntityManager) (*combat
 		return nil, err
 	}
 
-	attackingFactionType := encounterData.AttackingFactionType
-	defendedNodeID := s.TargetNodeID
-	return &combatlifecycle.CombatSetup{
-		PlayerFactionID: spawnResult.PlayerFactionID,
-		EnemyFactionID:  spawnResult.EnemyFactionID,
-		EnemySquadIDs:   spawnResult.EnemySquadIDs,
-		CombatPosition:  *nodePos,
-		EncounterID:     s.EncounterID,
-		ThreatID:        s.TargetNodeID,
-		ThreatName:      encounterData.Name,
-		RosterOwnerID:   0,
-		Type:            combatlifecycle.CombatTypeGarrisonDefense,
-		DefendedNodeID:  defendedNodeID,
-		BuildResolver: func(playerVictory bool, _ ecs.EntityID, _ []ecs.EntityID) combatlifecycle.CombatResolver {
-			return &GarrisonDefenseResolver{
-				PlayerVictory:        playerVictory,
-				DefendedNodeID:       defendedNodeID,
-				AttackingFactionType: attackingFactionType,
-			}
-		},
-	}, nil
+	resolver := &GarrisonDefenseResolver{
+		DefendedNodeID:       s.TargetNodeID,
+		AttackingFactionType: encounterData.AttackingFactionType,
+	}
+
+	return combatlifecycle.NewGarrisonSetup(
+		spawnResult.PlayerFactionID,
+		spawnResult.EnemyFactionID,
+		spawnResult.EnemySquadIDs,
+		*nodePos,
+		s.EncounterID,
+		s.TargetNodeID,
+		encounterData.Name,
+		s.TargetNodeID,
+		resolver,
+	), nil
 }

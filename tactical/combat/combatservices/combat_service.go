@@ -400,18 +400,29 @@ func (cs *CombatService) SetAIController(ctrl AITurnController) {
 
 // TeardownCombat disposes tactical-side combat entities when returning to exploration.
 // Enemy squads must be provided by the encounter service for disposal.
-// Returns the player squad IDs that were in combat so the caller (EncounterService) can
-// finish cross-cutting cleanup (stripping FactionMembership, PerkRoundState, etc. via
-// combatlifecycle.StripCombatComponents) without tactical/combat depending on mind/.
+// Player squads are identified via faction membership and stripped of combat-only
+// state (faction membership, perk round state, positions, IsDeployed) before
+// faction entities are disposed.
 // Satisfies combatlifecycle.CombatTeardown via structural typing.
-func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.EntityID {
+func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) {
 	fmt.Println("=== Combat Teardown Starting ===")
 
 	// Remove all active effects from player units before leaving combat
 	cs.cleanupEffects()
 
-	// Identify player squads from faction membership so the caller can strip their combat components.
-	playerSquadIDs := cs.collectPlayerSquadIDs()
+	// Strip combat state from player squads via direct calls into the owning
+	// packages. Must happen BEFORE faction entities are disposed:
+	// collectPlayerSquadIDs reads FactionMembershipComponent to identify
+	// player-controlled squads, and RemoveCombatMembership then removes it.
+	for _, squadID := range cs.collectPlayerSquadIDs() {
+		entity := cs.EntityManager.FindEntityByID(squadID)
+		if entity == nil {
+			continue
+		}
+		combatstate.RemoveCombatMembership(entity)
+		perks.RemovePerkRoundState(entity)
+		squadcore.ResetSquadDeployment(cs.EntityManager, entity)
+	}
 
 	// Build set of enemy squad IDs for unit filtering
 	enemySquadSet := make(map[ecs.EntityID]bool)
@@ -427,7 +438,6 @@ func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) []ecs.Enti
 	cs.disposeEnemyUnits(enemySquadSet)
 
 	fmt.Println("=== Combat Teardown Complete ===")
-	return playerSquadIDs
 }
 
 // cleanupEffects removes all active effects from all player squad units.
@@ -451,8 +461,9 @@ func (cs *CombatService) cleanupEffects() {
 // ================================
 
 // collectPlayerSquadIDs returns all squads whose faction membership is player-controlled.
-// Caller (EncounterService) uses this list to strip cross-cutting squad components via
-// combatlifecycle.StripCombatComponents — keeps tactical/combat free of mind/ imports.
+// Used internally by TeardownCombat to identify which squads to strip combat-only
+// state from (faction membership, perk round state, positions, IsDeployed)
+// before faction entities are disposed.
 func (cs *CombatService) collectPlayerSquadIDs() []ecs.EntityID {
 	var playerSquadIDs []ecs.EntityID
 	for _, result := range cs.EntityManager.World.Query(squadcore.SquadTag) {

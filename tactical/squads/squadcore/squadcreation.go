@@ -502,3 +502,30 @@ func DisposeSquadAndUnits(squadID ecs.EntityID, manager *common.EntityManager) {
 		manager.CleanDisposeEntity(squadEntity, pos)
 	}
 }
+
+// ResetSquadDeployment unregisters the squad and its units from the spatial
+// position system and clears the IsDeployed flag. Used when a squad leaves the
+// tactical map (combat exit, garrison-defenders returning to their node) but
+// the squad entities themselves must survive in ECS for future deployment.
+//
+// Counterpart to MarkSquadsDeployed in mind/combatlifecycle/enrollment.go.
+func ResetSquadDeployment(manager *common.EntityManager, squadEntity *ecs.Entity) {
+	if squadEntity == nil {
+		return
+	}
+
+	manager.UnregisterEntityPosition(squadEntity)
+
+	for _, unitID := range GetUnitIDsInSquad(squadEntity.GetID(), manager) {
+		unitEntity := manager.FindEntityByID(unitID)
+		if unitEntity == nil {
+			continue
+		}
+		manager.UnregisterEntityPosition(unitEntity)
+	}
+
+	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData != nil {
+		squadData.IsDeployed = false
+	}
+}

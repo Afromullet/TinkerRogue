@@ -72,6 +72,20 @@ func init() {
 	})
 }
 
+// RemoveCombatMembership removes FactionMembershipComponent from the entity if
+// present. FactionMembership is combat-only state — it links a squad to its
+// faction during a single combat encounter and must be stripped when the squad
+// leaves combat. Called from combat-exit orchestration (combatlifecycle.cleanup
+// and CombatService.TeardownCombat).
+func RemoveCombatMembership(entity *ecs.Entity) {
+	if entity == nil {
+		return
+	}
+	if entity.HasComponent(FactionMembershipComponent) {
+		entity.RemoveComponent(FactionMembershipComponent)
+	}
+}
+
 // InitCombatComponents registers all combat-related components with the ECS manager.
 // Call this during game initialization, similar to InitSquadComponents.
 func InitCombatComponents(manager *common.EntityManager) {

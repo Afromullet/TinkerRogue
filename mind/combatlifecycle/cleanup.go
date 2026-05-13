@@ -26,9 +26,14 @@ func ApplyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPerc
 	}
 }
 
-// StripCombatComponents removes combat-related state from the given squads
-// and their units: FactionMembership, Position, and resets IsDeployed.
-// Callers decide WHICH squads to strip (by ID list).
+// StripCombatComponents removes combat-only state from the given squads when
+// leaving combat: faction membership, perk round state, positions, and the
+// IsDeployed flag. Each component's cleanup lives in its owning package
+// (combatstate, perks, squadcore) and is invoked directly here.
+//
+// Used by combat-exit orchestration outside of CombatService.TeardownCombat —
+// currently only by the garrison-defense return-to-node path. CombatService
+// performs the same sequence inline on player squads during teardown.
 func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityID) {
 	for _, squadID := range squadIDs {
 		entity := manager.FindEntityByID(squadID)
@@ -36,34 +41,9 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 			continue
 		}
 
-		// Remove faction membership
-		if entity.HasComponent(combatstate.FactionMembershipComponent) {
-			entity.RemoveComponent(combatstate.FactionMembershipComponent)
-		}
-
-		// Atomically remove squad position from both component and position system
-		manager.UnregisterEntityPosition(entity)
-
-		// Atomically remove all unit positions
-		unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
-		for _, unitID := range unitIDs {
-			unitEntity := manager.FindEntityByID(unitID)
-			if unitEntity == nil {
-				continue
-			}
-			manager.UnregisterEntityPosition(unitEntity)
-		}
-
-		// Reset deployment flag
-		squadData := common.GetComponentType[*squadcore.SquadData](entity, squadcore.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = false
-		}
-
-		// Remove perk round state (combat-only component)
-		if entity.HasComponent(perks.PerkRoundStateComponent) {
-			entity.RemoveComponent(perks.PerkRoundStateComponent)
-		}
+		combatstate.RemoveCombatMembership(entity)
+		perks.RemovePerkRoundState(entity)
+		squadcore.ResetSquadDeployment(manager, entity)
 
 		if config.DEBUG_MODE {
 			fmt.Printf("Stripped combat components from squad %d\n", squadID)

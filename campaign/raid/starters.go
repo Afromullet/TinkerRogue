@@ -12,13 +12,14 @@ import (
 
 // RaidCombatStarter prepares raid encounter combat.
 // Calls SetupRaidFactions() to create factions and position squads,
-// then returns a CombatSetup with Type=CombatTypeRaid and PostCombatReturnMode="raid".
+// then returns a CombatSetup with a RaidEncounterResolver attached.
 type RaidCombatStarter struct {
 	RaidEntityID     ecs.EntityID
 	GarrisonSquadIDs []ecs.EntityID
 	DeployedSquadIDs []ecs.EntityID
 	CombatPos        coords.LogicalPosition
 	CommanderID      ecs.EntityID
+	RoomNodeID       int
 }
 
 func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifecycle.CombatSetup, error) {
@@ -30,16 +31,19 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifec
 		return nil, fmt.Errorf("failed to setup raid factions: %w", err)
 	}
 
-	return &combatlifecycle.CombatSetup{
-		PlayerFactionID:       playerFactionID,
-		EnemyFactionID:        enemyFactionID,
-		EnemySquadIDs:         s.GarrisonSquadIDs,
-		CombatPosition:        s.CombatPos,
-		EncounterID:           s.RaidEntityID,
-		ThreatName:            "Garrison Raid",
-		RosterOwnerID:         s.CommanderID,
-		Type:                  combatlifecycle.CombatTypeRaid,
-		PostCombatReturnMode:  combatlifecycle.PostCombatReturnRaid,
-		SkipServiceResolution: true,
-	}, nil
+	resolver := &RaidEncounterResolver{
+		RaidState:  GetRaidState(manager),
+		RoomNodeID: s.RoomNodeID,
+	}
+
+	return combatlifecycle.NewRaidSetup(
+		playerFactionID,
+		enemyFactionID,
+		s.GarrisonSquadIDs,
+		s.CombatPos,
+		s.RaidEntityID,
+		"Garrison Raid",
+		s.CommanderID,
+		resolver,
+	), nil
 }

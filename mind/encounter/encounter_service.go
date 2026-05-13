@@ -11,11 +11,14 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// maxHistoryEntries caps the size of the recent-encounter history ring.
+const maxHistoryEntries = 10
+
 // EncounterService coordinates encounter lifecycle and tracks history.
 // This is an HONEST coordinator - it doesn't own everything, but it provides:
 // - Encounter flow coordination (validation, state tracking, mode transitions)
 // - Encounter state tracking (activeEncounter)
-// - History recording (last 10 encounters)
+// - History recording (last maxHistoryEntries encounters)
 // - Analytics (win rate, last encounter)
 //
 // What it DOESN'T do (handled by other systems):
@@ -35,7 +38,13 @@ type EncounterService struct {
 
 	// postCombatCallback is called after ExitCombat finishes processing.
 	// Registered/unregistered by external systems (e.g., RaidRunner) to receive combat results.
-	postCombatCallback func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome)
+	// resolution is the output of the setup.Resolver (nil if no resolver ran).
+	//
+	// SINGLE-SUBSCRIBER BY DESIGN. Do not add a second consumer without first promoting
+	// this field to a slice — last-write-wins semantics would silently drop one of them.
+	// All combat types flow through this channel, so subscribers must filter for the
+	// combat types they care about (see RaidRunner's raidEntityID + RaidActive guard).
+	postCombatCallback func(reason combatlifecycle.CombatExitReason, outcome *combatlifecycle.EncounterOutcome, resolution *combatlifecycle.ResolutionResult)
 }
 
 // NewEncounterService creates a new encounter coordinator
@@ -47,8 +56,8 @@ func NewEncounterService(
 		manager:         manager,
 		modeCoordinator: modeCoordinator,
 		activeEncounter: nil,
-		history:         make([]*CompletedEncounter, 0, 10),
-		maxHistory:      10, // Keep last 10 encounters
+		history:         make([]*CompletedEncounter, 0, maxHistoryEntries),
+		maxHistory:      maxHistoryEntries,
 	}
 }
 
@@ -86,7 +95,8 @@ func (es *EncounterService) GetEnemySquadIDs() []ecs.EntityID {
 
 // SetPostCombatCallback sets a callback to receive combat results after ExitCombat completes.
 // Only one callback is supported at a time (last call wins).
-func (es *EncounterService) SetPostCombatCallback(fn func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome)) {
+// The callback receives the exit reason, outcome, and the resolution result (nil if no resolver ran).
+func (es *EncounterService) SetPostCombatCallback(fn func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome, *combatlifecycle.ResolutionResult)) {
 	es.postCombatCallback = fn
 }
 
@@ -114,30 +124,27 @@ func (es *EncounterService) ExitCombat(
 	// Single lookup of the encounter entity + data; reused by all steps below.
 	encounterEntity, encounterData := es.getEncounterData(enc.EncounterID)
 
-	// Step 1: Resolve combat outcome based on type + reason.
-	// Starters that own their own resolution (e.g. raid via its callback) set
-	// SkipServiceResolution so EncounterService stays agnostic of which types those are.
-	switch reason {
-	case combatlifecycle.ExitVictory, combatlifecycle.ExitDefeat:
-		if !enc.SkipServiceResolution && enc.BuildResolver != nil {
-			if encounterData == nil {
-				fmt.Printf("WARNING: Encounter entity %d not found during resolution\n", enc.EncounterID)
-			} else {
-				resolver := enc.BuildResolver(result.IsPlayerVictory, enc.PlayerEntityID, es.getAllPlayerSquadIDs())
-				if resolver != nil {
-					combatlifecycle.ExecuteResolution(es.manager, resolver)
-				}
-			}
+	// Step 1: Resolve combat outcome via the setup's resolver (built eagerly by the starter).
+	// One dispatch path for all combat types. Nil resolver means no resolution (debug encounters).
+	var resolution *combatlifecycle.ResolutionResult
+	if enc.Resolver != nil {
+		ctx := combatlifecycle.ResolutionContext{
+			Reason:         reason,
+			PlayerVictory:  result.IsPlayerVictory,
+			PlayerEntityID: enc.PlayerEntityID,
+			PlayerSquadIDs: es.getAllPlayerSquadIDs(),
 		}
-	case combatlifecycle.ExitFlee:
-		restoreEncounterSprite(encounterEntity, encounterData)
-		if encounterData != nil && encounterData.ThreatNodeID != 0 {
-			combatlifecycle.ExecuteResolution(es.manager, &FleeResolver{ThreatNodeID: encounterData.ThreatNodeID})
-		}
+		resolution = combatlifecycle.ExecuteResolution(es.manager, enc.Resolver, ctx)
 	}
 
-	// Step 2: Mark encounter defeated on victory (unless owned by callback)
-	if result.IsPlayerVictory && !enc.SkipServiceResolution {
+	// Step 1b: Flee restores the encounter sprite (overworld-only effect; no-op otherwise).
+	if reason == combatlifecycle.ExitFlee {
+		restoreEncounterSprite(encounterEntity, encounterData)
+	}
+
+	// Step 2: Mark encounter defeated on overworld victory.
+	// markEncounterDefeated is null-safe: it no-ops for raid (no OverworldEncounterData on the raid entity).
+	if result.IsPlayerVictory && enc.Type != combatlifecycle.CombatTypeRaid {
 		markEncounterDefeated(encounterEntity, encounterData)
 	}
 
@@ -168,20 +175,20 @@ func (es *EncounterService) ExitCombat(
 	}
 	es.activeEncounter = nil
 
-	// Step 5: Tear down all combat entities
+	// Step 5: Tear down all combat entities.
+	// TeardownCombat internally strips combat-only state from player squads
+	// (faction membership, perk round state, positions, IsDeployed) — the
+	// caller does not need to follow up.
 	if teardown != nil {
 		if enc.Type == combatlifecycle.CombatTypeGarrisonDefense && result.IsPlayerVictory {
 			es.returnGarrisonSquadsToNode(enc.DefendedNodeID)
 		}
-		playerSquadIDs := teardown.TeardownCombat(enc.EnemySquadIDs)
-		if len(playerSquadIDs) > 0 {
-			combatlifecycle.StripCombatComponents(es.manager, playerSquadIDs)
-		}
+		teardown.TeardownCombat(enc.EnemySquadIDs)
 	}
 
 	// Step 6: Notify external listeners (e.g., RaidRunner)
 	if es.postCombatCallback != nil {
-		es.postCombatCallback(reason, result)
+		es.postCombatCallback(reason, result, resolution)
 	}
 }
 

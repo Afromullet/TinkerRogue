@@ -11,19 +11,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// enrollSquadInFaction performs the full 4-step enrollment of a squad into a combat faction:
+// enrollSquadInFaction performs the 3-step enrollment of a squad into a combat faction:
 // 1. AddSquadToFaction (faction membership + position)
 // 2. EnsureUnitPositions (all units get positions at squad location)
 // 3. CreateActionStateForSquad (combat action tracking)
-// 4. Optionally marks squad as deployed
 //
-// Internal helper for EnrollSquadsAtPositions; the public entry point.
+// Internal helper for EnrollSquadsAtPositions.
 func enrollSquadInFaction(
 	fm *combatstate.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID, squadID ecs.EntityID,
 	pos coords.LogicalPosition,
-	markDeployed bool,
 ) error {
 	if err := fm.AddSquadToFaction(factionID, squadID, pos); err != nil {
 		return err
@@ -31,13 +29,6 @@ func enrollSquadInFaction(
 
 	EnsureUnitPositions(manager, squadID, pos)
 	combatstate.CreateActionStateForSquad(manager, squadID)
-
-	if markDeployed {
-		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
-		if squadData != nil {
-			squadData.IsDeployed = true
-		}
-	}
 
 	return nil
 }
@@ -57,23 +48,37 @@ func CreateFactionPair(
 
 // EnrollSquadsAtPositions enrolls multiple squads into a faction at given positions.
 // Positions and squadIDs must be the same length.
+// Deployment status (SquadData.IsDeployed) is the caller's policy — use
+// MarkSquadsDeployed separately if the squads should be marked deployed.
 func EnrollSquadsAtPositions(
 	fm *combatstate.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID ecs.EntityID,
 	squadIDs []ecs.EntityID,
 	positions []coords.LogicalPosition,
-	markDeployed bool,
 ) error {
 	if len(squadIDs) != len(positions) {
 		return fmt.Errorf("squad count (%d) != position count (%d)", len(squadIDs), len(positions))
 	}
 	for i, squadID := range squadIDs {
-		if err := enrollSquadInFaction(fm, manager, factionID, squadID, positions[i], markDeployed); err != nil {
+		if err := enrollSquadInFaction(fm, manager, factionID, squadID, positions[i]); err != nil {
 			return fmt.Errorf("failed to enroll squad %d: %w", squadID, err)
 		}
 	}
 	return nil
+}
+
+// MarkSquadsDeployed sets SquadData.IsDeployed = true on each squad.
+// Use after EnrollSquadsAtPositions for squads that weren't already deployed
+// (garrison defenders, raid player squads). Squads already marked deployed
+// (e.g. overworld player rosters) do not need this call.
+func MarkSquadsDeployed(manager *common.EntityManager, squadIDs []ecs.EntityID) {
+	for _, squadID := range squadIDs {
+		squadData := common.GetComponentTypeByID[*squadcore.SquadData](manager, squadID, squadcore.SquadComponent)
+		if squadData != nil {
+			squadData.IsDeployed = true
+		}
+	}
 }
 
 // EnsureUnitPositions ensures all units in a squad have position components.

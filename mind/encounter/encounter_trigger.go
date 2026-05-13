@@ -86,7 +86,6 @@ func TriggerGarrisonDefense(
 		EncounterType:        ids.EncounterTypeID(core.MapFactionToThreatType(attackingFactionType)),
 		IsDefeated:           false,
 		ThreatNodeID:         targetNodeID,
-		IsGarrisonDefense:    true,
 		AttackingFactionType: attackingFactionType,
 	}
 

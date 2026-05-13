@@ -8,14 +8,28 @@ import (
 	"game_main/tactical/squads/squadcore"
 )
 
+// RaidEncounterResolver dispatches a raid combat outcome to the appropriate
+// per-reason resolver. Built eagerly by RaidCombatStarter.Prepare and run by
+// the standard ExecuteResolution pipeline at exit time.
+type RaidEncounterResolver struct {
+	RaidState  *RaidStateData
+	RoomNodeID int
+}
+
+func (r *RaidEncounterResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
+	if ctx.PlayerVictory {
+		return (&RaidRoomResolver{RaidState: r.RaidState, RoomNodeID: r.RoomNodeID}).Resolve(manager, ctx)
+	}
+	return (&RaidDefeatResolver{}).Resolve(manager, ctx)
+}
+
 // RaidRoomResolver resolves a successful raid room encounter.
-// Replaces ProcessVictory.
 type RaidRoomResolver struct {
 	RaidState  *RaidStateData
 	RoomNodeID int
 }
 
-func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
+func (r *RaidRoomResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
 	if r.RaidState == nil {
 		return nil
 	}
@@ -56,10 +70,9 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager) *combatlifecyc
 }
 
 // RaidDefeatResolver resolves a raid defeat (combat loss or flee).
-// Replaces ProcessDefeat.
 type RaidDefeatResolver struct{}
 
-func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager) *combatlifecycle.ResolutionPlan {
+func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
 	raidState := GetRaidState(manager)
 	if raidState != nil {
 		raidState.Status = RaidDefeat
