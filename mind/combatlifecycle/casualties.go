@@ -10,31 +10,23 @@ import (
 // GetLivingUnitIDs returns the entity IDs of all living units across the given squads.
 func GetLivingUnitIDs(manager *common.EntityManager, squadIDs []ecs.EntityID) []ecs.EntityID {
 	var alive []ecs.EntityID
-	for _, squadID := range squadIDs {
-		for _, unitID := range squadcore.GetUnitIDsInSquad(squadID, manager) {
-			attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
-			if attr != nil && attr.CurrentHealth > 0 {
-				alive = append(alive, unitID)
-			}
+	squadcore.ForEachUnitWithAttrs(manager, squadIDs, func(unitID ecs.EntityID, attr *common.Attributes) bool {
+		if attr.CurrentHealth > 0 {
+			alive = append(alive, unitID)
 		}
-	}
+		return true
+	})
 	return alive
 }
 
 // CountDeadUnits counts how many units in the given squads have CurrentHealth <= 0.
 func CountDeadUnits(manager *common.EntityManager, squadIDs []ecs.EntityID) int {
 	dead := 0
-	for _, squadID := range squadIDs {
-		for _, unitID := range squadcore.GetUnitIDsInSquad(squadID, manager) {
-			entity := manager.FindEntityByID(unitID)
-			if entity == nil {
-				continue
-			}
-			attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-			if attr != nil && attr.CurrentHealth <= 0 {
-				dead++
-			}
+	squadcore.ForEachUnitWithAttrs(manager, squadIDs, func(_ ecs.EntityID, attr *common.Attributes) bool {
+		if attr.CurrentHealth <= 0 {
+			dead++
 		}
-	}
+		return true
+	})
 	return dead
 }

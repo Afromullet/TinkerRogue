@@ -10,15 +10,38 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// ForEachUnitWithAttrs invokes fn for every unit across the given squads that has an
+// Attributes component. Missing entities and units without Attributes are skipped.
+// Return false from fn to stop iteration early; returns true if iteration completed,
+// false if fn signaled early termination.
+func ForEachUnitWithAttrs(
+	manager *common.EntityManager,
+	squadIDs []ecs.EntityID,
+	fn func(unitID ecs.EntityID, attr *common.Attributes) bool,
+) bool {
+	for _, squadID := range squadIDs {
+		for _, unitID := range GetUnitIDsInSquad(squadID, manager) {
+			attr := getUnitAttributes(unitID, manager)
+			if attr == nil {
+				continue
+			}
+			if !fn(unitID, attr) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 // CountLivingUnitsInSquad returns the number of units in a squad with CurrentHealth > 0.
 func CountLivingUnitsInSquad(manager *common.EntityManager, squadID ecs.EntityID) int {
 	count := 0
-	for _, unitID := range GetUnitIDsInSquad(squadID, manager) {
-		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
-		if attr != nil && attr.CurrentHealth > 0 {
+	ForEachUnitWithAttrs(manager, []ecs.EntityID{squadID}, func(_ ecs.EntityID, attr *common.Attributes) bool {
+		if attr.CurrentHealth > 0 {
 			count++
 		}
-	}
+		return true
+	})
 	return count
 }
 
@@ -115,18 +138,19 @@ func GetUnitType(unitID ecs.EntityID, manager *common.EntityManager) string {
 // IsSquadDestroyed checks if all units are dead by iterating alive units.
 // Returns true if squad not found, has no units, or all units are dead.
 func IsSquadDestroyed(squadID ecs.EntityID, squadmanager *common.EntityManager) bool {
-	unitIDs := GetUnitIDsInSquad(squadID, squadmanager)
-	if len(unitIDs) == 0 {
+	if len(GetUnitIDsInSquad(squadID, squadmanager)) == 0 {
 		return true
 	}
 
-	for _, unitID := range unitIDs {
-		if GetAliveUnitAttributes(unitID, squadmanager) != nil {
+	foundAlive := false
+	ForEachUnitWithAttrs(squadmanager, []ecs.EntityID{squadID}, func(_ ecs.EntityID, attr *common.Attributes) bool {
+		if attr.CurrentHealth > 0 {
+			foundAlive = true
 			return false
 		}
-	}
-
-	return true
+		return true
+	})
+	return !foundAlive
 }
 
 // WouldSquadSurvive checks if a squad would have any survivors after predicted damage is applied

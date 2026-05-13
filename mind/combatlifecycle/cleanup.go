@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/perks"
 	"game_main/tactical/squads/squadcore"
@@ -64,6 +65,8 @@ func StripCombatComponents(manager *common.EntityManager, squadIDs []ecs.EntityI
 			entity.RemoveComponent(perks.PerkRoundStateComponent)
 		}
 
-		fmt.Printf("Stripped combat components from squad %d\n", squadID)
+		if config.DEBUG_MODE {
+			fmt.Printf("Stripped combat components from squad %d\n", squadID)
+		}
 	}
 }

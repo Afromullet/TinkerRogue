@@ -1,6 +1,28 @@
 # Combat Environment
 
-- Biome Determines Map 
+Terrain Hazards
+
+- Ice: Slows movement. 
+- Rot: Causes blight when stepping through. Decreases physical stats for N Nurds
+- Fire: Units which step on this take DoT. Take damage for N turns
+- Tentacles: Grabs units, leaving them immobilized for N turns
+- Siphon: Drains mana when stepping through
+- Euclidian: Teleport player to a random tile 
+- Pullers: If players step within n tiles of this, they are pulled adjacent to the puller
+- Time Warp: 
+- Spell Warp: Disables spells for n turns
+
+
+
+Other hazard ideas for the future
+
+- Terror Mouth: Unit must flee to (some position)
+- Corruption: Unit that is corrupted becomes hostile to all enemies. 
+- Mutation: Mutates units stats, can be positive and negative
+- Corrupter: Unit attacks the cloest ally for one turn
+
+- Random Weather Effects
+
 
 
 - Cover and destroyable cover

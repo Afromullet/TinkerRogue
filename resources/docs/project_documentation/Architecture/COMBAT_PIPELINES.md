@@ -263,34 +263,28 @@ func CreateFactionPair(manager, playerName, enemyName, encounterID) (*CombatFact
 
 This 3-line sequence appeared in 4 places (overworld setup, garrison encounter, garrison defense starter, raid factions) and is now a single helper.
 
-### EnrollSquadInFaction
-
-**File:** `mind/combatlifecycle/enrollment.go`
-
-The unified 4-step squad enrollment helper used by all starters:
-
-1. `fm.AddSquadToFaction(factionID, squadID, pos)` — faction membership + position
-2. `EnsureUnitPositions(manager, squadID, pos)` — all units get positions at squad location
-3. `combatstate.CreateActionStateForSquad(manager, squadID)` — combat action tracking
-4. Optionally marks squad as deployed (`squadData.IsDeployed = true`)
-
 ### EnrollSquadsAtPositions
 
 **File:** `mind/combatlifecycle/enrollment.go`
 
-Batch helper that calls `EnrollSquadInFaction` for each squad/position pair:
+The public batch enrollment helper used by all starters. For each squad/position pair, it performs the full 4-step enrollment:
+
+1. `fm.AddSquadToFaction(factionID, squadID, pos)` — faction membership + position
+2. `EnsureUnitPositions(manager, squadID, pos)` — all units get positions at squad location
+3. `combatstate.CreateActionStateForSquad(manager, squadID)` — combat action tracking
+4. Optionally marks the squad as deployed (`squadData.IsDeployed = true`)
 
 ```go
 func EnrollSquadsAtPositions(fm, manager, factionID, squadIDs, positions, markDeployed) error
 ```
 
-Replaces the repeated `for i, squadID := range squadIDs { EnrollSquadInFaction(...) }` loops across all setup paths.
+Replaces the repeated 4-step enrollment loops that previously appeared across all setup paths.
 
 ### EnsureUnitPositions
 
 **File:** `mind/combatlifecycle/enrollment.go`
 
-Called by `EnrollSquadInFaction` to give every unit in a squad a `LogicalPosition`. Units that already have positions are moved; units without positions have one registered. This is required before combat so that the movement system can find units on the map.
+Called during squad enrollment (see `EnrollSquadsAtPositions`) to give every unit in a squad a `LogicalPosition`. Units that already have positions are moved; units without positions have one registered. This is required before combat so that the movement system can find units on the map.
 
 ### CreateStandardFactions
 
@@ -747,8 +741,7 @@ mind/combatlifecycle
 
 mind/encounter
   → mind/combatlifecycle              (ExecuteResolution, StripCombatComponents,
-                                        EnrollSquadInFaction, CreateFactionPair,
-                                        EnrollSquadsAtPositions)
+                                        CreateFactionPair, EnrollSquadsAtPositions)
   → tactical/combat/combatstate       (FactionMembershipComponent)
   → tactical/combat/combattypes       (CombatSetup types used indirectly)
   → campaign/overworld/core           (OverworldEncounterData, OverworldNodeData)
@@ -758,8 +751,8 @@ mind/encounter
 
 campaign/raid
   → mind/combatlifecycle              (ExecuteCombatStart, ExecuteResolution,
-                                        ApplyHPRecovery, EnrollSquadInFaction,
-                                        CreateFactionPair)
+                                        ApplyHPRecovery, CreateFactionPair,
+                                        EnrollSquadsAtPositions)
   → mind/encounter                    (EncounterService)
   → tactical/combat/combatstate       (CombatQueryCache, CombatFactionManager)
 
@@ -968,7 +961,7 @@ The resolution pipeline has two distinct output types in `mind/combatlifecycle/p
 | `mind/combatlifecycle/contracts.go` | Shared contracts: `CombatStarter`, `CombatSetup`, `CombatType`, `CombatTransitioner`, `CombatTeardown`, `CombatExitReason`, `PostCombatReturnRaid`/`PostCombatReturnDefault` constants |
 | `mind/combatlifecycle/starter.go` | `ExecuteCombatStart`: the single entry point for all combat initiation |
 | `mind/combatlifecycle/pipeline.go` | `CombatResolver`, `ResolutionPlan`, `ResolutionResult`, `ExecuteResolution`: the single entry point for all combat resolution |
-| `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadInFaction`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
+| `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
 | `mind/combatlifecycle/cleanup.go` | `StripCombatComponents`: strips combat state from player squads without disposing them |
 | `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`: generic reward calculation and distribution primitives |
 | `mind/combatlifecycle/casualties.go` | `GetLivingUnitIDs`, `CountDeadUnits`: casualty counting helpers |

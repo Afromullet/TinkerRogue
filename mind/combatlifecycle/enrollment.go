@@ -11,15 +11,14 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// EnrollSquadInFaction performs the full 4-step enrollment of a squad into a combat faction:
+// enrollSquadInFaction performs the full 4-step enrollment of a squad into a combat faction:
 // 1. AddSquadToFaction (faction membership + position)
 // 2. EnsureUnitPositions (all units get positions at squad location)
 // 3. CreateActionStateForSquad (combat action tracking)
 // 4. Optionally marks squad as deployed
 //
-// This eliminates the duplicated 4-step sequence across encounter_setup.go,
-// starters.go, and raidencounter.go.
-func EnrollSquadInFaction(
+// Internal helper for EnrollSquadsAtPositions; the public entry point.
+func enrollSquadInFaction(
 	fm *combatstate.CombatFactionManager,
 	manager *common.EntityManager,
 	factionID, squadID ecs.EntityID,
@@ -70,7 +69,7 @@ func EnrollSquadsAtPositions(
 		return fmt.Errorf("squad count (%d) != position count (%d)", len(squadIDs), len(positions))
 	}
 	for i, squadID := range squadIDs {
-		if err := EnrollSquadInFaction(fm, manager, factionID, squadID, positions[i], markDeployed); err != nil {
+		if err := enrollSquadInFaction(fm, manager, factionID, squadID, positions[i], markDeployed); err != nil {
 			return fmt.Errorf("failed to enroll squad %d: %w", squadID, err)
 		}
 	}

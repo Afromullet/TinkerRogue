@@ -193,7 +193,7 @@ func (cs *CombatService) InitializeCombat(factionIDs []ecs.EntityID) error {
 	}
 
 	// Safety net: assign any deployed squads that somehow lack faction membership.
-	// Starters should enroll all squads via EnrollSquadInFaction, so this should
+	// Starters should enroll all squads via EnrollSquadsAtPositions, so this should
 	// rarely fire. If it does, it indicates a bug in the starter.
 	if playerFactionID != 0 {
 		cs.assignDeployedSquadsToPlayerFaction(playerFactionID)

@@ -3,6 +3,7 @@ package combatlifecycle
 import (
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/tactical/commander"
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/powers/spells"
@@ -14,6 +15,14 @@ import (
 
 	"github.com/bytearena/ecs"
 )
+
+// xpRNG is the random source for XP/stat-growth rolls. Tests should call
+// SetXPRNG with a deterministically seeded *rand.Rand to make level-up
+// stat rolls reproducible.
+var xpRNG = rand.New(rand.NewSource(time.Now().UnixNano()))
+
+// SetXPRNG overrides the package's XP RNG. Intended for tests only.
+func SetXPRNG(rng *rand.Rand) { xpRNG = rng }
 
 // Reward represents what a player receives. Zero-valued fields are skipped.
 type Reward struct {
@@ -96,7 +105,9 @@ func grantGold(manager *common.EntityManager, playerEntityID ecs.EntityID, amoun
 		return ""
 	}
 	common.AddGold(resources, amount)
-	fmt.Printf("Granted %d gold to player %d\n", amount, playerEntityID)
+	if config.DEBUG_MODE {
+		fmt.Printf("Granted %d gold to player %d\n", amount, playerEntityID)
+	}
 	return fmt.Sprintf("%d gold", amount)
 }
 
@@ -113,13 +124,14 @@ func grantExperience(manager *common.EntityManager, squadIDs []ecs.EntityID, tot
 		xpPerUnit = 1
 	}
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for _, unitID := range aliveUnitIDs {
-		unitprogression.AwardExperience(unitID, xpPerUnit, manager, rng)
+		unitprogression.AwardExperience(unitID, xpPerUnit, manager, xpRNG)
 	}
 
-	fmt.Printf("Granted %d XP each to %d alive units (total %d XP)\n",
-		xpPerUnit, len(aliveUnitIDs), totalXP)
+	if config.DEBUG_MODE {
+		fmt.Printf("Granted %d XP each to %d alive units (total %d XP)\n",
+			xpPerUnit, len(aliveUnitIDs), totalXP)
+	}
 	return fmt.Sprintf("%d XP", totalXP)
 }
 
@@ -141,7 +153,9 @@ func grantManaToSquads(manager *common.EntityManager, squadIDs []ecs.EntityID, a
 		return ""
 	}
 	desc := fmt.Sprintf("%d mana to %d squads", amount, restored)
-	fmt.Printf("Granted %s\n", desc)
+	if config.DEBUG_MODE {
+		fmt.Printf("Granted %s\n", desc)
+	}
 	return desc
 }
 
@@ -159,7 +173,9 @@ func grantProgressionPoints(
 		return ""
 	}
 	add(commanderID, amount, manager)
-	fmt.Printf("Granted %d %s to commander %d\n", amount, label, commanderID)
+	if config.DEBUG_MODE {
+		fmt.Printf("Granted %d %s to commander %d\n", amount, label, commanderID)
+	}
 	return fmt.Sprintf("%d %s", amount, label)
 }
 
