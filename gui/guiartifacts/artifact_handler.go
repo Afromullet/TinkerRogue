@@ -6,7 +6,6 @@ import (
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/powercore"
-	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 )
@@ -63,7 +62,7 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 		return
 	}
 
-	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.playerPos)
+	clickedPos := coords.MouseToLogicalPosition(mouseX, mouseY, *h.playerPos)
 	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, h.deps.CombatService.EntityManager)
 
 	if clickedSquadID == 0 {

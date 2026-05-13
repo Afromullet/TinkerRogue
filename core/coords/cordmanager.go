@@ -6,6 +6,17 @@ import "game_main/core/config"
 // CoordManager is a global coordinate manager instance.
 var CoordManager *CoordinateManager
 
+// ScreenInfo is the global screen-configuration singleton. Mutated by the main
+// loop and various setup paths to record current window dimensions and dungeon
+// extents; read by renderers, world generators, and the coordinate manager.
+var ScreenInfo = NewScreenData()
+
+// MouseToLogicalPosition converts mouse screen coordinates to logical tile coordinates.
+// Automatically handles both scrolling modes via the CoordinateManager.
+func MouseToLogicalPosition(mouseX, mouseY int, centerPos LogicalPosition) LogicalPosition {
+	return CoordManager.ScreenToLogical(mouseX, mouseY, &centerPos)
+}
+
 // MAP_SCROLLING_ENABLED controls whether the game uses viewport scrolling (true) or full map view (false).
 // When true: Uses config.DefaultScaleFactor scaling and centers viewport on player position
 // When false: Uses 1x scaling and shows entire map

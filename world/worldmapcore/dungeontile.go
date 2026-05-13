@@ -49,13 +49,7 @@ func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition, blocked bool,
 		Image:      img,
 		TileType:   tileType,
 		IsRevealed: isRevealed,
-		cm: graphics.ColorMatrix{
-			R:           0,
-			G:           0,
-			B:           0,
-			A:           0,
-			ApplyMatrix: false,
-		}}
+		cm: graphics.ColorMatrix{}}
 
 	return tile
 }

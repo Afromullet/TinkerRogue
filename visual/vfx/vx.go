@@ -101,8 +101,17 @@ func (e *BaseEffect) ResetVX() {
 	}
 }
 
+// Copy creates a shallow copy of the BaseEffect that shares the underlying
+// animator and renderer pointers with the original. This is intentional for
+// VisualEffectArea fan-out: all tiles in an AoE animate in lock-step, which
+// reads as a coherent "effect on the area" rather than independent per-tile
+// motion. The shared animator state (e.g. RandomAnimator.flickerTimer,
+// PulseAnimator.puffinessPhase) advances once per frame and is sampled by
+// every copy in the same frame.
+//
+// If a future animator needs independent state per copy, add an
+// Animator.Clone() method to the Animator interface and call it here.
 func (e *BaseEffect) Copy() VisualEffect {
-	// Shallow copy - animators and renderers are stateless except for frame counters
 	copy := *e
 	return &copy
 }

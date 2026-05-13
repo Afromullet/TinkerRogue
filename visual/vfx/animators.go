@@ -65,31 +65,6 @@ func (a *RandomAnimator) Reset() {
 	a.flickerTimer = 0
 }
 
-// SineShimmerAnimator implements sine-wave based shimmering (used by IceEffect2)
-type SineShimmerAnimator struct {
-	shimmerPhase float64
-	scaleBase    float64
-	scaleAmp     float64
-	shimmerSpeed float64
-}
-
-func (a *SineShimmerAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
-	a.shimmerPhase += a.shimmerSpeed
-
-	shimmerIntensity := 0.2 + 0.1*math.Sin(a.shimmerPhase)
-	scale := a.scaleBase + a.scaleAmp*math.Sin(a.shimmerPhase)
-
-	return AnimationState{
-		Scale:      scale,
-		Opacity:    1.0,
-		ColorShift: 1.0 + shimmerIntensity,
-	}
-}
-
-func (a *SineShimmerAnimator) Reset() {
-	a.shimmerPhase = 0
-}
-
 // PulseAnimator implements smooth pulsing behavior (used by cloud effects)
 type PulseAnimator struct {
 	puffinessPhase float64
@@ -111,77 +86,4 @@ func (a *PulseAnimator) Update(effect *BaseEffect, elapsed float64) AnimationSta
 
 func (a *PulseAnimator) Reset() {
 	a.puffinessPhase = 0
-}
-
-// MotionAnimator implements linear motion from start to end (used by projectiles)
-type MotionAnimator struct {
-	endX, endY         float64
-	currentX, currentY float64
-	speed              float64
-	completed          bool
-}
-
-func NewMotionAnimator(startX, startY, endX, endY int, speed float64) *MotionAnimator {
-	return &MotionAnimator{
-		endX:      float64(endX),
-		endY:      float64(endY),
-		currentX:  float64(startX),
-		currentY:  float64(startY),
-		speed:     speed,
-		completed: false,
-	}
-}
-
-func (a *MotionAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
-	if a.completed {
-		return AnimationState{Scale: 1.0, Opacity: 1.0}
-	}
-
-	dirX := a.endX - effect.startX
-	dirY := a.endY - effect.startY
-
-	length := math.Sqrt(dirX*dirX + dirY*dirY)
-	dirX /= length
-	dirY /= length
-
-	a.currentX += dirX * a.speed
-	a.currentY += dirY * a.speed
-
-	// Check if we've arrived at the target
-	if math.Abs(a.currentX-a.endX) < a.speed && math.Abs(a.currentY-a.endY) < a.speed {
-		a.completed = true
-		effect.completed = true
-	}
-
-	return AnimationState{
-		Scale:   1.0,
-		Opacity: 1.0,
-		OffsetX: a.currentX - effect.startX,
-		OffsetY: a.currentY - effect.startY,
-	}
-}
-
-func (a *MotionAnimator) Reset() {
-	a.currentX = 0
-	a.currentY = 0
-	a.completed = false
-}
-
-// WaveAnimator implements slow wave-based movement (used by sticky ground effects)
-type WaveAnimator struct {
-	waveOffset float64
-	waveSpeed  float64
-}
-
-func (a *WaveAnimator) Update(effect *BaseEffect, elapsed float64) AnimationState {
-	a.waveOffset += a.waveSpeed
-
-	return AnimationState{
-		Scale:   1.0,
-		Opacity: 0.8 + 0.2*math.Sin(a.waveOffset),
-	}
-}
-
-func (a *WaveAnimator) Reset() {
-	a.waveOffset = 0
 }

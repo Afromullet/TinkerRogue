@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"game_main/core/common"
 	"game_main/setup/savesystem"
-	"game_main/visual/graphics"
 	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 )
@@ -68,8 +67,8 @@ func (c *MapChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	}
 
 	gm := c.GameMap
-	width := graphics.ScreenInfo.DungeonWidth
-	height := graphics.ScreenInfo.DungeonHeight
+	width := coords.ScreenInfo.DungeonWidth
+	height := coords.ScreenInfo.DungeonHeight
 
 	chunkData := savedMapChunkData{
 		Width:  width,
@@ -157,8 +156,8 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			idx := coords.CoordManager.LogicalToIndex(logicalPos)
 			tileValues[idx] = worldmapcore.NewTile(
-				x*graphics.ScreenInfo.TileSize,
-				y*graphics.ScreenInfo.TileSize,
+				x*coords.ScreenInfo.TileSize,
+				y*coords.ScreenInfo.TileSize,
 				logicalPos, true, nil, worldmapcore.WALL, false,
 			)
 			gm.Tiles[idx] = &tileValues[idx]

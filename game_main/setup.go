@@ -13,8 +13,8 @@ import (
 	"game_main/campaign/raid"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
+	"game_main/core/coords"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 )
 
@@ -48,9 +48,9 @@ func setupUICore(g *Game) (*framework.GameModeCoordinator, *encounter.EncounterS
 		ECSManager:   &g.em,
 		PlayerData:   &g.playerData,
 		GameMap:      &g.gameMap,
-		ScreenWidth:  graphics.ScreenInfo.GetCanvasWidth(),
-		ScreenHeight: graphics.ScreenInfo.GetCanvasHeight(),
-		TileSize:     graphics.ScreenInfo.TileSize,
+		ScreenWidth:  coords.ScreenInfo.GetCanvasWidth(),
+		ScreenHeight: coords.ScreenInfo.GetCanvasHeight(),
+		TileSize:     coords.ScreenInfo.TileSize,
 		Queries:      framework.NewGUIQueries(&g.em),
 	}
 

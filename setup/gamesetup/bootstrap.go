@@ -18,7 +18,6 @@ import (
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	"game_main/testing/bootstrap"
-	"game_main/visual/graphics"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
 )
@@ -74,9 +73,9 @@ func (gb *GameBootstrap) InitializeCoreECS(em *common.EntityManager) {
 	common.GlobalPositionSystem = common.NewPositionSystem(em.World)
 
 	// Configure graphics system
-	graphics.ScreenInfo.ScaleFactor = 1
+	coords.ScreenInfo.ScaleFactor = 1
 	if coords.MAP_SCROLLING_ENABLED {
-		graphics.ScreenInfo.ScaleFactor = 3
+		coords.ScreenInfo.ScaleFactor = 3
 	}
 }
 

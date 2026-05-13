@@ -1,7 +1,6 @@
 package maprender
 
 import (
-	"game_main/visual/graphics"
 	"game_main/visual/rendering"
 	"game_main/core/coords"
 	"game_main/world/worldmapcore"
@@ -125,14 +124,14 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 
 	// Apply scaling if in viewport mode
 	if opts.CenterOn != nil {
-		scale := float32(graphics.ScreenInfo.ScaleFactor)
+		scale := float32(coords.ScreenInfo.ScaleFactor)
 		tileW *= scale
 		tileH *= scale
 	}
 
 	// Get color values (default to white if no color matrix)
 	colorR, colorG, colorB, colorA := float32(1), float32(1), float32(1), float32(1)
-	if !tile.GetColorMatrix().IsEmpty() {
+	if !tile.GetColorMatrix().IsTransparent() {
 		cm := tile.GetColorMatrix()
 		colorR, colorG, colorB, colorA = cm.R, cm.G, cm.B, cm.A
 	}
@@ -151,15 +150,15 @@ func (r *TileRenderer) addTileToBatch(x, y int, opts RenderOptions, bounds *Rend
 func (r *TileRenderer) calculateViewportPosition(tile *worldmapcore.Tile, center *coords.LogicalPosition, bounds *RenderedBounds) (float32, float32) {
 	// Convert pixel position to logical position
 	tileLogicalPos := coords.LogicalPosition{
-		X: tile.PixelX / graphics.ScreenInfo.TileSize,
-		Y: tile.PixelY / graphics.ScreenInfo.TileSize,
+		X: tile.PixelX / coords.ScreenInfo.TileSize,
+		Y: tile.PixelY / coords.ScreenInfo.TileSize,
 	}
 
 	// Use unified coordinate transformation - handles scrolling mode and viewport centering
 	screenX, screenY := coords.CoordManager.LogicalToScreen(tileLogicalPos, center)
 
 	// Apply scaling
-	scale := float32(graphics.ScreenInfo.ScaleFactor)
+	scale := float32(coords.ScreenInfo.ScaleFactor)
 	tileBounds := tile.Image.Bounds()
 	tileWidth := float32(tileBounds.Dx()) * scale
 
@@ -191,13 +190,13 @@ func (r *TileRenderer) calculateBounds(opts RenderOptions) RenderedBounds {
 
 	return RenderedBounds{
 		MinX: 0,
-		MaxX: graphics.ScreenInfo.DungeonWidth - 1,
+		MaxX: coords.ScreenInfo.DungeonWidth - 1,
 		MinY: 0,
-		MaxY: graphics.ScreenInfo.DungeonHeight - 1,
+		MaxY: coords.ScreenInfo.DungeonHeight - 1,
 	}
 }
 
 func (r *TileRenderer) inMapBounds(x, y int) bool {
-	return x >= 0 && x < graphics.ScreenInfo.DungeonWidth &&
-		y >= 0 && y < graphics.ScreenInfo.DungeonHeight
+	return x >= 0 && x < coords.ScreenInfo.DungeonWidth &&
+		y >= 0 && y < coords.ScreenInfo.DungeonHeight
 }

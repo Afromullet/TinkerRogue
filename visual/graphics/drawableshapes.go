@@ -5,16 +5,17 @@ import (
 	"game_main/core/coords"
 )
 
-// ShapeSize determines the scale of shape dimensions
+// ShapeSize determines the scale of shape dimensions.
+// Only SmallShape is currently used by any call site; the type is preserved
+// for future expansion (Medium/Large quality tiers were removed pending a
+// concrete need).
 type ShapeSize int
 
 const (
 	SmallShape ShapeSize = iota
-	MediumShape
-	LargeShape
 )
 
-// ===================s=========================================================
+// ============================================================================
 // SHAPE DIRECTION SYSTEM (preserved from original)
 // ============================================================================
 
@@ -28,42 +29,44 @@ const (
 	LineDiagonalUpRight
 	LineDiagonalDownRight
 	LineDiagonalUpLeft
-	LinedDiagonalDownLeft
-	NoDirection
+	LineDiagonalDownLeft
+	NoDirection // Returned by BaseShape.GetDirection when Direction is nil. Callers should prefer CanRotate() to detect direction-less shapes.
 )
 
-var AllDirections = []ShapeDirection{
+// allDirections is an iteration order for rotation helpers. Internal to this
+// file; external callers should use RotateRight / RotateLeft.
+var allDirections = []ShapeDirection{
 	LineUp,
 	LineDiagonalUpRight,
 	LineRight,
 	LineDiagonalDownRight,
 	LineDown,
-	LinedDiagonalDownLeft,
+	LineDiagonalDownLeft,
 	LineLeft,
 	LineDiagonalUpLeft,
 }
 
 func RotateRight(dir ShapeDirection) ShapeDirection {
-	for i, direction := range AllDirections {
+	for i, direction := range allDirections {
 		if direction == dir {
 			newDir := i + 1
-			if newDir >= len(AllDirections) {
+			if newDir >= len(allDirections) {
 				newDir = 0
 			}
-			return AllDirections[newDir]
+			return allDirections[newDir]
 		}
 	}
 	return dir
 }
 
 func RotateLeft(dir ShapeDirection) ShapeDirection {
-	for i, direction := range AllDirections {
+	for i, direction := range allDirections {
 		if direction == dir {
 			newDir := i - 1
 			if newDir < 0 {
-				newDir = len(AllDirections) - 1
+				newDir = len(allDirections) - 1
 			}
-			return AllDirections[newDir]
+			return allDirections[newDir]
 		}
 	}
 	return dir
@@ -183,15 +186,7 @@ func (s *BaseShape) CanRotate() bool {
 // ============================================================================
 
 func NewCircle(pixelX, pixelY int, size ShapeSize) *BaseShape {
-	var radius int
-	switch size {
-	case SmallShape:
-		radius = common.RandomInt(3) // 0-2 (matches current system)
-	case MediumShape:
-		radius = common.RandomInt(4) // 0-3
-	case LargeShape:
-		radius = common.RandomInt(9) // 0-8
-	}
+	radius := common.RandomInt(3) // 0-2
 
 	return &BaseShape{
 		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
@@ -202,15 +197,7 @@ func NewCircle(pixelX, pixelY int, size ShapeSize) *BaseShape {
 }
 
 func NewSquare(pixelX, pixelY int, shapeSize ShapeSize) *BaseShape {
-	var size int
-	switch shapeSize {
-	case SmallShape:
-		size = common.RandomInt(2) + 1 // 1-2 (matches current system)
-	case MediumShape:
-		size = common.RandomInt(3) + 1 // 1-3
-	case LargeShape:
-		size = common.RandomInt(4) + 1 // 1-4
-	}
+	size := common.RandomInt(2) + 1 // 1-2
 
 	return &BaseShape{
 		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
@@ -223,18 +210,8 @@ func NewSquare(pixelX, pixelY int, shapeSize ShapeSize) *BaseShape {
 }
 
 func NewRectangle(pixelX, pixelY int, size ShapeSize) *BaseShape {
-	var width, height int
-	switch size {
-	case SmallShape:
-		width = common.RandomInt(5)  // 0-4 (matches current system)
-		height = common.RandomInt(3) // 0-2
-	case MediumShape:
-		width = common.RandomInt(7)  // 0-6
-		height = common.RandomInt(5) // 0-4
-	case LargeShape:
-		width = common.RandomInt(9)  // 0-8
-		height = common.RandomInt(7) // 0-6
-	}
+	width := common.RandomInt(5)  // 0-4
+	height := common.RandomInt(3) // 0-2
 
 	return &BaseShape{
 		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
@@ -247,15 +224,7 @@ func NewRectangle(pixelX, pixelY int, size ShapeSize) *BaseShape {
 }
 
 func NewLine(pixelX, pixelY int, direction ShapeDirection, size ShapeSize) *BaseShape {
-	var length int
-	switch size {
-	case SmallShape:
-		length = common.RandomInt(3) + 1 // 1-3 (matches current system)
-	case MediumShape:
-		length = common.RandomInt(5) + 1 // 1-5
-	case LargeShape:
-		length = common.RandomInt(7) + 1 // 1-7
-	}
+	length := common.RandomInt(3) + 1 // 1-3
 
 	return &BaseShape{
 		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
@@ -267,15 +236,7 @@ func NewLine(pixelX, pixelY int, direction ShapeDirection, size ShapeSize) *Base
 }
 
 func NewCone(pixelX, pixelY int, direction ShapeDirection, size ShapeSize) *BaseShape {
-	var length int
-	switch size {
-	case SmallShape:
-		length = common.RandomInt(3) + 1 // 1-3
-	case MediumShape:
-		length = common.RandomInt(5) + 1 // 1-5
-	case LargeShape:
-		length = common.RandomInt(7) + 1 // 1-7
-	}
+	length := common.RandomInt(3) + 1 // 1-3
 
 	return &BaseShape{
 		Position:     coords.PixelPosition{X: pixelX, Y: pixelY},
@@ -388,50 +349,9 @@ func DirectionToCoords(direction ShapeDirection) (int, int) {
 		return -1, -1
 	case LineDiagonalDownRight:
 		return 1, 1
-	case LinedDiagonalDownLeft:
+	case LineDiagonalDownLeft:
 		return -1, 1
 	default:
 		return 1, 0 // Default to right
 	}
-}
-
-// GetLineTo creates a line from start position to end position
-func GetLineTo(startPos coords.LogicalPosition, endPos coords.LogicalPosition) []int {
-	startPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: startPos.X, Y: startPos.Y})
-	endPixelPos := coords.CoordManager.LogicalToPixel(coords.LogicalPosition{X: endPos.X, Y: endPos.Y})
-
-	// Calculate direction and length
-	deltaX := endPixelPos.X - startPixelPos.X
-	deltaY := endPixelPos.Y - startPixelPos.Y
-
-	// Simple line drawing using step-based approach
-	var indices []int
-	steps := max(abs(deltaX), abs(deltaY))
-
-	if steps == 0 {
-		return []int{coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: startPos.X, Y: startPos.Y})}
-	}
-
-	for i := 0; i <= steps; i++ {
-		x := startPixelPos.X + (deltaX*i)/steps
-		y := startPixelPos.Y + (deltaY*i)/steps
-		logical := coords.CoordManager.PixelToLogical(coords.PixelPosition{X: x, Y: y})
-		indices = append(indices, coords.CoordManager.LogicalToIndex(logical))
-	}
-
-	return indices
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }

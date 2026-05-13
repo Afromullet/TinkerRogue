@@ -157,7 +157,7 @@ func (h *SpellCastingHandler) HandleSingleTargetClick(mouseX, mouseY int) {
 		return
 	}
 
-	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
+	clickedPos := coords.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
 	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, h.deps.ECSManager)
 
 	if clickedSquadID == 0 {
@@ -185,7 +185,7 @@ func (h *SpellCastingHandler) HandleAoETargetingFrame(mouseX, mouseY int) {
 
 	// Convert mouse to logical via global CoordManager (correct screen dimensions),
 	// then back to pixel for shape positioning.
-	logicalPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
+	logicalPos := coords.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
 	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 
 	// Update shape position and get indices
@@ -193,7 +193,7 @@ func (h *SpellCastingHandler) HandleAoETargetingFrame(mouseX, mouseY int) {
 	indices := h.activeShape.GetIndices()
 
 	// Apply spell overlay color to each tile
-	spellOverlay := graphics.ColorMatrix{R: 0.8, G: 0.2, B: 0.8, A: 0.4, ApplyMatrix: true}
+	spellOverlay := graphics.ColorMatrix{R: 0.8, G: 0.2, B: 0.8, A: 0.4}
 	for _, idx := range indices {
 		if idx >= 0 && idx < h.deps.GameMap.NumTiles {
 			h.deps.GameMap.ApplyColorMatrixToIndex(idx, spellOverlay)
@@ -211,7 +211,7 @@ func (h *SpellCastingHandler) HandleAoEConfirmClick(mouseX, mouseY int) {
 
 	// Convert mouse to logical via global CoordManager (correct screen dimensions),
 	// then back to pixel for shape positioning.
-	logicalPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
+	logicalPos := coords.MouseToLogicalPosition(mouseX, mouseY, *h.deps.PlayerPos)
 	pixelPos := coords.CoordManager.LogicalToPixel(logicalPos)
 	h.activeShape.UpdatePosition(pixelPos.X, pixelPos.Y)
 
@@ -335,12 +335,12 @@ func triggerSpellVX(spell *templates.SpellDefinition, targetSquadIDs []ecs.Entit
 
 	// AoE: one visual effect area at the clicked position
 	if spell.IsAoE() && spell.Shape != nil && targetPos != nil {
-		pixelX := targetPos.X * graphics.ScreenInfo.TileSize
-		pixelY := targetPos.Y * graphics.ScreenInfo.TileSize
+		pixelX := targetPos.X * coords.ScreenInfo.TileSize
+		pixelY := targetPos.Y * coords.ScreenInfo.TileSize
 		shape := createAoEShape(spell)
 		shape.UpdatePosition(pixelX, pixelY)
 		vx := vfx.CreateVisualEffectByType(spell.VXType, 0, 0, spell.VXDuration)
-		area := vfx.NewVisualEffectArea(playerPos.X, playerPos.Y, shape, vx)
+		area := vfx.NewVisualEffectArea(playerPos.X, playerPos.Y, shape.GetIndices(), vx)
 		vfx.AddVXArea(area)
 		return
 	}

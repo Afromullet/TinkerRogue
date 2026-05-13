@@ -11,7 +11,6 @@ import (
 	"game_main/tactical/squads/squadservices"
 
 	"game_main/visual/combatrender"
-	"game_main/visual/graphics"
 	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
@@ -176,7 +175,7 @@ func (sdm *SquadDeploymentMode) Update(deltaTime float64) error {
 		playerPos := *sdm.Context.PlayerData.Pos
 
 		// Convert mouse position to logical position (handles both scrolling modes)
-		clickedPos := graphics.MouseToLogicalPosition(sdm.pendingMouseX, sdm.pendingMouseY, playerPos)
+		clickedPos := coords.MouseToLogicalPosition(sdm.pendingMouseX, sdm.pendingMouseY, playerPos)
 
 		// Place the squad at the clicked position
 		sdm.placeSquadAt(sdm.selectedSquadID, clickedPos)

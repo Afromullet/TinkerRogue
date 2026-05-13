@@ -2,7 +2,6 @@ package worldgen
 
 import (
 	"game_main/core/common"
-	"game_main/visual/graphics"
 	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
@@ -64,8 +63,8 @@ func CreateEmptyTiles(width, height int, images worldmapcore.TileImageSet) []*wo
 
 			// Initialize tile directly in the contiguous slice
 			tileValues[index] = worldmapcore.NewTile(
-				x*graphics.ScreenInfo.TileSize,
-				y*graphics.ScreenInfo.TileSize,
+				x*coords.ScreenInfo.TileSize,
+				y*coords.ScreenInfo.TileSize,
 				logicalPos, true, wallImg, worldmapcore.WALL, false,
 			)
 
@@ -268,8 +267,8 @@ func ConvertTerrainMapToTiles(result *worldmapcore.GenerationResult, terrainMap 
 		for x := 0; x < width; x++ {
 			idx := PositionToIndex(x, y)
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			pixelX := x * graphics.ScreenInfo.TileSize
-			pixelY := y * graphics.ScreenInfo.TileSize
+			pixelX := x * coords.ScreenInfo.TileSize
+			pixelY := y * coords.ScreenInfo.TileSize
 
 			result.BiomeMap[idx] = biome
 

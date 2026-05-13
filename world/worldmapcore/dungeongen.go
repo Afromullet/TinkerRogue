@@ -63,8 +63,8 @@ func NewGameMap(gen MapGenerator) GameMap {
 
 	// Generate the map
 	result := gen.Generate(
-		graphics.ScreenInfo.DungeonWidth,
-		graphics.ScreenInfo.DungeonHeight,
+		coords.ScreenInfo.DungeonWidth,
+		coords.ScreenInfo.DungeonHeight,
 		images,
 	)
 
@@ -97,8 +97,8 @@ func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
 	}
 
 	// Fallback for non-room generators: use center of map
-	centerX := graphics.ScreenInfo.DungeonWidth / 2
-	centerY := graphics.ScreenInfo.DungeonHeight / 2
+	centerX := coords.ScreenInfo.DungeonWidth / 2
+	centerY := coords.ScreenInfo.DungeonHeight / 2
 
 	// If center is not walkable, find first valid position
 	logicalPos := coords.LogicalPosition{X: centerX, Y: centerY}
@@ -212,7 +212,7 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 
 func (gameMap GameMap) InBounds(x, y int) bool {
 
-	if x < 0 || x >= graphics.ScreenInfo.DungeonWidth || y < 0 || y >= graphics.ScreenInfo.DungeonHeight {
+	if x < 0 || x >= coords.ScreenInfo.DungeonWidth || y < 0 || y >= coords.ScreenInfo.DungeonHeight {
 		return false
 	}
 	return true

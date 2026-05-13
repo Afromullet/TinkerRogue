@@ -1,8 +1,8 @@
 package combatinput
 
 import (
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatstate"
-	"game_main/visual/graphics"
 )
 
 func (cih *CombatInputHandler) ToggleInspectMode() {
@@ -24,7 +24,7 @@ func (cih *CombatInputHandler) handleInspectClick(mouseX, mouseY int) {
 		return
 	}
 
-	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
+	clickedPos := coords.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	if clickedSquadID == 0 {

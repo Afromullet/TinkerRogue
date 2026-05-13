@@ -2,7 +2,6 @@ package vfx
 
 import (
 	"game_main/core/config"
-	"image/color"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -62,19 +61,6 @@ func NewIceEffect(startX, startY int, duration int) VisualEffect {
 	})
 }
 
-// NewIceEffect2 creates an ice effect with sine-wave shimmering.
-func NewIceEffect2(x, y int, duration int) VisualEffect {
-	return NewEffect(x, y, duration, EffectConfig{
-		ImagePath: config.AssetPath("effects/frost0.png"),
-		Animator: &SineShimmerAnimator{
-			scaleBase:    1.0,
-			scaleAmp:     0.05,
-			shimmerSpeed: 0.1,
-		},
-		Renderer: &ImageRenderer{},
-	})
-}
-
 // NewCloudEffect creates a cloud effect with pulsing animation.
 func NewCloudEffect(startX, startY int, duration int) VisualEffect {
 	return NewEffect(startX, startY, duration, EffectConfig{
@@ -104,33 +90,6 @@ func NewElectricityEffect(startX, startY int, duration int) VisualEffect {
 	})
 }
 
-// NewStickyGroundEffect creates a sticky ground effect with wave animation.
-func NewStickyGroundEffect(startX, startY int, duration int) VisualEffect {
-	return NewEffect(startX, startY, duration, EffectConfig{
-		Animator: &WaveAnimator{
-			waveOffset: 0.0,
-			waveSpeed:  0.01,
-		},
-		Renderer: NewProceduralRenderer(color.RGBA{0x90, 0xEE, 0x90, 0xFF}),
-	})
-}
-
-// NewProjectile creates a projectile effect that moves from start to end position.
-func NewProjectile(startX, startY, endX, endY int) VisualEffect {
-	return NewEffect(startX, startY, 999999, EffectConfig{
-		ImagePath: config.AssetPath("effects/arrow3.png"),
-		Animator:  NewMotionAnimator(startX, startY, endX, endY, 5.0),
-		Renderer:  &ProjectileRenderer{endX: float64(endX), endY: float64(endY)},
-	})
-}
-
-// NewElectricityEffectNoImage creates a line-based electricity effect.
-func NewElectricityEffectNoImage(startX, startY int, duration int, numSegments int) VisualEffect {
-	return NewEffect(startX, startY, duration, EffectConfig{
-		Renderer: NewLineSegmentRenderer(startX, startY, numSegments),
-	})
-}
-
 // CreateVisualEffectByType creates a visual effect by type name string.
 // Decouples callers from needing to know the specific effect constructors.
 func CreateVisualEffectByType(vxType string, x, y, duration int) VisualEffect {
@@ -146,11 +105,4 @@ func CreateVisualEffectByType(vxType string, x, y, duration int) VisualEffect {
 	default:
 		return NewFireEffect(x, y, duration)
 	}
-}
-
-// NewElectricArc creates an electric arc effect between two points.
-func NewElectricArc(startX, startY, endX, endY int, duration int) VisualEffect {
-	return NewEffect(startX, startY, duration, EffectConfig{
-		Renderer: NewElectricArcRenderer(startX, startY, endX, endY),
-	})
 }

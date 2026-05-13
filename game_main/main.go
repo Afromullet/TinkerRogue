@@ -15,12 +15,11 @@ import (
 	"game_main/input"
 	"game_main/campaign/overworld/core"
 	"game_main/core/config"
+	"game_main/core/coords"
 	"game_main/setup/gamesetup"
-	"game_main/visual/graphics"
 	"game_main/visual/maprender"
 	"game_main/visual/rendering"
 	"game_main/visual/vfx"
-	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 	"log"
 	"math"
@@ -120,8 +119,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	// Update screen dimensions
-	graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
-	graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
+	coords.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
+	coords.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
 
 	// Phase 1: Render tactical map only when in tactical context
@@ -147,8 +146,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 // It calculates canvas size based on tile size, dungeon dimensions, and device scale.
 func (g *Game) Layout(w, h int) (int, int) {
 	scale := ebiten.DeviceScaleFactor()
-	canvasWidth := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonWidth) * scale))
-	canvasHeight := int(math.Ceil(float64(graphics.ScreenInfo.TileSize*graphics.ScreenInfo.DungeonHeight) * scale))
+	canvasWidth := int(math.Ceil(float64(coords.ScreenInfo.TileSize*coords.ScreenInfo.DungeonWidth) * scale))
+	canvasHeight := int(math.Ceil(float64(coords.ScreenInfo.TileSize*coords.ScreenInfo.DungeonHeight) * scale))
 	return canvasWidth + config.DefaultStaticUIOffset, canvasHeight
 }
 

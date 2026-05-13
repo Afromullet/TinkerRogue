@@ -5,7 +5,6 @@ package rendering
 
 import (
 	"game_main/core/common"
-	"game_main/visual/graphics"
 	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
@@ -58,7 +57,7 @@ func processRenderablesCore(cache *RenderingCache, gameMap worldmapcore.GameMap,
 			}
 			logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
 			screenX, screenY := coords.CoordManager.LogicalToScreen(logicalPos, vp.centerPos)
-			scale := float32(graphics.ScreenInfo.ScaleFactor)
+			scale := float32(coords.ScreenInfo.ScaleFactor)
 			dstX = float32(screenX)
 			dstY = float32(screenY)
 			dstW = srcW * scale

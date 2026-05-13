@@ -11,7 +11,6 @@ import (
 	"game_main/gui/guiinspect"
 	"game_main/gui/guispells"
 	"game_main/tactical/combat/combatstate"
-	"game_main/visual/graphics"
 
 	"github.com/bytearena/ecs"
 )
@@ -246,7 +245,7 @@ func (cih *CombatInputHandler) handleMovementClick(mouseX, mouseY int) {
 		return
 	}
 
-	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
+	clickedPos := coords.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 
 	validTiles := cih.deps.CombatService.MovementSystem.GetValidMovementTiles(cih.deps.BattleState.SelectedSquadID)
 	if validTiles == nil {
@@ -277,7 +276,7 @@ func (cih *CombatInputHandler) handleSquadClick(mouseX, mouseY int) {
 		return
 	}
 
-	clickedPos := graphics.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
+	clickedPos := coords.MouseToLogicalPosition(mouseX, mouseY, *cih.playerPos)
 	clickedSquadID := combatstate.GetSquadAtPosition(clickedPos, cih.deps.Queries.ECSManager)
 
 	if clickedSquadID == 0 {

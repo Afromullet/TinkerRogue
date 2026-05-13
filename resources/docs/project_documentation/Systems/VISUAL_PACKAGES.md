@@ -107,40 +107,23 @@ Key lifecycle rules:
 
 ### Animators
 
-`animators.go` provides five concrete `Animator` implementations. All implement `Update(effect *BaseEffect, elapsed float64) AnimationState` and `Reset()`.
+`animators.go` provides two concrete `Animator` implementations. All implement `Update(effect *BaseEffect, elapsed float64) AnimationState` and `Reset()`.
 
 | Type | Behavior | Used by |
 |---|---|---|
 | `RandomAnimator` | Randomizes scale, opacity, brightness, color shift, and positional jitter each frame within configured ranges. Zero-value ranges are skipped. | Fire, ice, electricity effects |
-| `SineShimmerAnimator` | Uses a `math.Sin` phase to produce smooth shimmering on scale and color shift channels. | `NewIceEffect2` |
 | `PulseAnimator` | Two independent sine waves: one for scale, one for opacity, advancing at configurable speeds. | Cloud effects |
-| `MotionAnimator` | Moves a position linearly from start to end at a fixed speed. Marks the parent `BaseEffect.completed` when within one step of the target. | Projectiles |
-| `WaveAnimator` | Slow sine-wave modulation on opacity only. | Sticky ground effects |
 
 `RandomAnimator` is the most general. Its zero-value handling means callers configure only the channels they need and omit the rest — no interface proliferation for each combination.
 
-`MotionAnimator` requires a constructor (`NewMotionAnimator`) because it carries mutable current-position state:
-
-```go
-func NewMotionAnimator(startX, startY, endX, endY int, speed float64) *MotionAnimator
-```
-
-It is the only animator that can terminate an effect through a mechanism other than duration expiry.
-
 ### Renderers
 
-`renderers.go` provides six concrete `Renderer` implementations. All implement `Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState)`.
+`renderers.go` provides two concrete `Renderer` implementations. All implement `Draw(screen *ebiten.Image, effect *BaseEffect, state AnimationState)`.
 
 | Type | Technique | Notes |
 |---|---|---|
 | `ImageRenderer` | `DrawImage` with `GeoM` scale/translate and `ColorM` adjustments for brightness and color shift | General purpose; used by most image-based effects |
-| `ProjectileRenderer` | `DrawImage` with `Atan2`-based rotation and center-pivot translation | Computes angle from `effect.startY` to `endY`, rotating the sprite to face the direction of travel |
 | `CloudRenderer` | `DrawImage` called three times: main layer plus two scaled-down layers at 30% opacity for "fluffiness" | Deliberately multi-draw; the layering produces a volumetric illusion |
-| `LineSegmentRenderer` | `ebitenutil.DrawLine` for each pre-generated segment; jitters endpoints each frame | Procedural, no image asset; segments allocated at construction |
-| `ElectricArcRenderer` | `vector.StrokeLine` with thickness for each segment; re-generates 10 segments from start to end each frame | Procedural arc from one point to another; randomizes color and thickness |
-| `ProceduralRenderer` | `DrawImage` of freshly created circle images in a rotating formation | Used for sticky ground; least GPU-friendly due to per-frame image creation |
-
-`NewLineSegmentRenderer` and `NewElectricArcRenderer` both require constructors because they carry geometry state.
 
 ### Effect Factory: vxfactory
 
@@ -168,13 +151,8 @@ Named constructors and their configurations:
 |---|---|---|---|
 | `NewFireEffect` | `effects/cloud_fire2.png` | `RandomAnimator` (scale, opacity, jitter) | `ImageRenderer` |
 | `NewIceEffect` | `effects/frost0.png` | `RandomAnimator` (scale, opacity, color shift) | `ImageRenderer` |
-| `NewIceEffect2` | `effects/frost0.png` | `SineShimmerAnimator` | `ImageRenderer` |
 | `NewCloudEffect` | `effects/cloud_poison0.png` | `PulseAnimator` | `CloudRenderer` |
 | `NewElectricityEffect` | `effects/zap0.png` | `RandomAnimator` (scale, brightness, jitter) | `ImageRenderer` |
-| `NewStickyGroundEffect` | none | `WaveAnimator` | `ProceduralRenderer` |
-| `NewProjectile` | `effects/arrow3.png` | `MotionAnimator` | `ProjectileRenderer` |
-| `NewElectricityEffectNoImage` | none | none | `LineSegmentRenderer` |
-| `NewElectricArc` | none | none | `ElectricArcRenderer` |
 
 `CreateVisualEffectByType(vxType string, x, y, duration int) VisualEffect` is a string-dispatch wrapper for the four main spell effect types ("fire", "ice", "electricity", "cloud"). This decouples the spell system from knowing specific constructor names; the spell template specifies the effect type as a string.
 
@@ -201,10 +179,10 @@ The handler's game-loop integration methods are:
 
 These two methods are called directly from `game_main/main.go`'s `Update` and `Draw` functions respectively.
 
-**`VisualEffectArea`** applies one effect to every tile covered by a `TileBasedShape`. Construction takes a prototype `VisualEffect`; it calls `Copy()` to stamp one instance per tile, each positioned at the correct screen coordinate:
+**`VisualEffectArea`** applies one effect to every tile covered by a shape. Construction takes a prototype `VisualEffect`; it calls `Copy()` to stamp one instance per tile, each positioned at the correct screen coordinate:
 
 ```go
-func NewVisualEffectArea(centerX, centerY int, shape TileBasedShape, vx VisualEffect) VisualEffectArea
+func NewVisualEffectArea(centerX, centerY int, shape *graphics.BaseShape, vx VisualEffect) VisualEffectArea
 ```
 
 Completion is determined by the first element of the effects slice — when that is done, the whole area is considered done. This works because all copies have the same duration and start time.
@@ -213,21 +191,7 @@ Completion is determined by the first element of the effects slice — when that
 
 `drawableshapes.go` defines the geometry system that determines which map tiles are affected by area spells and how visual effects are positioned across them.
 
-**`TileBasedShape`** interface:
-
-```go
-type TileBasedShape interface {
-    GetIndices() []int
-    UpdatePosition(pixelX, pixelY int)
-    StartPositionPixels() (int, int)
-    GetDirection() ShapeDirection
-    CanRotate() bool
-}
-```
-
-`GetIndices()` is the core method. It returns flat tile-array indices (using `coords.CoordManager.LogicalToIndex`) for all tiles covered by the shape at its current position. These indices are used both for visual effect placement (in `VisualEffectArea`) and for applying `ColorMatrix` overlays to map tiles (in the spell targeting handler).
-
-**`BaseShape`** is the single concrete implementation, parameterized by a `BasicShapeType` enum:
+**`BaseShape`** is the concrete shape type, parameterized by a `BasicShapeType` enum:
 
 | `BasicShapeType` | Fields used | Algorithm |
 |---|---|---|
@@ -235,13 +199,19 @@ type TileBasedShape interface {
 | `Rectangular` | `Width`, `Height` | Nested loop over `[-halfW, halfW] x [-halfH, halfH]` |
 | `Linear` | `Size` (length), `Direction` | Step along a direction vector |
 
-Factory functions create `BaseShape` values with size randomized within a `ShapeSize` category (Small, Medium, Large). This randomization happens at construction time, not per-frame, so the shape is stable once created.
+Key methods:
+
+- `GetIndices() []int` — returns flat tile-array indices (via `coords.CoordManager.LogicalToIndex`) for all tiles covered by the shape at its current position. Used both for visual effect placement and for applying `ColorMatrix` overlays to map tiles.
+- `UpdatePosition(pixelX, pixelY int)` — moves the shape's pixel-space center.
+- `StartPositionPixels() (int, int)` — returns the current pixel-space center.
+- `GetDirection() ShapeDirection` — returns the direction of a linear shape (or `NoDirection` if the shape has no direction; use `CanRotate()` to test).
+- `CanRotate() bool` — reports whether the shape has a direction.
+
+Factory functions create `BaseShape` values with size randomized within a `ShapeSize` category. Currently only `SmallShape` is used at any call site; the type is preserved for future expansion. This randomization happens at construction time, not per-frame, so the shape is stable once created.
 
 **`ShapeDirection`** is an 8-way compass enum (up, down, left, right, four diagonals). `RotateRight` and `RotateLeft` advance the direction through a fixed ordered slice, implementing rotation as index arithmetic. `DirectionToCoords` maps a direction to `(deltaX, deltaY)` unit vectors.
 
-**`ShapeConfig`** is a JSON-deserializable struct used by the spell template system to describe shapes declaratively. `CreateShapeFromConfig` converts it to a `TileBasedShape`.
-
-`GetLineTo(start, end LogicalPosition) []int` is a standalone helper that uses pixel-space interpolation to compute a line of tile indices between two logical positions. It is used for line-of-sight and line-based spell targeting rather than for instancing `BaseShape`.
+**`ShapeConfig`** is a JSON-deserializable struct used by the spell template system to describe shapes declaratively. `CreateShapeFromConfig` converts it to a `*BaseShape`.
 
 ### ColorMatrix
 
@@ -249,12 +219,11 @@ Factory functions create `BaseShape` values with size randomized within a `Shape
 
 ```go
 type ColorMatrix struct {
-    R, G, B, A  float32
-    ApplyMatrix bool
+    R, G, B, A float32
 }
 ```
 
-`ApplyMatrix` is a gate flag. When false, the tile renderer skips color application entirely (the zero value of the struct means "no tint"). When true, the RGBA values are passed directly to `QuadBatch.Add` as color modulation values.
+The zero-value matrix (`R=G=B=A=0`) means "no tint applied." The tile renderer gates on `IsTransparent()`, which reports true exactly when all four channels are zero, and skips color application in that case. Any non-zero channel triggers the full color path.
 
 The file provides nine gradient constructors, one for each semantic use in the tactical map overlay system:
 
@@ -272,20 +241,11 @@ The file provides nine gradient constructors, one for each semantic use in the t
 
 Two pre-constructed constants, `GreenColorMatrix` and `RedColorMatrix`, are defined for use without an opacity parameter.
 
-`NewEmptyMatrix()` creates a zero-value matrix with `ApplyMatrix: true`, used to clear a previously applied tint.
+`NewEmptyMatrix()` returns a zero-value matrix, used to clear a previously applied tint.
 
-### Global Aliases
+### Shared Helpers
 
-`graphictypes.go` re-exports two values from `world/coords` under the `graphics` package name:
-
-```go
-var ScreenInfo = coords.NewScreenData()
-var CoordManager = coords.CoordManager
-```
-
-`MouseToLogicalPosition` provides a single call site for converting mouse screen coordinates to logical tile coordinates, delegating to `coords.CoordManager.ScreenToLogical`.
-
-These aliases exist so that GUI and rendering code can import only `visual/graphics` rather than also importing `world/coords` for these common operations.
+Screen configuration (`coords.ScreenInfo`), the global coordinate manager (`coords.CoordManager`), and the mouse-to-logical helper (`coords.MouseToLogicalPosition`) all live in the `core/coords` package. Callers across rendering, GUI, and world generation import `core/coords` directly. Previous `graphics`-package aliases for these symbols have been removed; see `core/coords/cordmanager.go`.
 
 ---
 
@@ -364,7 +324,7 @@ The renderer uses a lazy-rebuild strategy. Batches are rebuilt only when:
 
 After rebuilding, the same batches are re-drawn every frame without re-examining individual tiles. This is correct because tile images do not change per frame; only positions and colors change, and positions only change when the viewport moves.
 
-When viewport mode is active (`CenterOn != nil`), screen positions are computed via `coords.CoordManager.LogicalToScreen(tileLogicalPos, center)` and the tile dimensions are scaled by `graphics.ScreenInfo.ScaleFactor`. In full-map mode, tiles use their stored `PixelX/PixelY` values directly with no scaling.
+When viewport mode is active (`CenterOn != nil`), screen positions are computed via `coords.CoordManager.LogicalToScreen(tileLogicalPos, center)` and the tile dimensions are scaled by `coords.ScreenInfo.ScaleFactor`. In full-map mode, tiles use their stored `PixelX/PixelY` values directly with no scaling.
 
 `RenderedBounds` captures the edges of what was drawn for use by the UI layout system:
 
@@ -412,7 +372,7 @@ type RenderingCache struct {
 
 `GetOrCreateSpriteBatch` lazily creates a batch for an image the first time it is needed. `ClearSpriteBatches` resets all batches at the start of each frame. `DrawSpriteBatches` issues one draw call per unique image.
 
-`RefreshRenderablesView` recreates the view from scratch. This is necessary after batch entity disposal: the ECS library may not immediately remove disposed entities from existing views, so the view must be rebuilt to ensure stale entities do not appear in the next render pass.
+`RenderablesView` is created once at `NewRenderingCache` and is automatically maintained by the bytearena/ecs library when components are added or removed — disposed entities drop out without explicit refresh.
 
 ### Renderable ECS Component
 
@@ -440,7 +400,7 @@ func ProcessRenderablesInSquare(gameMap worldmap.GameMap, screen *ebiten.Image,
 
 `ProcessRenderables` renders all entities in full-map mode: no bounds check, sprites drawn at their tile's stored pixel coordinates without scaling.
 
-`ProcessRenderablesInSquare` renders only entities whose logical position falls within a square region of `squareSize` tiles around `playerPos`. Entities outside that region are skipped. Positions within the region are converted via `coords.CoordManager.LogicalToScreen` and scaled by `graphics.ScreenInfo.ScaleFactor`.
+`ProcessRenderablesInSquare` renders only entities whose logical position falls within a square region of `squareSize` tiles around `playerPos`. Entities outside that region are skipped. Positions within the region are converted via `coords.CoordManager.LogicalToScreen` and scaled by `coords.ScreenInfo.ScaleFactor`.
 
 The internal `viewportParams` struct carries the filtering parameters and selects which code path to use:
 
@@ -628,8 +588,8 @@ graphics.VXHandler.UpdateVisualEffects()
 In `Draw()`:
 ```go
 // Update screen dimensions
-graphics.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
-graphics.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
+coords.ScreenInfo.ScreenWidth = screen.Bounds().Dx()
+coords.ScreenInfo.ScreenHeight = screen.Bounds().Dy()
 coords.CoordManager.UpdateScreenDimensions(...)
 
 // Render map (one of two modes)
@@ -701,7 +661,7 @@ The `SquadCombatRenderer` is constructed inside the combat animation mode:
 cam.squadRenderer = rendering.NewSquadCombatRenderer(cam.Queries)
 ```
 
-The spell casting handler in `gui/guispells/spell_handler.go` uses the `graphics` package directly for two purposes: converting mouse position to logical tile coordinates via `graphics.MouseToLogicalPosition`, and manipulating `graphics.TileBasedShape` instances for AoE targeting. It calls `GameMap.ApplyColorMatrix` to paint the targeting overlay onto tiles.
+The spell casting handler in `gui/guispells/spell_handler.go` uses `coords.MouseToLogicalPosition` to convert mouse position to logical tile coordinates and operates on `*graphics.BaseShape` instances for AoE targeting. It calls `GameMap.ApplyColorMatrix` to paint the targeting overlay onto tiles.
 
 ---
 

@@ -48,11 +48,11 @@ type ViewportRenderer struct {
 	overlayDrawOpts ebiten.DrawImageOptions    // Reusable draw options for overlays
 }
 
-// NewViewportRenderer creates a renderer for the current screen
+// NewViewportRenderer creates a renderer for the current screen.
+// Screen-dimension synchronization is the caller's responsibility — game_main.Draw
+// calls coords.CoordManager.UpdateScreenDimensions once per frame before any
+// viewport renderer is fetched, so this constructor has no side effects.
 func NewViewportRenderer(screen *ebiten.Image, centerPos coords.LogicalPosition) *ViewportRenderer {
-	// Update screen dimensions in global CoordManager
-	coords.CoordManager.UpdateScreenDimensions(screen.Bounds().Dx(), screen.Bounds().Dy())
-
 	return &ViewportRenderer{
 		centerPos: centerPos,
 	}
