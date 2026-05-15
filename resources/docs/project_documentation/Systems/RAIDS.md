@@ -574,8 +574,8 @@ The raid system integrates with the existing combat system through two key conne
 2. Creates a "Garrison Defenders" faction (AI-controlled).
 3. Positions player squads left of the combat position with `playerOffsetX = -3`, `playerOffsetY = -2`.
 4. Positions garrison squads right of the combat position with `enemyOffsetX = 3`, `enemyOffsetY = 2`.
-5. Calls `encounter.EnsureUnitPositions()` to place individual units.
-6. Calls `combat.CreateActionStateForSquad()` to initialize combat state.
+5. Calls `combatlifecycle.MoveSquadUnitsToCombatPosition()` to place individual units.
+6. Calls `combatstate.CreateActionStateForSquad()` to initialize combat state.
 
 ```
 Player Squads                  Garrison Squads

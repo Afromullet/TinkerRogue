@@ -542,21 +542,19 @@ func (d *ArtifactDispatcher) DispatchOnTurnEnd(round)                     // bro
 
 ---
 
-## 8. Encounter Post-Combat Callback
+## 8. Encounter Post-Combat Listeners
 
 **Location:** `mind/encounter/encounter_service.go`
 
 ```go
-type EncounterService struct {
-    // ...
-    postCombatCallback func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome, *combatlifecycle.ResolutionResult)
-}
+type PostCombatListener func(reason combatlifecycle.CombatExitReason, outcome *combatlifecycle.EncounterOutcome, resolution *combatlifecycle.ResolutionResult)
+type PostCombatListenerHandle int
 
-func (es *EncounterService) SetPostCombatCallback(fn func(combatlifecycle.CombatExitReason, *combatlifecycle.EncounterOutcome, *combatlifecycle.ResolutionResult))
-func (es *EncounterService) ClearPostCombatCallback()
+func (es *EncounterService) AddPostCombatListener(fn PostCombatListener) PostCombatListenerHandle
+func (es *EncounterService) RemovePostCombatListener(handle PostCombatListenerHandle)
 ```
 
-Single-subscriber field. The last `SetPostCombatCallback` call wins. It fires at the end of `ExitCombat`, after all cleanup steps (outcome resolution via `setup.Resolver`, history recording, entity disposal, player squad stripping) have completed. The `*ResolutionResult` argument is the output of `setup.Resolver.Resolve` — consumers (e.g., `RaidRunner`) use it to read `RewardText` for GUI summaries. The only current subscriber is `RaidRunner`, which registers at construction time and clears on `finishRaid`; with resolution now part of the standard pipeline, the callback is a notification hook only (not a dispatch path).
+Multi-subscriber listener list. `AddPostCombatListener` returns a handle the caller stores so it can remove its own listener later (no last-write-wins overwrite hazard). Listeners fire in registration order at the end of `ExitCombat`, after all cleanup steps (outcome resolution via `setup.Resolver`, history recording, entity disposal, player squad stripping) have completed. The `*ResolutionResult` argument is the output of `setup.Resolver.Resolve` — consumers (e.g., `RaidRunner`) use it to read `RewardText` for GUI summaries. Today the only subscriber is `RaidRunner`, which registers at construction time and removes its own listener via the stored handle on `finishRaid`.
 
 `ExitCombat` is the single exit point for all combat endings (victory, defeat, flee). Any system that needs to respond to combat completion should use this callback rather than hooking directly into `CombatService`.
 
@@ -829,7 +827,7 @@ Note: `ResetSquadActions` (→ `PostReset`) fires before `EndTurn` completes (�
 | PowerLogger | `tactical/powers/powercore/logger.go` | Interface / func adapter | Single injected; shared by artifacts and perks | On artifact activation / perk hook emission |
 | Artifact validation | `tactical/powers/artifacts/registry.go` | Cross-registry check | N/A (one-shot at startup) | During `GameBootstrap.LoadGameData()` |
 | Artifact balance config | `tactical/powers/artifacts/balanceconfig.go` | JSON → global struct | N/A (loaded once) | During `GameBootstrap.LoadGameData()` |
-| Encounter postCombatCallback | `mind/encounter/encounter_service.go` | Single func field | Single subscriber | At end of `EncounterService.ExitCombat` |
+| Encounter post-combat listeners | `mind/encounter/encounter_service.go` | `[]PostCombatListener` | Multiple subscribers via handles | At end of `EncounterService.ExitCombat` |
 | ECS subsystem registration | `core/common/ecsutil.go` | `[]func(*EntityManager)` slice | All registered subsystems | Once at startup via `InitializeSubsystems` |
 | Map generator registry | `world/worldgen/registry.go` | `map[string]worldmapcore.MapGenerator` | One generator per name | On `GetGeneratorOrDefault` call |
 | Map generator ConfigOverride | `world/worldgen/registry.go` | Package-level func variable | Single subscriber | Before registry lookup in `GetGeneratorOrDefault` |

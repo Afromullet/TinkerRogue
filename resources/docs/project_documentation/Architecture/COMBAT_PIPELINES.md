@@ -129,7 +129,6 @@ const (
     CombatTypeOverworld       CombatType = iota // Standard overworld threat encounter
     CombatTypeGarrisonDefense                   // Defending a garrisoned node
     CombatTypeRaid                              // Raid room encounter
-    CombatTypeDebug                             // Debug/test encounters
 )
 
 type CombatSetup struct {
@@ -345,7 +344,7 @@ This 3-line sequence appeared in 4 places (overworld setup, garrison encounter, 
 The public batch enrollment helper used by all starters. For each squad/position pair, it performs the 3-step enrollment:
 
 1. `fm.AddSquadToFaction(factionID, squadID, pos)` — faction membership + position
-2. `EnsureUnitPositions(manager, squadID, pos)` — all units get positions at squad location
+2. `MoveSquadUnitsToCombatPosition(manager, squadID, pos)` — all units get positions at squad location
 3. `combatstate.CreateActionStateForSquad(manager, squadID)` — combat action tracking
 
 ```go
@@ -354,7 +353,7 @@ func EnrollSquadsAtPositions(fm, manager, factionID, squadIDs, positions) error
 
 Deployment status (`SquadData.IsDeployed`) is the caller's policy — use `MarkSquadsDeployed(manager, squadIDs)` separately for squads that weren't already deployed (garrison defenders, raid player squads).
 
-### EnsureUnitPositions
+### MoveSquadUnitsToCombatPosition
 
 **File:** `mind/combatlifecycle/enrollment.go`
 
@@ -492,7 +491,7 @@ This pathway does not immediately start combat. It transitions to `RaidMode`, wh
 
 **The "Start Raid" button is only reachable in roguelike mode** because the "Debug" button that opens the sub-menu is conditionally shown. `ExplorationPanelActionButtons` checks whether the `squad_editor` tactical mode is registered — it only appears when `squad_editor` is in the tactical context (i.e., roguelike mode). The "Start Raid" button itself also checks `em.ModeManager.GetMode("raid")` to verify that a raid mode is registered before triggering the transition.
 
-The `RaidRunner` registers as a post-combat callback via `encounterService.SetPostCombatCallback(...)` at construction time, so it receives the combat result automatically after each raid room battle. The callback includes a guard: it only calls `ResolveEncounter` when `raidEntityID != 0` AND `raidState.Status == RaidActive`. This prevents cross-contamination if the player retreats from a raid and then triggers an overworld encounter.
+The `RaidRunner` registers as a post-combat listener via `encounterService.AddPostCombatListener(...)` at construction time, so it receives the combat result automatically after each raid room battle. The listener includes a guard: it only calls `ResolveEncounter` when `raidEntityID != 0` AND `raidState.Status == RaidActive`. This prevents cross-contamination if the player retreats from a raid and then triggers an overworld encounter.
 
 ### Pathway 5: Debug "Start Random Encounter" (Overworld Mode)
 
@@ -620,7 +619,7 @@ ctx := combatlifecycle.ResolutionContext{
     Reason:                 reason,
     Outcome:                result,
     PlayerEntityID:         enc.PlayerEntityID,
-    PlayerSquadIDs:         es.collectPlayerSquadIDs(enc.Setup.RosterOwnerID),
+    PlayerSquadIDs:         enc.PlayerSquadIDs, // snapshot taken at TransitionToCombat
     OriginalPlayerPosition: enc.OriginalPlayerPosition,
 }
 hooks := NewEncounterExitHooks(es.manager, es.modeCoordinator)
@@ -628,14 +627,14 @@ onHistory := func(resolution *combatlifecycle.ResolutionResult) {
     /* append CompletedEncounter, clear activeEncounter */
 }
 resolution := combatlifecycle.ExecuteCombatExit(es.manager, ctx, hooks, teardown, onHistory)
-if es.postCombatCallback != nil {
-    es.postCombatCallback(reason, result, resolution)
+for _, entry := range es.postCombatListeners {
+    entry.fn(reason, result, resolution)
 }
 ```
 
 The six-step sequence inside `ExecuteCombatExit` is documented above under [ExecuteCombatExit and ExitHooks](#executecombatexit-and-exithooks-symmetric-exit-pipeline). All sprite restoration, mark-defeated, position-restore, and garrison-return logic now lives in the `EncounterExitHooks` methods rather than inline in `ExitCombat`.
 
-Resolvers themselves decide what to do based on the `ResolutionContext`. Each combat type has exactly one resolver — branches for flee/victory/defeat are inlined inside `Resolve` rather than dispatched to sub-resolvers. The post-combat callback (used by `RaidRunner`) fires once after `ExecuteCombatExit` returns and receives the `*ResolutionResult` for GUI summary use.
+Resolvers themselves decide what to do based on the `ResolutionContext`. Each combat type has exactly one resolver — branches for flee/victory/defeat are inlined inside `Resolve` rather than dispatched to sub-resolvers. Post-combat listeners (used by `RaidRunner`) fire after `ExecuteCombatExit` returns and receive the `*ResolutionResult` for GUI summary use.
 
 ### Overworld Combat Resolution
 
@@ -697,9 +696,9 @@ After resolution, `RaidRunner.PostEncounterProcessing` runs:
 
 ### Debug / No-Op Resolution
 
-Activated when: `Type = CombatTypeOverworld` and `ThreatNodeID = 0`, or `Type = CombatTypeDebug`.
+Activated when: `Type = CombatTypeOverworld` and `ThreatNodeID = 0`.
 
-In `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterData.ThreatNodeID != 0` before creating a resolver. When `ThreatNodeID = 0` (debug random encounter), no resolver is created and no resolution occurs. `CombatTypeDebug` is handled as a no-op in the switch. This means debug encounters have zero side effects on the game world.
+In `resolveEncounterOutcome`, the `CombatTypeOverworld` case checks `encounterData.ThreatNodeID != 0` before creating a resolver. When `ThreatNodeID = 0` (debug random encounter), no resolver is created and no resolution occurs. This means debug encounters have zero side effects on the game world.
 
 ---
 
@@ -1067,7 +1066,7 @@ Additionally, the callback itself includes a guard: it only calls `ResolveEncoun
 | `mind/combatlifecycle/start.go` | Start-side contracts + orchestration: `CombatStarter` (returns optional rollback closure), `CombatSetup` (with `PostCombatReturnMode()` method), `CombatType`, `CombatTransitioner`, `ExecuteCombatStart`, `PostCombatReturnRaid`/`PostCombatReturnDefault` constants |
 | `mind/combatlifecycle/exit.go` | Exit-side contracts + orchestration: `CombatExitReason`, `EncounterOutcome`, `ResolutionContext`, `CombatResolver`, `ResolutionResult`, `ExitHooks`, `ExecuteResolution`, `ExecuteCombatExit` |
 | `mind/combatlifecycle/teardown.go` | `CombatTeardown` interface plus `StripCombatComponents` and `ApplyHPRecovery` helpers |
-| `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadsAtPositions`, `EnsureUnitPositions`: faction creation and squad enrollment helpers |
+| `mind/combatlifecycle/enrollment.go` | `CreateFactionPair`, `EnrollSquadsAtPositions`, `MoveSquadUnitsToCombatPosition`: faction creation and squad enrollment helpers |
 | `mind/combatlifecycle/reward.go` | `Reward`, `Grant`, `GrantTarget`: generic reward calculation and distribution primitives |
 | `mind/combatlifecycle/casualties.go` | `GetLivingUnitIDs`, `CountDeadUnits`: casualty counting helpers |
 | `mind/encounter/encounter_service.go` | `EncounterService`: tracks `ActiveEncounter`, implements `TransitionToCombat`, `ExitCombat`, `SetPostCombatCallback` |
