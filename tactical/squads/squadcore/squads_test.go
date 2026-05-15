@@ -115,10 +115,10 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	// Add GridPositionComponent at invalid position so it doesn't interfere with grid
 	// and UnitRoleComponent for visualization compatibility
 	leaderEntity.AddComponent(GridPositionComponent, &GridPositionData{
-		AnchorRow: -1, // Invalid position - won't appear in 3x3 grid
-		AnchorCol: -1,
-		Width:     1,
-		Height:    1,
+		AnchorRow:  -1, // Invalid position - won't appear in 3x3 grid
+		AnchorCol:  -1,
+		CellWidth:  1,
+		CellHeight: 1,
 	})
 	leaderEntity.AddComponent(UnitRoleComponent, &UnitRoleData{
 		Role: unitdefs.RoleTank, // Arbitrary role for the invisible leader
@@ -155,8 +155,8 @@ func TestCreateUnitEntity_SingleCell(t *testing.T) {
 	}
 
 	gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-	if gridPos.Width != 1 || gridPos.Height != 1 {
-		t.Errorf("Expected 1x1 unit, got %dx%d", gridPos.Width, gridPos.Height)
+	if gridPos.CellWidth != 1 || gridPos.CellHeight != 1 {
+		t.Errorf("Expected 1x1 unit, got %dx%d", gridPos.CellWidth, gridPos.CellHeight)
 	}
 
 	// Verify UnitRoleComponent
@@ -190,8 +190,8 @@ func TestCreateUnitEntity_MultiCell_2x2(t *testing.T) {
 	}
 
 	gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-	if gridPos.Width != 2 || gridPos.Height != 2 {
-		t.Errorf("Expected 2x2 unit, got %dx%d", gridPos.Width, gridPos.Height)
+	if gridPos.CellWidth != 2 || gridPos.CellHeight != 2 {
+		t.Errorf("Expected 2x2 unit, got %dx%d", gridPos.CellWidth, gridPos.CellHeight)
 	}
 
 	// Verify it occupies 4 cells
@@ -216,8 +216,8 @@ func TestCreateUnitEntity_MultiCell_1x3(t *testing.T) {
 	}
 
 	gridPos := common.GetComponentType[*GridPositionData](entity, GridPositionComponent)
-	if gridPos.Width != 1 || gridPos.Height != 3 {
-		t.Errorf("Expected 1x3 unit, got %dx%d", gridPos.Width, gridPos.Height)
+	if gridPos.CellWidth != 1 || gridPos.CellHeight != 3 {
+		t.Errorf("Expected 1x3 unit, got %dx%d", gridPos.CellWidth, gridPos.CellHeight)
 	}
 
 	// Verify it occupies 3 cells

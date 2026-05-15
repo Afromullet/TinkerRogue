@@ -53,15 +53,9 @@ type PlayerPurchaseInfo struct {
 	CanAddUnit     bool
 }
 
-// GetUnitCost calculates the cost of a unit template
+// GetUnitCost returns the gold cost of a unit template, sourced from JSON.
 func (ups *UnitPurchaseService) GetUnitCost(template unitdefs.UnitTemplate) int {
-	// Simple cost formula based on unit name hash
-	// TODO: Add cost field to UnitTemplate or JSON data
-	baseCost := 100
-	for _, c := range template.UnitType {
-		baseCost += int(c) % 50
-	}
-	return baseCost
+	return template.Cost
 }
 
 // CanPurchaseUnit validates if player can purchase a unit

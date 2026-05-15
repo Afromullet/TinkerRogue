@@ -221,7 +221,7 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 	if gp := common.GetComponentType[*squadcore.GridPositionData](entity, squadcore.GridPositionComponent); gp != nil {
 		sm.GridPos = savedGridPosition{
 			AnchorRow: gp.AnchorRow, AnchorCol: gp.AnchorCol,
-			Width: gp.Width, Height: gp.Height,
+			Width: gp.CellWidth, Height: gp.CellHeight,
 		}
 	}
 
@@ -361,7 +361,7 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 		AddComponent(common.AttributeComponent, &attr).
 		AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
 			AnchorRow: sm.GridPos.AnchorRow, AnchorCol: sm.GridPos.AnchorCol,
-			Width: sm.GridPos.Width, Height: sm.GridPos.Height,
+			CellWidth: sm.GridPos.Width, CellHeight: sm.GridPos.Height,
 		}).
 		AddComponent(squadcore.UnitRoleComponent, &squadcore.UnitRoleData{
 			Role: unitdefs.UnitRole(sm.Role),

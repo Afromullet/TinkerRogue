@@ -59,11 +59,11 @@ func (gq *GUIQueries) GetUnitRenderInfo(unitID ecs.EntityID) *combatrender.UnitR
 	isAlive := attr != nil && attr.CurrentHealth > 0
 
 	return &combatrender.UnitRenderInfo{
-		AnchorRow: gridPos.AnchorRow,
-		AnchorCol: gridPos.AnchorCol,
-		Width:     gridPos.Width,
-		Height:    gridPos.Height,
-		Image:     renderable.Image,
-		IsAlive:   isAlive,
+		AnchorRow:  gridPos.AnchorRow,
+		AnchorCol:  gridPos.AnchorCol,
+		CellWidth:  gridPos.CellWidth,
+		CellHeight: gridPos.CellHeight,
+		Image:      renderable.Image,
+		IsAlive:    isAlive,
 	}
 }

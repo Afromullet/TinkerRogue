@@ -2142,35 +2142,20 @@ TinkerRogue uses a **two-tier query API** that separates canonical queries from 
 
 ### Two-Tier Query API
 
-Every queryable subsystem follows a naming convention with paired files:
+There are two patterns in the codebase for routing queries through auto-maintained ECS Views. Pick the one that matches who owns the query:
 
-| File | Purpose | API Style | When to Use |
-|------|---------|-----------|-------------|
-| `*queries.go` | Canonical queries | `World.Query()` per call | Game logic, systems, tests |
-| `*cache.go` | Cached queries | ECS Views (auto-maintained) | GUI, services, hot paths |
+| Pattern | Where it lives | API Style | When to Use |
+|---------|----------------|-----------|-------------|
+| Package-level View singletons | Top-level vars in a `*manager.go` (initialized in `init()`) | `package.GetXxx(id, manager)` | Queries owned by a single package; transparent caching |
+| `QueryCache` struct | `*queriescache.go`, constructed by callers | `cache.GetXxx(id)` | Cache held by a coordinator (e.g., GUI) that wants typed receiver methods |
 
 **Real examples in the codebase:**
-- `tactical/squads/squadqueries.go` + `tactical/squads/squadcache.go`
-- `tactical/combat/combatqueries.go` + `tactical/combat/combatqueriescache.go`
-
-**Header comment convention** (from `squadcache.go`):
-```go
-// This file provides a View-based cached API for squad queries, intended for GUI hot paths.
-//
-// Canonical API (squadqueries.go): Uses World.Query() on every call. Works anywhere,
-// no setup required. Preferred for game logic, systems, and tests.
-//
-// Cached API (this file): Uses ECS Views which are automatically maintained by the
-// library when components change. O(k) where k = matching entities, vs O(n) for
-// World.Query(). Use when you have a SquadQueryCache instance (typically in GUI code).
-//
-// Both APIs return identical results. The cached versions are thin wrappers that
-// iterate Views instead of running queries.
-```
+- Package-level Views: `tactical/squads/squadcore/squadmanager.go` (`squadView`, `squadMemberView`, `leaderView`) consumed by `squadqueries.go`.
+- QueryCache struct: `tactical/combat/combatstate/combatqueriescache.go` (`CombatQueryCache` with `ActionStateView`, `FactionView`).
 
 **Decision guide:**
-- **Canonical (`*queries.go`)**: Default choice. Use for game logic, combat resolution, AI decisions, tests. No setup required — just pass `*EntityManager`.
-- **Cached (`*cache.go`)**: Use when profiling shows a query is a hot path, or when building GUI/rendering code that runs every frame. Requires a `QueryCache` struct instance.
+- **Package-level Views**: Default. Caller-side API stays as plain functions (`squadcore.GetSquadEntity(id, manager)`), and there's nothing extra to construct. Use when the queries don't need to be batched into a typed handle.
+- **QueryCache struct**: Use when a coordinator (typically GUI) wants typed receiver methods (`cache.GetXxx`) it can pass around, or needs to bundle multiple Views together for ownership/lifetime reasons.
 
 ### What Are ECS Views?
 
@@ -2238,39 +2223,10 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 
 ### QueryCache Structs
 
-For queries shared across packages (typically GUI code), wrap views in a cache struct:
+When a coordinator (typically GUI) needs to bundle several Views together and expose typed receiver methods, wrap them in a cache struct:
 
 ```go
-// tactical/squads/squadcache.go
-type SquadQueryCache struct {
-    SquadView       *ecs.View // All SquadTag entities
-    SquadMemberView *ecs.View // All SquadMemberTag entities
-    LeaderView      *ecs.View // All LeaderTag entities
-}
-
-func NewSquadQueryCache(manager *common.EntityManager) *SquadQueryCache {
-    return &SquadQueryCache{
-        SquadView:       manager.World.CreateView(SquadTag),
-        SquadMemberView: manager.World.CreateView(SquadMemberTag),
-        LeaderView:      manager.World.CreateView(LeaderTag),
-    }
-}
-
-// Cached query function — same result as GetSquadEntity() but O(k) instead of O(n)
-func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity {
-    for _, result := range c.SquadView.Get() {
-        squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
-        if squadData != nil && squadData.SquadID == squadID {
-            return result.Entity
-        }
-    }
-    return nil
-}
-```
-
-**Combat cache example** (`tactical/combat/combatqueriescache.go`):
-
-```go
+// tactical/combat/combatstate/combatqueriescache.go
 type CombatQueryCache struct {
     ActionStateView *ecs.View // All ActionStateTag entities
     FactionView     *ecs.View // All FactionTag entities
@@ -2282,11 +2238,20 @@ func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
         FactionView:     manager.World.CreateView(FactionTag),
     }
 }
+
+// Receiver method on the cache — same result a plain query function would return,
+// but holds the View for the lifetime of the coordinator that owns the cache.
+func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID) *ecs.Entity {
+    for _, result := range c.ActionStateView.Get() {
+        // ...
+    }
+    return nil
+}
 ```
 
 ### Performance Benchmarks
 
-Real benchmarks from `tactical/squads/squadcache_test.go`:
+Indicative numbers for View-backed queries versus `World.Query()` on the same data:
 
 | Query | World.Query() | View | Speedup |
 |-------|--------------|------|---------|
@@ -2314,14 +2279,13 @@ Real benchmarks from `tactical/squads/squadcache_test.go`:
 2. **Use specific tags** — never create a view on `AllEntitiesTag`
 3. **Store views persistently** — in package vars or cache structs, never recreate per-call
 4. **Export views only when needed** — default to unexported package-level vars
-5. **Add `*cache.go` files** — follow the two-tier naming convention
+5. **Pick one pattern per subsystem** — package-level Views by default; QueryCache struct when a coordinator owns the lifetime
 
 ### Reference Implementations
 
-- `tactical/squads/squadcache.go` — SquadQueryCache with 3 views
-- `tactical/combat/combatqueriescache.go` — CombatQueryCache with 2 views
-- `tactical/squads/squadmanager.go` — Package-level view (`squadMemberView`)
-- `tactical/combat/combatcomponents.go` — Package-level views (`factionView`, `combatSquadView`)
+- `tactical/squads/squadcore/squadmanager.go` — package-level Views (`squadView`, `squadMemberView`, `leaderView`) used by `squadqueries.go`
+- `tactical/combat/combatstate/combatqueriescache.go` — `CombatQueryCache` with 2 Views
+- `tactical/combat/combatcore/combatcomponents.go` — package-level Views (`factionView`, `combatSquadView`)
 - `overworld/core/init.go` — Exported package-level view (`OverworldNodeView`)
 
 ---
@@ -2993,9 +2957,8 @@ One major system per package with consistent file naming:
 ```
 squads/
 ├── squadcomponents.go     # Component data definitions
-├── squadmanager.go        # Initialization, package-level views
-├── squadqueries.go        # Canonical query functions (World.Query)
-├── squadcache.go          # Cached query functions (ECS Views)
+├── squadmanager.go        # Initialization, package-level Views (squadView, squadMemberView, leaderView)
+├── squadqueries.go        # Query functions (consume the Views)
 ├── squadcombat.go         # Combat system logic
 ├── squadabilities.go      # Ability system logic
 ├── squadcreation.go       # Creation system logic
@@ -3942,13 +3905,12 @@ sc.InvalidateSquad(squadID)
 ```go
 type GUIQueries struct {
     ECSManager     *common.EntityManager
-    SquadCache     *squads.SquadQueryCache     // View-based ECS queries
-    CombatCache    *combat.CombatQueryCache    // View-based ECS queries
-    squadInfoCache *SquadInfoCache             // Event-driven dirty tracking
+    CombatCache    *combatstate.CombatQueryCache // View-based ECS queries
+    squadInfoCache *SquadInfoCache               // Event-driven dirty tracking
 }
 ```
 
-`GUIQueries` composes both View-based query caches (for ECS-level iteration) and the event-driven `SquadInfoCache` (for pre-built UI data). The View caches are always up-to-date automatically; the `SquadInfoCache` rebuilds on-demand when game events mark entries dirty.
+`GUIQueries` composes a View-based query cache for combat (`CombatCache`) and the event-driven `SquadInfoCache` (for pre-built UI data). Squad-side queries route through package-level Views in `squadcore`, so no squad cache lives on `GUIQueries`. The View-backed paths are always up-to-date automatically; the `SquadInfoCache` rebuilds on-demand when game events mark entries dirty.
 
 **Key invalidation events:**
 - **Damage dealt** → `MarkSquadDirty(attackerID)`, `MarkSquadDirty(defenderID)`
@@ -4540,36 +4502,35 @@ func BenchmarkSpatialLookup(b *testing.B) {
 
 ### View Benchmarking Pattern
 
-Compare `World.Query()` vs View performance using paired benchmarks (`tactical/squads/squadcache_test.go`):
+Compare a raw `World.Query()` against a View-backed query using paired benchmarks. The example below contrasts a hypothetical `worldQueryGetSquadEntity` helper (which calls `World.Query(SquadTag)` per invocation) against the package-level View-backed `GetSquadEntity` actually used by the codebase:
 
 ```go
 import testfx "game_main/testing"
 
-func BenchmarkGetSquadEntity_NoCache(b *testing.B) {
+func BenchmarkGetSquadEntity_WorldQuery(b *testing.B) {
     manager := testfx.NewTestEntityManager()
     common.InitializeSubsystems(manager)
     // ... create test data ...
 
     b.ResetTimer()
     for i := 0; i < b.N; i++ {
-        _ = GetSquadEntity(targetSquadID, manager)
+        _ = worldQueryGetSquadEntity(targetSquadID, manager) // World.Query each call
     }
 }
 
-func BenchmarkGetSquadEntity_WithCache(b *testing.B) {
+func BenchmarkGetSquadEntity_View(b *testing.B) {
     manager := testfx.NewTestEntityManager()
     common.InitializeSubsystems(manager)
-    cache := NewSquadQueryCache(manager)
     // ... create test data ...
 
     b.ResetTimer()
     for i := 0; i < b.N; i++ {
-        _ = cache.GetSquadEntity(targetSquadID)
+        _ = GetSquadEntity(targetSquadID, manager) // Iterates squadView under the hood
     }
 }
 ```
 
-Run with: `go test -bench=. ./tactical/squads/`
+Run with: `go test -bench=. ./tactical/squads/...`
 
 ---
 

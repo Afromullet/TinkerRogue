@@ -17,14 +17,16 @@ type SquadRenderInfo struct {
 	MaxHP       int
 }
 
-// UnitRenderInfo holds minimal data a renderer needs about a single unit
+// UnitRenderInfo holds minimal data a renderer needs about a single unit.
+// CellWidth/CellHeight are squad-grid cell counts (1-3), not pixel dimensions;
+// the renderer multiplies them by cellSize to produce pixels.
 type UnitRenderInfo struct {
-	AnchorRow int
-	AnchorCol int
-	Width     int
-	Height    int
-	Image     *ebiten.Image
-	IsAlive   bool
+	AnchorRow  int
+	AnchorCol  int
+	CellWidth  int
+	CellHeight int
+	Image      *ebiten.Image
+	IsAlive    bool
 }
 
 // SquadInfoProvider supplies squad data for rendering.

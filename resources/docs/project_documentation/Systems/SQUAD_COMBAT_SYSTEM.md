@@ -330,7 +330,7 @@ Templates are loaded from JSON monster data at startup via `InitUnitTemplatesFro
 
 `GetRole(roleString string)` converts JSON strings "Tank", "DPS", "Support" to `UnitRole` values.
 
-`GetAttackType(attackTypeString string, attackRange int)` converts "MeleeRow", "MeleeColumn", "Ranged", "Magic" strings to `AttackType` values, with a fallback from `attackRange` integer for backward compatibility.
+`GetAttackType(attackTypeString string)` converts "MeleeRow", "MeleeColumn", "Ranged", "Magic", "Heal" strings to `AttackType` values. An empty string returns an error — every unit must declare its attack type explicitly in JSON.
 
 `GetTemplateByName(name string) *UnitTemplate` finds a loaded template by name.
 
@@ -516,23 +516,7 @@ func GetSquadMovementSpeed(squadID ecs.EntityID, squadmanager *common.EntityMana
 
 `GetSquadMovementSpeed` returns the minimum `MovementSpeedData.Speed` across all alive units with a `MovementSpeedComponent`. Returns 0 if no valid units are found.
 
-**Cached API** (`squadcache.go`): Uses ECS `View` objects which are auto-maintained by the library. O(k) where k is the number of entities with the relevant component.
-
-```go
-type SquadQueryCache struct {
-    SquadView       *ecs.View
-    SquadMemberView *ecs.View
-    LeaderView      *ecs.View
-}
-
-func (c *SquadQueryCache) GetSquadEntity(squadID ecs.EntityID) *ecs.Entity
-func (c *SquadQueryCache) GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID
-func (c *SquadQueryCache) GetLeaderID(squadID ecs.EntityID) ecs.EntityID
-func (c *SquadQueryCache) GetSquadName(squadID ecs.EntityID) string
-func (c *SquadQueryCache) FindAllSquads() []ecs.EntityID
-```
-
-The cached API is preferred for GUI hot paths (e.g., list refresh on every frame). Both APIs return identical results.
+**View-backed performance:** The query functions above are already O(k). They iterate three package-level `*ecs.View` singletons — `squadView`, `squadMemberView`, `leaderView` — created once in `squadmanager.go:init()` and auto-maintained by the ECS library. Callers do not construct or pass a cache object; the View access is transparent.
 
 ---
 
@@ -1296,7 +1280,7 @@ The layering is strict: `squadcore` does not import `combatcore`. Combat compone
 - `tactical/squads/squadcore/squadqueries.go`
 - `tactical/squads/squadcore/squadabilities.go`
 - `tactical/squads/squadcore/units.go`
-- `tactical/squads/squadcore/squadcache.go`
+- `tactical/squads/squadcore/squadmanager.go`
 - `tactical/squads/squadcommands/command.go`
 - `tactical/squads/squadcommands/command_executor.go`
 - `tactical/squads/squadservices/unit_purchase_service.go`

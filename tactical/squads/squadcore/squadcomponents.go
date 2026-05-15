@@ -95,17 +95,17 @@ type SquadMemberData struct {
 // Pure data - systems query for units at specific positions
 // Supports multi-cell units (e.g., 1x2, 2x2, 2x1, etc.)
 type GridPositionData struct {
-	AnchorRow int // Top-left row (0-2)
-	AnchorCol int // Top-left col (0-2)
-	Width     int // Number of columns occupied (1-3)
-	Height    int // Number of rows occupied (1-3)
+	AnchorRow  int // Top-left row (0-2)
+	AnchorCol  int // Top-left col (0-2)
+	CellWidth  int // Number of grid columns occupied (1-3)
+	CellHeight int // Number of grid rows occupied (1-3)
 }
 
 // GetOccupiedCells returns all grid cells this unit occupies
 func (g *GridPositionData) GetOccupiedCells() [][2]int {
 	var cells [][2]int
-	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < SquadGridSize; r++ {
-		for c := g.AnchorCol; c < g.AnchorCol+g.Width && c < SquadGridSize; c++ {
+	for r := g.AnchorRow; r < g.AnchorRow+g.CellHeight && r < SquadGridSize; r++ {
+		for c := g.AnchorCol; c < g.AnchorCol+g.CellWidth && c < SquadGridSize; c++ {
 			cells = append(cells, [2]int{r, c})
 		}
 	}
@@ -114,14 +114,14 @@ func (g *GridPositionData) GetOccupiedCells() [][2]int {
 
 // OccupiesCell checks if this unit occupies a specific grid cell
 func (g *GridPositionData) OccupiesCell(row, col int) bool {
-	return row >= g.AnchorRow && row < g.AnchorRow+g.Height &&
-		col >= g.AnchorCol && col < g.AnchorCol+g.Width
+	return row >= g.AnchorRow && row < g.AnchorRow+g.CellHeight &&
+		col >= g.AnchorCol && col < g.AnchorCol+g.CellWidth
 }
 
 // GetRows returns all row indices this unit occupies
 func (g *GridPositionData) GetRows() []int {
 	var rows []int
-	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < SquadGridSize; r++ {
+	for r := g.AnchorRow; r < g.AnchorRow+g.CellHeight && r < SquadGridSize; r++ {
 		rows = append(rows, r)
 	}
 	return rows

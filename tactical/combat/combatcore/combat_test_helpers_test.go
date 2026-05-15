@@ -82,10 +82,10 @@ func CreateTestUnit(manager *common.EntityManager, squadID ecs.EntityID, index i
 	row := index / 3
 	col := index % 3
 	unitEntity.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
-		AnchorRow: row,
-		AnchorCol: col,
-		Width:     1,
-		Height:    1,
+		AnchorRow:  row,
+		AnchorCol:  col,
+		CellWidth:  1,
+		CellHeight: 1,
 	})
 
 	// Add attack range component (matches production code in units.go)
@@ -129,10 +129,10 @@ func CreateTestRangedUnit(manager *common.EntityManager, squadID ecs.EntityID, i
 	row := index / 3
 	col := index % 3
 	unitEntity.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
-		AnchorRow: row,
-		AnchorCol: col,
-		Width:     1,
-		Height:    1,
+		AnchorRow:  row,
+		AnchorCol:  col,
+		CellWidth:  1,
+		CellHeight: 1,
 	})
 
 	// Add attack range component (matches production code in units.go)

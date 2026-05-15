@@ -281,15 +281,15 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 	}
 
 	// Validate new anchor position and that unit fits within grid
-	if err := ValidateGridPlacement(newRow, newCol, gridPosData.Width, gridPosData.Height); err != nil {
+	if err := ValidateGridPlacement(newRow, newCol, gridPosData.CellWidth, gridPosData.CellHeight); err != nil {
 		return err
 	}
 
 	memberData := common.GetComponentTypeByID[*SquadMemberData](ecsmanager, unitEntityID, SquadMemberComponent)
 
 	// Check if ANY cell at new position is occupied (excluding this unit itself)
-	for r := newRow; r < newRow+gridPosData.Height; r++ {
-		for c := newCol; c < newCol+gridPosData.Width; c++ {
+	for r := newRow; r < newRow+gridPosData.CellHeight; r++ {
+		for c := newCol; c < newCol+gridPosData.CellWidth; c++ {
 			existingUnitIDs := GetUnitIDsAtGridPosition(memberData.SquadID, r, c, ecsmanager)
 			for _, existingID := range existingUnitIDs {
 				if existingID != unitEntityID {
@@ -304,18 +304,6 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 	gridPosData.AnchorCol = newCol
 
 	return nil
-}
-
-// FormationPreset defines a quick-start squad configuration
-type FormationPreset struct {
-	Positions []FormationPosition
-}
-
-type FormationPosition struct {
-	AnchorRow int
-	AnchorCol int
-	Role      unitdefs.UnitRole
-	Target    []int
 }
 
 // CreateSquadFromTemplate

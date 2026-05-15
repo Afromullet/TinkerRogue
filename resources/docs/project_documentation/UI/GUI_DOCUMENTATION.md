@@ -725,9 +725,8 @@ GUIQueries provides a typed, cached query interface for accessing game state. Mo
 ```go
 type GUIQueries struct {
     ECSManager     *common.EntityManager
-    factionManager *combat.CombatFactionManager
-    SquadCache     *squads.SquadQueryCache
-    CombatCache    *combat.CombatQueryCache
+    factionManager *combatstate.CombatFactionManager
+    CombatCache    *combatstate.CombatQueryCache
     squadInfoCache *SquadInfoCache
 }
 ```
@@ -736,11 +735,11 @@ type GUIQueries struct {
 
 **factionManager**: Combat faction system (internal use).
 
-**SquadCache**: ECS-level squad query cache.
-
 **CombatCache**: ECS-level combat query cache.
 
 **squadInfoCache**: UI-specific squad info cache with invalidation.
+
+Squad-side queries call package-level functions in `squadcore` (e.g., `squadcore.GetSquadEntity`), which use ECS Views initialized in `squadmanager.go`. No squad cache field is held on `GUIQueries`.
 
 ### SquadInfo
 

@@ -22,12 +22,11 @@ TinkerRogue/
 │
 ├── tactical/               # In-battle tactical gameplay systems
 │   ├── squads/             # Squad system (REFERENCE ECS IMPLEMENTATION)
-│   │   ├── squadcore/              # Squad components, queries, creation, caches, abilities
+│   │   ├── squadcore/              # Squad components, queries, creation, abilities
 │   │   │   ├── squadcomponents.go  # Pure data components (SquadData, SquadMemberData, ...)
-│   │   │   ├── squadqueries.go     # Query functions
+│   │   │   ├── squadqueries.go     # Query functions (use package-level ECS Views)
 │   │   │   ├── squadcreation.go    # Squad/unit instantiation
-│   │   │   ├── squadmanager.go     # Manager helpers
-│   │   │   ├── squadcache.go       # Squad info cache
+│   │   │   ├── squadmanager.go     # Manager helpers + ECS View singletons (init())
 │   │   │   ├── squadabilities.go   # Leader ability definitions
 │   │   │   └── units.go            # Unit helpers
 │   │   ├── squadservices/          # Higher-level orchestration

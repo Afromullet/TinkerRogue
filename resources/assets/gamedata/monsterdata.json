@@ -21,6 +21,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 2,
+      "cost": 183,
       "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
     },
     {
@@ -44,6 +45,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 2,
+      "cost": 179,
       "statGrowths": { "strength": "B", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "B", "weapon": "C" }
     },
     {
@@ -67,6 +69,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 3,
+      "cost": 170,
       "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "B", "weapon": "A" }
     },
     {
@@ -90,6 +93,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 3,
+      "cost": 156,
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
     },
     {
@@ -113,6 +117,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 4,
+      "cost": 158,
       "statGrowths": { "strength": "C", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "D", "weapon": "A" }
     },
     {
@@ -136,6 +141,7 @@
       "requiresActive": true,
       "attackRange": 2,
       "movementSpeed": 3,
+      "cost": 168,
       "statGrowths": { "strength": "B", "dexterity": "C", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
@@ -159,6 +165,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 5,
+      "cost": 161,
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "B" }
     },
     {
@@ -182,6 +189,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 5,
+      "cost": 163,
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "F", "armor": "E", "weapon": "A" }
     },
     {
@@ -205,6 +213,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 5,
+      "cost": 159,
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "E", "leadership": "B", "armor": "D", "weapon": "C" }
     },
     {
@@ -228,6 +237,7 @@
       "requiresActive": false,
       "attackRange": 4,
       "movementSpeed": 3,
+      "cost": 160,
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
     },
     {
@@ -251,6 +261,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 4,
+      "cost": 190,
       "statGrowths": { "strength": "C", "dexterity": "A", "magic": "C", "leadership": "B", "armor": "C", "weapon": "B" }
     },
     {
@@ -274,6 +285,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 3,
+      "cost": 158,
       "statGrowths": { "strength": "C", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "D", "weapon": "A" }
     },
     {
@@ -297,6 +309,7 @@
       "requiresActive": false,
       "attackRange": 4,
       "movementSpeed": 3,
+      "cost": 160,
       "statGrowths": { "strength": "D", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "A" }
     },
     {
@@ -320,6 +333,7 @@
       "requiresActive": false,
       "attackRange": 4,
       "movementSpeed": 2,
+      "cost": 182,
       "statGrowths": { "strength": "D", "dexterity": "D", "magic": "S", "leadership": "C", "armor": "E", "weapon": "F" }
     },
     {
@@ -343,6 +357,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 2,
+      "cost": 180,
       "statGrowths": { "strength": "D", "dexterity": "C", "magic": "A", "leadership": "C", "armor": "D", "weapon": "E" }
     },
     {
@@ -366,6 +381,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 2,
+      "cost": 179,
       "statGrowths": { "strength": "D", "dexterity": "D", "magic": "A", "leadership": "B", "armor": "D", "weapon": "F" }
     },
     {
@@ -389,6 +405,7 @@
       "requiresActive": true,
       "attackRange": 2,
       "movementSpeed": 3,
+      "cost": 221,
       "statGrowths": { "strength": "E", "dexterity": "D", "magic": "A", "leadership": "S", "armor": "C", "weapon": "E" }
     },
     {
@@ -412,6 +429,7 @@
       "requiresActive": true,
       "attackRange": 2,
       "movementSpeed": 3,
+      "cost": 219,
       "statGrowths": { "strength": "E", "dexterity": "D", "magic": "B", "leadership": "S", "armor": "D", "weapon": "E" }
     },
     {
@@ -435,6 +453,7 @@
       "requiresActive": false,
       "attackRange": 4,
       "movementSpeed": 3,
+      "cost": 180,
       "statGrowths": { "strength": "E", "dexterity": "C", "magic": "S", "leadership": "D", "armor": "E", "weapon": "D" }
     },
     {
@@ -458,6 +477,7 @@
       "requiresActive": false,
       "attackRange": 2,
       "movementSpeed": 3,
+      "cost": 161,
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "B", "leadership": "B", "armor": "C", "weapon": "C" }
     },
     {
@@ -481,6 +501,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 2,
+      "cost": 187,
       "statGrowths": { "strength": "S", "dexterity": "D", "magic": "F", "leadership": "C", "armor": "A", "weapon": "B" }
     },
     {
@@ -504,6 +525,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 4,
+      "cost": 168,
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "C", "armor": "E", "weapon": "C" }
     },
     {
@@ -527,6 +549,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 2,
+      "cost": 177,
       "statGrowths": { "strength": "S", "dexterity": "E", "magic": "F", "leadership": "E", "armor": "S", "weapon": "B" }
     },
     {
@@ -550,6 +573,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 3,
+      "cost": 198,
       "statGrowths": { "strength": "E", "dexterity": "B", "magic": "C", "leadership": "B", "armor": "F", "weapon": "C" }
     },
     {
@@ -573,6 +597,7 @@
       "requiresActive": true,
       "attackRange": 2,
       "movementSpeed": 6,
+      "cost": 175,
       "statGrowths": { "strength": "B", "dexterity": "B", "magic": "F", "leadership": "C", "armor": "B", "weapon": "B" }
     },
     {
@@ -596,6 +621,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 6,
+      "cost": 163,
       "statGrowths": { "strength": "A", "dexterity": "B", "magic": "F", "leadership": "D", "armor": "C", "weapon": "A" }
     },
     {
@@ -619,6 +645,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 6,
+      "cost": 161,
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "F", "leadership": "D", "armor": "E", "weapon": "A" }
     },
     {
@@ -642,6 +669,7 @@
       "requiresActive": true,
       "attackRange": 1,
       "movementSpeed": 6,
+      "cost": 175,
       "statGrowths": { "strength": "A", "dexterity": "C", "magic": "F", "leadership": "B", "armor": "A", "weapon": "B" }
     },
     {
@@ -665,6 +693,7 @@
       "requiresActive": false,
       "attackRange": 3,
       "movementSpeed": 7,
+      "cost": 164,
       "statGrowths": { "strength": "D", "dexterity": "A", "magic": "D", "leadership": "B", "armor": "D", "weapon": "C" }
     },
     {
@@ -688,6 +717,7 @@
       "requiresActive": false,
       "attackRange": 1,
       "movementSpeed": 7,
+      "cost": 162,
       "statGrowths": { "strength": "C", "dexterity": "S", "magic": "F", "leadership": "E", "armor": "E", "weapon": "A" }
     }
   ]

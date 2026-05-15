@@ -106,10 +106,10 @@ func createTestUnit(manager *common.EntityManager, squadID ecs.EntityID, row, co
 	// Add required components
 	unit.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: squadID})
 	unit.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
-		AnchorRow: row,
-		AnchorCol: col,
-		Width:     1,
-		Height:    1,
+		AnchorRow:  row,
+		AnchorCol:  col,
+		CellWidth:  1,
+		CellHeight: 1,
 	})
 	unit.AddComponent(common.NameComponent, &common.Name{NameStr: "TestUnit"})
 
@@ -466,7 +466,7 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 	// Create magic attacker: Magic=15, Strength=3, Weapon=2
 	attacker := manager.World.NewEntity()
 	attacker.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: squadID})
-	attacker.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, CellWidth: 1, CellHeight: 1})
 	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
 
 	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
@@ -483,7 +483,7 @@ func TestCalculateUnitDamageByID_MagicDamageUsesMagicFormula(t *testing.T) {
 	// Create defender with low magic defense
 	defender := manager.World.NewEntity()
 	defender.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: squadID})
-	defender.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 1, CellWidth: 1, CellHeight: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
 
 	defenderAttr := common.NewAttributes(10, 0, 0, 0, 2, 10) // Magic=0, defense comes from BaseMagicResist only
@@ -541,7 +541,7 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 	// Create magic attacker: Wizard with Magic=15
 	attacker := manager.World.NewEntity()
 	attacker.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: squadID})
-	attacker.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	attacker.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, CellWidth: 1, CellHeight: 1})
 	attacker.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
 
 	attackerAttr := common.NewAttributes(3, 100, 15, 0, 1, 2) // High dex for guaranteed hit
@@ -557,7 +557,7 @@ func TestCalculateUnitDamageByID_MagicDefenseApplied(t *testing.T) {
 	// Create magic defender: Sorcerer with Magic=14
 	defender := manager.World.NewEntity()
 	defender.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: squadID})
-	defender.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 1, Width: 1, Height: 1})
+	defender.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 1, CellWidth: 1, CellHeight: 1})
 	defender.AddComponent(common.NameComponent, &common.Name{NameStr: "Sorcerer"})
 
 	defenderAttr := common.NewAttributes(4, 0, 14, 0, 1, 3) // Magic=14
@@ -1369,10 +1369,10 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 	multiCellUnit := manager.World.NewEntity()
 	multiCellUnit.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: defenderSquadID})
 	multiCellUnit.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
-		AnchorRow: 0,
-		AnchorCol: 0,
-		Width:     2,
-		Height:    2,
+		AnchorRow:  0,
+		AnchorCol:  0,
+		CellWidth:  2,
+		CellHeight: 2,
 	})
 	multiCellUnit.AddComponent(common.NameComponent, &common.Name{NameStr: "Giant"})
 
@@ -1445,10 +1445,10 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	multiCellUnit := manager.World.NewEntity()
 	multiCellUnit.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: defenderSquadID})
 	multiCellUnit.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{
-		AnchorRow: 0,
-		AnchorCol: 0,
-		Width:     2,
-		Height:    2,
+		AnchorRow:  0,
+		AnchorCol:  0,
+		CellWidth:  2,
+		CellHeight: 2,
 	})
 	multiCellUnit.AddComponent(common.NameComponent, &common.Name{NameStr: "Giant"})
 
@@ -1510,7 +1510,7 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	attackerSquadID := createTestSquad(manager, "Magic Squad")
 	wizard := manager.World.NewEntity()
 	wizard.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: attackerSquadID})
-	wizard.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 2, AnchorCol: 1, Width: 1, Height: 1})
+	wizard.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 2, AnchorCol: 1, CellWidth: 1, CellHeight: 1})
 	wizard.AddComponent(common.NameComponent, &common.Name{NameStr: "Wizard"})
 
 	// Wizard stats: Str=10, Magic=15
@@ -1529,7 +1529,7 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	defenderSquadID := createTestSquad(manager, "Physical Squad")
 	fighter := manager.World.NewEntity()
 	fighter.AddComponent(squadcore.SquadMemberComponent, &squadcore.SquadMemberData{SquadID: defenderSquadID})
-	fighter.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, Width: 1, Height: 1})
+	fighter.AddComponent(squadcore.GridPositionComponent, &squadcore.GridPositionData{AnchorRow: 0, AnchorCol: 0, CellWidth: 1, CellHeight: 1})
 	fighter.AddComponent(common.NameComponent, &common.Name{NameStr: "Fighter"})
 
 	// Fighter stats

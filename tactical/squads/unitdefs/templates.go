@@ -31,6 +31,7 @@ type UnitTemplate struct {
 	RequiresActive bool                           // If true, dead/stunned units don't provide cover
 	AttackRange    int                            // World-based attack range (Melee=1, Ranged=3, Magic=4)
 	MovementSpeed  int                            // Movement speed on world map (1 tile per speed point)
+	Cost           int                            // Gold cost to purchase this unit
 	StatGrowths    unitprogression.StatGrowthData // Per-stat growth rates for leveling
 }
 
@@ -56,7 +57,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 		return UnitTemplate{}, fmt.Errorf("invalid role for %s: %w", monsterData.UnitType, err)
 	}
 
-	attackType, err := GetAttackType(monsterData.AttackType, monsterData.AttackRange)
+	attackType, err := GetAttackType(monsterData.AttackType)
 	if err != nil {
 		return UnitTemplate{}, fmt.Errorf("invalid attack type for %s: %w", monsterData.UnitType, err)
 	}
@@ -99,6 +100,7 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 		RequiresActive: monsterData.RequiresActive,
 		AttackRange:    monsterData.AttackRange,
 		MovementSpeed:  monsterData.MovementSpeed,
+		Cost:           monsterData.Cost,
 		StatGrowths:    growths,
 	}
 

@@ -105,8 +105,8 @@ func (r *SquadCombatRenderer) RenderUnitWithColor(
 	spriteHeight := info.Image.Bounds().Dy()
 
 	// Calculate cell dimensions
-	unitCellWidth := info.Width * cellSize
-	unitCellHeight := info.Height * cellSize
+	unitCellWidth := info.CellWidth * cellSize
+	unitCellHeight := info.CellHeight * cellSize
 
 	// Calculate scale
 	scaleX := float64(unitCellWidth) / float64(spriteWidth)

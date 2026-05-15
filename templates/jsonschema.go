@@ -66,6 +66,7 @@ type JSONMonster struct {
 	RequiresActive bool    `json:"requiresActive"` // If true, dead/stunned units don't provide cover
 	AttackRange    int     `json:"attackRange"`    // World-based attack range (Melee=1, Ranged=3, Magic=4)
 	MovementSpeed  int     `json:"movementSpeed"`  // Movement speed on world map (1 tile per speed point)
+	Cost           int     `json:"cost"`           // Gold cost to purchase this unit
 
 	StatGrowths JSONStatGrowths `json:"statGrowths"` // Per-stat growth rate grades for leveling
 }

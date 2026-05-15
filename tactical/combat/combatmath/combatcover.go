@@ -12,7 +12,7 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 	var providers []ecs.EntityID
 
 	defenderCols := make(map[int]bool)
-	for c := defenderPos.AnchorCol; c < defenderPos.AnchorCol+defenderPos.Width && c < 3; c++ {
+	for c := defenderPos.AnchorCol; c < defenderPos.AnchorCol+defenderPos.CellWidth && c < 3; c++ {
 		defenderCols[c] = true
 	}
 
@@ -48,7 +48,7 @@ func GetCoverProvidersFor(defenderID ecs.EntityID, defenderSquadID ecs.EntityID,
 			continue
 		}
 		unitCols := make(map[int]bool)
-		for c := unitPos.AnchorCol; c < unitPos.AnchorCol+unitPos.Width && c < 3; c++ {
+		for c := unitPos.AnchorCol; c < unitPos.AnchorCol+unitPos.CellWidth && c < 3; c++ {
 			unitCols[c] = true
 		}
 		hasOverlap := false

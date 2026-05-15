@@ -71,36 +71,21 @@ func GetRole(roleString string) (UnitRole, error) {
 }
 
 // GetAttackType converts an attack type string from JSON to an AttackType enum value.
-// If attackTypeString is empty, falls back to attackRange for backward compatibility.
-func GetAttackType(attackTypeString string, attackRange int) (AttackType, error) {
-	if attackTypeString != "" {
-		switch attackTypeString {
-		case "MeleeRow":
-			return AttackTypeMeleeRow, nil
-		case "MeleeColumn":
-			return AttackTypeMeleeColumn, nil
-		case "Ranged":
-			return AttackTypeRanged, nil
-		case "Magic":
-			return AttackTypeMagic, nil
-		case "Heal":
-			return AttackTypeHeal, nil
-		default:
-			return 0, fmt.Errorf("invalid attackType: %q, expected MeleeRow, MeleeColumn, Ranged, Magic, or Heal", attackTypeString)
-		}
-	}
-
-	// Fallback to attackRange for backward compatibility
-	switch attackRange {
-	case 0:
+func GetAttackType(attackTypeString string) (AttackType, error) {
+	switch attackTypeString {
+	case "":
+		return 0, fmt.Errorf("attackType is required")
+	case "MeleeRow":
 		return AttackTypeMeleeRow, nil
-	case 1:
-		return AttackTypeMeleeRow, nil
-	case 3:
+	case "MeleeColumn":
+		return AttackTypeMeleeColumn, nil
+	case "Ranged":
 		return AttackTypeRanged, nil
-	case 4:
+	case "Magic":
 		return AttackTypeMagic, nil
+	case "Heal":
+		return AttackTypeHeal, nil
 	default:
-		return 0, fmt.Errorf("cannot determine attack type: attackType is empty and attackRange %d is invalid", attackRange)
+		return 0, fmt.Errorf("invalid attackType: %q, expected MeleeRow, MeleeColumn, Ranged, Magic, or Heal", attackTypeString)
 	}
 }

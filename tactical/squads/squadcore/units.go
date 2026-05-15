@@ -79,10 +79,10 @@ func ApplyUnitComponents(entity *ecs.Entity, template unitdefs.UnitTemplate, anc
 	})
 
 	entity.AddComponent(GridPositionComponent, &GridPositionData{
-		AnchorRow: anchorRow,
-		AnchorCol: anchorCol,
-		Width:     width,
-		Height:    height,
+		AnchorRow:  anchorRow,
+		AnchorCol:  anchorCol,
+		CellWidth:  width,
+		CellHeight: height,
 	})
 
 	entity.AddComponent(UnitRoleComponent, &UnitRoleData{

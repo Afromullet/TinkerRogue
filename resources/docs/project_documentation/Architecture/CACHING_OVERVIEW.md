@@ -24,43 +24,39 @@ This document provides a comprehensive overview of all caching mechanisms used t
 
 ECS Views are automatically-maintained caches provided by the bytearena/ecs library. When components are added or removed from entities, the library automatically updates all relevant Views. This provides O(k) iteration where k = entities with the component, versus O(n) for World.Query() where n = all entities.
 
-### 1.1 SquadQueryCache
+### 1.1 Squad Views (package-level)
 
-**File:** `tactical/squads/squadcore/squadcache.go`
+**File:** `tactical/squads/squadcore/squadmanager.go` (initialization), `squadqueries.go` (consumers)
 
-**Purpose:** Provides cached access to squad-related queries for GUI hot paths.
+**Purpose:** Cached access to squad-related queries for GUI and combat hot paths.
 
-**Structure:**
-```go
-type SquadQueryCache struct {
-    SquadView       *ecs.View // All SquadTag entities
-    SquadMemberView *ecs.View // All SquadMemberTag entities
-    LeaderView      *ecs.View // All LeaderTag entities
-}
-```
+**Mechanism:** Three package-level `*ecs.View` singletons — `squadView`, `squadMemberView`, `leaderView` — are created once during ECS subsystem initialization. Every query function in `squadqueries.go` (`GetSquadEntity`, `GetUnitIDsInSquad`, `GetLeaderID`, `GetSquadName`, `FindAllSquads`, etc.) iterates these Views directly.
 
 **Initialization:**
 ```go
-// Created during GUI initialization
-cache := squads.NewSquadQueryCache(manager)
-// Views are created with:
-manager.World.CreateView(SquadTag)
+// tactical/squads/squadcore/squadmanager.go
+var (
+    squadView       *ecs.View
+    squadMemberView *ecs.View
+    leaderView      *ecs.View
+)
+
+func init() {
+    common.RegisterSubsystem(func(em *common.EntityManager) {
+        InitSquadComponents(em)
+        InitSquadTags(em)
+        squadView = em.World.CreateView(SquadTag)
+        squadMemberView = em.World.CreateView(SquadMemberTag)
+        leaderView = em.World.CreateView(LeaderTag)
+    })
+}
 ```
 
-**Usage Pattern:**
-- GUI code uses `cache.GetSquadEntity(squadID)` instead of `squads.GetSquadEntity(squadID, manager)`
-- Iteration over `cache.SquadView.Get()` instead of `manager.World.Query(SquadTag)`
+**Usage Pattern:** Callers invoke top-level functions like `squadcore.GetSquadEntity(squadID, manager)`; they do not construct a cache object. The View access is transparent.
 
-**Invalidation:** Automatic - ECS library updates Views when components change
+**Invalidation:** Automatic — the ECS library updates each View when components are added or removed.
 
-**Performance:** 100-500x faster than full World.Query() for large entity counts
-
-**Methods:**
-- `GetSquadEntity(squadID)` - Find squad by ID
-- `GetUnitIDsInSquad(squadID)` - Get all units in a squad
-- `GetLeaderID(squadID)` - Find squad leader
-- `GetSquadName(squadID)` - Get squad name
-- `FindAllSquads()` - List all squad IDs
+**Performance:** O(k) iteration where k = entities with the relevant tag, versus O(n) for `World.Query()` where n = all entities. 100-500x faster for large entity counts.
 
 **Reference Implementation:** This is the canonical example of proper ECS View usage in TinkerRogue.
 
@@ -323,7 +319,7 @@ guiQueries.MarkAllSquadsDirty()
 - Faction membership
 - Combat action state (HasActed, HasMoved, MovementRemaining)
 
-**Dependencies:** Uses `SquadQueryCache` and `CombatQueryCache` for data collection during rebuild.
+**Dependencies:** Uses the package-level squad Views (`squadcore`) and `CombatQueryCache` for data collection during rebuild.
 
 ---
 
@@ -337,13 +333,14 @@ guiQueries.MarkAllSquadsDirty()
 ```go
 type GUIQueries struct {
     ECSManager     *common.EntityManager
-    factionManager *combat.CombatFactionManager
+    factionManager *combatstate.CombatFactionManager
 
-    SquadCache     *squads.SquadQueryCache      // ECS View cache
-    CombatCache    *combat.CombatQueryCache     // ECS View cache
-    squadInfoCache *SquadInfoCache              // Event-driven cache
+    CombatCache    *combatstate.CombatQueryCache // ECS View cache
+    squadInfoCache *SquadInfoCache               // Event-driven cache
 }
 ```
+
+(Squad-side queries route through package-level Views in `squadcore`, so `GUIQueries` does not hold a squad cache field.)
 
 **Integration Pattern:**
 - Owns multiple cache types (View-based + event-driven)
@@ -830,7 +827,7 @@ Global Singleton:
     Used by: EntityManager.MoveEntity(), squad movement, combat positioning
 
 ECS Views (auto-maintained):
-  SquadQueryCache
+  Squad Views in squadcore (squadView, squadMemberView, leaderView)
   CombatQueryCache
   RenderingCache.RenderablesView
   Package-level Views (OverworldNodeView, CommanderView, etc.)
@@ -840,7 +837,7 @@ ECS Views (auto-maintained):
 Event-Driven:
   SquadInfoCache
     ↓ Depends on
-    SquadQueryCache + CombatQueryCache
+    Squad Views + CombatQueryCache
     ↓ Invalidated by
     PowerPipeline subscribers (attack / move / turn-end / post-reset)
 
@@ -897,7 +894,7 @@ Rendering:
    ↓
 6. GlobalPositionSystem.MoveEntity() for each member (spatial grid update)
    ↓
-7. ECS library auto-updates all Views (SquadQueryCache, CombatQueryCache, RenderingCache)
+7. ECS library auto-updates all Views (squad Views, CombatQueryCache, RenderingCache)
    ↓
 8. CombatMovementSystem fires its raw hook → powerPipeline.FireMoveComplete(squadID)
    ↓
