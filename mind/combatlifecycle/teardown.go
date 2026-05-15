@@ -12,6 +12,17 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// CombatTeardown handles tactical-side entity disposal when exiting combat.
+// Implemented by CombatService (satisfies via Go structural typing, no import needed).
+// The implementation strips combat-only components from player squads internally
+// (faction membership, perk round state, positions, IsDeployed) — the caller
+// does not need to follow up.
+// Invoked by EncounterService.ExitCombat as one step in the exit orchestration —
+// it is NOT the full combat-exit flow.
+type CombatTeardown interface {
+	TeardownCombat(enemySquadIDs []ecs.EntityID)
+}
+
 // ApplyHPRecovery restores a percentage of max HP to all living units in a squad.
 func ApplyHPRecovery(manager *common.EntityManager, squadID ecs.EntityID, hpPercent int) {
 	for _, unitID := range squadcore.GetUnitIDsInSquad(squadID, manager) {

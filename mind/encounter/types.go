@@ -27,11 +27,11 @@ type ModeCoordinator interface {
 }
 
 // ActiveEncounter holds context for the currently active encounter.
-// CombatSetup fields (EncounterID, ThreatID, ThreatName, EnemySquadIDs, RosterOwnerID,
-// Type, DefendedNodeID, Resolver, etc.) are promoted.
-// CombatPosition (promoted) is the encounter location where combat takes place.
+// Setup carries the per-encounter handoff packet built by the starter
+// (EncounterID, EnemySquadIDs, Type, Resolver, etc.) — accessed via
+// the explicit Setup field so origin stays visible at the call site.
 type ActiveEncounter struct {
-	combatlifecycle.CombatSetup
+	Setup combatlifecycle.CombatSetup
 
 	// Player's original location before teleporting to the encounter (restored after combat).
 	OriginalPlayerPosition coords.LogicalPosition

@@ -8,7 +8,6 @@ import (
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/garrison"
 	"game_main/campaign/overworld/threat"
-	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 )
@@ -22,10 +21,22 @@ type OverworldCombatResolver struct {
 	EnemySquadIDs []ecs.EntityID
 }
 
-func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
-	// Flee delegates to the FleeResolver; no rewards, just a log entry.
+func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionResult {
+	// Flee: no rewards, no state changes, just a log entry.
 	if ctx.Reason == combatlifecycle.ExitFlee {
-		return (&FleeResolver{ThreatNodeID: r.ThreatNodeID}).Resolve(manager, ctx)
+		currentTick := core.GetCurrentTick(manager)
+		core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
+			fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
+			map[string]interface{}{
+				"victory":            false,
+				"retreat":            true,
+				"player_units_lost":  0,
+				"enemy_units_killed": 0,
+			})
+		fmt.Printf("Retreated from threat %d (no changes)\n", r.ThreatNodeID)
+		return &combatlifecycle.ResolutionResult{
+			Description: fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
+		}
 	}
 
 	// Count casualties
@@ -44,7 +55,7 @@ func (r *OverworldCombatResolver) Resolve(manager *common.EntityManager, ctx com
 		return nil
 	}
 
-	if ctx.PlayerVictory {
+	if ctx.Outcome.IsPlayerVictory {
 		return r.resolveVictory(manager, threatEntity, nodeData, ctx, enemyUnitsKilled)
 	}
 	return r.resolveDefeat(manager, threatEntity, nodeData)
@@ -56,7 +67,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	nodeData *core.OverworldNodeData,
 	ctx combatlifecycle.ResolutionContext,
 	enemyUnitsKilled int,
-) *combatlifecycle.ResolutionPlan {
+) *combatlifecycle.ResolutionResult {
 	damageDealt := enemyUnitsKilled / EnemiesPerIntensityPoint
 	oldIntensity := nodeData.Intensity
 	nodeData.Intensity -= damageDealt
@@ -84,7 +95,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 		fmt.Printf("Threat %d destroyed! Rewards: %d gold, %d XP\n",
 			r.ThreatNodeID, rewards.Gold, rewards.Experience)
 
-		return &combatlifecycle.ResolutionPlan{
+		return &combatlifecycle.ResolutionResult{
 			Rewards:     rewards,
 			Target:      target,
 			Description: fmt.Sprintf("Threat %d destroyed", r.ThreatNodeID),
@@ -108,7 +119,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	fmt.Printf("Threat %d weakened to intensity %d. Partial rewards: %d gold, %d XP\n",
 		r.ThreatNodeID, nodeData.Intensity, partialRewards.Gold, partialRewards.Experience)
 
-	return &combatlifecycle.ResolutionPlan{
+	return &combatlifecycle.ResolutionResult{
 		Rewards:     partialRewards,
 		Target:      target,
 		Description: fmt.Sprintf("Threat %d weakened to intensity %d", r.ThreatNodeID, nodeData.Intensity),
@@ -119,7 +130,7 @@ func (r *OverworldCombatResolver) resolveDefeat(
 	manager *common.EntityManager,
 	threatEntity *ecs.Entity,
 	nodeData *core.OverworldNodeData,
-) *combatlifecycle.ResolutionPlan {
+) *combatlifecycle.ResolutionResult {
 	oldIntensity := nodeData.Intensity
 	nodeData.Intensity += DefeatIntensityGrowth
 	nodeData.GrowthProgress = 0.0
@@ -144,7 +155,7 @@ func (r *OverworldCombatResolver) resolveDefeat(
 	fmt.Printf("Defeated by threat %d! Threat grew to intensity %d\n",
 		r.ThreatNodeID, nodeData.Intensity)
 
-	return &combatlifecycle.ResolutionPlan{
+	return &combatlifecycle.ResolutionResult{
 		Description: fmt.Sprintf("Defeated by threat %d", r.ThreatNodeID),
 	}
 }
@@ -156,16 +167,16 @@ type GarrisonDefenseResolver struct {
 	AttackingFactionType core.FactionType
 }
 
-func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
+func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionResult {
 	currentTick := core.GetCurrentTick(manager)
 
-	if ctx.PlayerVictory {
+	if ctx.Outcome.IsPlayerVictory {
 		core.LogEvent(core.EventGarrisonDefended, currentTick, r.DefendedNodeID,
 			fmt.Sprintf("Garrison at node %d successfully defended against %s",
 				r.DefendedNodeID, r.AttackingFactionType.String()), nil)
 		fmt.Printf("Garrison at node %d held! Defense successful.\n", r.DefendedNodeID)
 
-		return &combatlifecycle.ResolutionPlan{
+		return &combatlifecycle.ResolutionResult{
 			Description: "Garrison defended",
 		}
 	}
@@ -178,59 +189,8 @@ func (r *GarrisonDefenseResolver) Resolve(manager *common.EntityManager, ctx com
 		fmt.Printf("Garrison at node %d fell. Node captured by %s.\n", r.DefendedNodeID, newOwner)
 	}
 
-	return &combatlifecycle.ResolutionPlan{
+	return &combatlifecycle.ResolutionResult{
 		Description: fmt.Sprintf("Node %d captured", r.DefendedNodeID),
 	}
 }
 
-// FleeResolver resolves flee/retreat from combat.
-// Invoked by OverworldCombatResolver when ctx.Reason == ExitFlee.
-type FleeResolver struct {
-	ThreatNodeID ecs.EntityID
-}
-
-func (r *FleeResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
-	if r.ThreatNodeID == 0 {
-		return nil
-	}
-
-	currentTick := core.GetCurrentTick(manager)
-
-	core.LogEvent(core.EventCombatResolved, currentTick, r.ThreatNodeID,
-		fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
-		map[string]interface{}{
-			"victory":            false,
-			"retreat":            true,
-			"player_units_lost":  0,
-			"enemy_units_killed": 0,
-		})
-
-	fmt.Printf("Retreated from threat %d (no changes)\n", r.ThreatNodeID)
-
-	return &combatlifecycle.ResolutionPlan{
-		Description: fmt.Sprintf("Retreated from threat %d", r.ThreatNodeID),
-	}
-}
-
-// getAllPlayerSquadIDs returns all player squad IDs from the roster.
-func (es *EncounterService) getAllPlayerSquadIDs() []ecs.EntityID {
-	if es.activeEncounter == nil {
-		return nil
-	}
-
-	roster := rstr.GetPlayerSquadRoster(es.activeEncounter.RosterOwnerID, es.manager)
-	if roster != nil && len(roster.OwnedSquads) > 0 {
-		return roster.OwnedSquads
-	}
-	return nil
-}
-
-// returnGarrisonSquadsToNode returns garrison squads to their garrison after a successful defense.
-// Removes combat components but keeps the squad entities alive.
-func (es *EncounterService) returnGarrisonSquadsToNode(nodeID ecs.EntityID) {
-	garrisonData := garrison.GetGarrisonAtNode(es.manager, nodeID)
-	if garrisonData == nil {
-		return
-	}
-	combatlifecycle.StripCombatComponents(es.manager, garrisonData.SquadIDs)
-}

@@ -22,13 +22,13 @@ type RaidCombatStarter struct {
 	RoomNodeID       int
 }
 
-func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifecycle.CombatSetup, error) {
+func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifecycle.CombatSetup, func(), error) {
 	playerFactionID, enemyFactionID, err := SetupRaidFactions(
 		manager, s.RaidEntityID,
 		s.GarrisonSquadIDs, s.DeployedSquadIDs, s.CombatPos,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to setup raid factions: %w", err)
+		return nil, nil, fmt.Errorf("failed to setup raid factions: %w", err)
 	}
 
 	resolver := &RaidEncounterResolver{
@@ -45,5 +45,5 @@ func (s *RaidCombatStarter) Prepare(manager *common.EntityManager) (*combatlifec
 		"Garrison Raid",
 		s.CommanderID,
 		resolver,
-	), nil
+	), nil, nil
 }

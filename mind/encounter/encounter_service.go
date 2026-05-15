@@ -6,7 +6,7 @@ import (
 
 	"game_main/core/common"
 	"game_main/mind/combatlifecycle"
-	"game_main/campaign/overworld/core"
+	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 )
@@ -71,7 +71,7 @@ func (es *EncounterService) IsEncounterActive() bool {
 // GetCurrentEncounterID returns the currently active encounter ID (0 if none)
 func (es *EncounterService) GetCurrentEncounterID() ecs.EntityID {
 	if es.activeEncounter != nil {
-		return es.activeEncounter.EncounterID
+		return es.activeEncounter.Setup.EncounterID
 	}
 	return 0
 }
@@ -80,7 +80,7 @@ func (es *EncounterService) GetCurrentEncounterID() ecs.EntityID {
 // Returns 0 if no encounter is active.
 func (es *EncounterService) GetRosterOwnerID() ecs.EntityID {
 	if es.activeEncounter != nil {
-		return es.activeEncounter.RosterOwnerID
+		return es.activeEncounter.Setup.RosterOwnerID
 	}
 	return 0
 }
@@ -88,7 +88,7 @@ func (es *EncounterService) GetRosterOwnerID() ecs.EntityID {
 // GetEnemySquadIDs returns the enemy squad IDs for the current encounter (for cleanup coordination)
 func (es *EncounterService) GetEnemySquadIDs() []ecs.EntityID {
 	if es.activeEncounter != nil {
-		return es.activeEncounter.EnemySquadIDs
+		return es.activeEncounter.Setup.EnemySquadIDs
 	}
 	return nil
 }
@@ -107,7 +107,9 @@ func (es *EncounterService) ClearPostCombatCallback() {
 
 // ExitCombat is the single unified exit point for all combat endings.
 // All paths (victory, defeat, flee) MUST use this method.
-// Handles resolution, history recording, cleanup, and listener notification.
+// Snapshots the active encounter, delegates orchestration to
+// combatlifecycle.ExecuteCombatExit, records history during the orchestration's
+// history hook, then fires the post-combat callback for external listeners.
 func (es *EncounterService) ExitCombat(
 	reason combatlifecycle.CombatExitReason,
 	result *combatlifecycle.EncounterOutcome,
@@ -117,104 +119,46 @@ func (es *EncounterService) ExitCombat(
 		return
 	}
 
-	// Snapshot encounter before we clear activeEncounter.
-	// All cleanup steps reference this snapshot so new fields don't get missed.
+	// Snapshot per-encounter state before orchestration. PlayerSquadIDs is read
+	// from the roster up front so the resolver sees a stable list even after
+	// activeEncounter is cleared by the history hook.
 	enc := *es.activeEncounter
+	ctx := combatlifecycle.ResolutionContext{
+		Setup:                  enc.Setup,
+		Reason:                 reason,
+		Outcome:                result,
+		PlayerEntityID:         enc.PlayerEntityID,
+		PlayerSquadIDs:         es.collectPlayerSquadIDs(enc.Setup.RosterOwnerID),
+		OriginalPlayerPosition: enc.OriginalPlayerPosition,
+	}
 
-	// Single lookup of the encounter entity + data; reused by all steps below.
-	encounterEntity, encounterData := es.getEncounterData(enc.EncounterID)
+	hooks := NewEncounterExitHooks(es.manager, es.modeCoordinator)
 
-	// Step 1: Resolve combat outcome via the setup's resolver (built eagerly by the starter).
-	// One dispatch path for all combat types. Nil resolver means no resolution (debug encounters).
-	var resolution *combatlifecycle.ResolutionResult
-	if enc.Resolver != nil {
-		ctx := combatlifecycle.ResolutionContext{
-			Reason:         reason,
-			PlayerVictory:  result.IsPlayerVictory,
-			PlayerEntityID: enc.PlayerEntityID,
-			PlayerSquadIDs: es.getAllPlayerSquadIDs(),
+	onHistory := func(resolution *combatlifecycle.ResolutionResult) {
+		completed := &CompletedEncounter{
+			EncounterID:     enc.Setup.EncounterID,
+			ThreatID:        enc.Setup.ThreatID,
+			ThreatName:      enc.Setup.ThreatName,
+			PlayerPosition:  enc.Setup.CombatPosition,
+			StartTime:       enc.StartTime,
+			EndTime:         time.Now(),
+			Duration:        time.Since(enc.StartTime),
+			Outcome:         reason,
+			RoundsCompleted: result.RoundsCompleted,
+			VictorFaction:   result.VictorFaction,
+			VictorName:      result.VictorName,
 		}
-		resolution = combatlifecycle.ExecuteResolution(es.manager, enc.Resolver, ctx)
-	}
-
-	// Step 1b: Flee restores the encounter sprite (overworld-only effect; no-op otherwise).
-	if reason == combatlifecycle.ExitFlee {
-		restoreEncounterSprite(encounterEntity, encounterData)
-	}
-
-	// Step 2: Mark encounter defeated on overworld victory.
-	// markEncounterDefeated is null-safe: it no-ops for raid (no OverworldEncounterData on the raid entity).
-	if result.IsPlayerVictory && enc.Type != combatlifecycle.CombatTypeRaid {
-		markEncounterDefeated(encounterEntity, encounterData)
-	}
-
-	// Step 3: Restore player to original position (before they were teleported to encounter)
-	if es.modeCoordinator != nil {
-		if pos := es.modeCoordinator.GetPlayerPosition(); pos != nil {
-			*pos = enc.OriginalPlayerPosition
+		es.history = append(es.history, completed)
+		if len(es.history) > es.maxHistory {
+			es.history = es.history[len(es.history)-es.maxHistory:]
 		}
+		es.activeEncounter = nil
 	}
 
-	// Step 4: Record history from the snapshot, then clear activeEncounter.
-	completed := &CompletedEncounter{
-		EncounterID:     enc.EncounterID,
-		ThreatID:        enc.ThreatID,
-		ThreatName:      enc.ThreatName,
-		PlayerPosition:  enc.CombatPosition,
-		StartTime:       enc.StartTime,
-		EndTime:         time.Now(),
-		Duration:        time.Since(enc.StartTime),
-		Outcome:         reason,
-		RoundsCompleted: result.RoundsCompleted,
-		VictorFaction:   result.VictorFaction,
-		VictorName:      result.VictorName,
-	}
-	es.history = append(es.history, completed)
-	if len(es.history) > es.maxHistory {
-		es.history = es.history[len(es.history)-es.maxHistory:]
-	}
-	es.activeEncounter = nil
+	resolution := combatlifecycle.ExecuteCombatExit(es.manager, ctx, hooks, teardown, onHistory)
 
-	// Step 5: Tear down all combat entities.
-	// TeardownCombat internally strips combat-only state from player squads
-	// (faction membership, perk round state, positions, IsDeployed) — the
-	// caller does not need to follow up.
-	if teardown != nil {
-		if enc.Type == combatlifecycle.CombatTypeGarrisonDefense && result.IsPlayerVictory {
-			es.returnGarrisonSquadsToNode(enc.DefendedNodeID)
-		}
-		teardown.TeardownCombat(enc.EnemySquadIDs)
-	}
-
-	// Step 6: Notify external listeners (e.g., RaidRunner)
 	if es.postCombatCallback != nil {
 		es.postCombatCallback(reason, result, resolution)
-	}
-}
-
-// markEncounterDefeated marks the encounter as defeated and hides its sprite permanently.
-func markEncounterDefeated(entity *ecs.Entity, encounterData *core.OverworldEncounterData) {
-	if entity == nil || encounterData == nil {
-		return
-	}
-
-	encounterData.IsDefeated = true
-
-	renderable := common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
-	if renderable != nil {
-		renderable.Visible = false
-	}
-}
-
-// restoreEncounterSprite restores the encounter sprite visibility when fleeing combat.
-func restoreEncounterSprite(entity *ecs.Entity, encounterData *core.OverworldEncounterData) {
-	if entity == nil || encounterData == nil || encounterData.IsDefeated {
-		return
-	}
-
-	renderable := common.GetComponentType[*common.Renderable](entity, common.RenderableComponent)
-	if renderable != nil {
-		renderable.Visible = true
 	}
 }
 
@@ -241,9 +185,10 @@ func (es *EncounterService) TransitionToCombat(setup *combatlifecycle.CombatSetu
 	es.modeCoordinator.SetTriggeredEncounterID(setup.EncounterID)
 	es.modeCoordinator.ResetTacticalState()
 
-	// Set post-combat return mode if specified (e.g., "raid")
-	if setup.PostCombatReturnMode != "" {
-		es.modeCoordinator.SetPostCombatReturnMode(setup.PostCombatReturnMode)
+	// Set post-combat return mode if specified (e.g., "raid").
+	// Derived from setup.Type rather than a separate field.
+	if mode := setup.PostCombatReturnMode(); mode != "" {
+		es.modeCoordinator.SetPostCombatReturnMode(mode)
 	}
 
 	// Move player camera to encounter position so map zooms correctly
@@ -257,7 +202,7 @@ func (es *EncounterService) TransitionToCombat(setup *combatlifecycle.CombatSetu
 	playerEntityID := es.modeCoordinator.GetPlayerEntityID()
 
 	es.activeEncounter = &ActiveEncounter{
-		CombatSetup:            *setup,
+		Setup:                  *setup,
 		OriginalPlayerPosition: originalPlayerPos,
 		StartTime:              time.Now(),
 		PlayerEntityID:         playerEntityID,
@@ -266,14 +211,15 @@ func (es *EncounterService) TransitionToCombat(setup *combatlifecycle.CombatSetu
 	return nil
 }
 
-// getEncounterData looks up an encounter entity and its OverworldEncounterData.
-// Returns (nil, nil) if either the entity or the component is missing.
-func (es *EncounterService) getEncounterData(encounterID ecs.EntityID) (*ecs.Entity, *core.OverworldEncounterData) {
-	entity := es.manager.FindEntityByID(encounterID)
-	if entity == nil {
-		return nil, nil
+// collectPlayerSquadIDs reads the commander's owned-squad list from the roster.
+// Used to populate ResolutionContext.PlayerSquadIDs in ExitCombat before the
+// activeEncounter snapshot is cleared. Returns nil when the roster is missing
+// or empty (e.g., garrison defense, debug encounters).
+func (es *EncounterService) collectPlayerSquadIDs(rosterOwnerID ecs.EntityID) []ecs.EntityID {
+	roster := rstr.GetPlayerSquadRoster(rosterOwnerID, es.manager)
+	if roster != nil && len(roster.OwnedSquads) > 0 {
+		return roster.OwnedSquads
 	}
-	data := common.GetComponentType[*core.OverworldEncounterData](entity, core.OverworldEncounterComponent)
-	return entity, data
+	return nil
 }
 

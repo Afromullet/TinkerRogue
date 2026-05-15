@@ -8,28 +8,27 @@ import (
 	"game_main/tactical/squads/squadcore"
 )
 
-// RaidEncounterResolver dispatches a raid combat outcome to the appropriate
-// per-reason resolver. Built eagerly by RaidCombatStarter.Prepare and run by
-// the standard ExecuteResolution pipeline at exit time.
+// RaidEncounterResolver resolves a raid room outcome. Built eagerly by
+// RaidCombatStarter.Prepare and run by the standard ExecuteResolution pipeline
+// at exit time. On victory it marks the room cleared, advances floor state,
+// and computes the room reward. On defeat or flee it flags the raid as
+// defeated; rewards stay empty.
 type RaidEncounterResolver struct {
 	RaidState  *RaidStateData
 	RoomNodeID int
 }
 
-func (r *RaidEncounterResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
-	if ctx.PlayerVictory {
-		return (&RaidRoomResolver{RaidState: r.RaidState, RoomNodeID: r.RoomNodeID}).Resolve(manager, ctx)
+func (r *RaidEncounterResolver) Resolve(manager *common.EntityManager, ctx combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionResult {
+	if !ctx.Outcome.IsPlayerVictory {
+		raidState := GetRaidState(manager)
+		if raidState != nil {
+			raidState.Status = RaidDefeat
+		}
+		return &combatlifecycle.ResolutionResult{
+			Description: "Raid ended in defeat",
+		}
 	}
-	return (&RaidDefeatResolver{}).Resolve(manager, ctx)
-}
 
-// RaidRoomResolver resolves a successful raid room encounter.
-type RaidRoomResolver struct {
-	RaidState  *RaidStateData
-	RoomNodeID int
-}
-
-func (r *RaidRoomResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
 	if r.RaidState == nil {
 		return nil
 	}
@@ -62,23 +61,10 @@ func (r *RaidRoomResolver) Resolve(manager *common.EntityManager, _ combatlifecy
 	// Calculate room reward (pipeline grants it)
 	reward, target := calculateRoomReward(manager, r.RaidState, room.RoomType)
 
-	return &combatlifecycle.ResolutionPlan{
+	return &combatlifecycle.ResolutionResult{
 		Rewards:     reward,
 		Target:      target,
 		Description: fmt.Sprintf("Room %d (%s) cleared", room.NodeID, room.RoomType),
-	}
-}
-
-// RaidDefeatResolver resolves a raid defeat (combat loss or flee).
-type RaidDefeatResolver struct{}
-
-func (r *RaidDefeatResolver) Resolve(manager *common.EntityManager, _ combatlifecycle.ResolutionContext) *combatlifecycle.ResolutionPlan {
-	raidState := GetRaidState(manager)
-	if raidState != nil {
-		raidState.Status = RaidDefeat
-	}
-	return &combatlifecycle.ResolutionPlan{
-		Description: "Raid ended in defeat",
 	}
 }
 
