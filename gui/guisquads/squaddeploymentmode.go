@@ -105,7 +105,7 @@ func (sdm *SquadDeploymentMode) updateInstructionText() {
 		return
 	}
 
-	squadName := sdm.Queries.SquadCache.GetSquadName(sdm.selectedSquadID)
+	squadName := squadcore.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
 	sdm.instructionText.Label = fmt.Sprintf("Placing %s - Click on the map to position it", squadName)
 }
 
@@ -115,8 +115,8 @@ func (sdm *SquadDeploymentMode) updateDetailPanel() {
 		return
 	}
 
-	squadName := sdm.Queries.SquadCache.GetSquadName(sdm.selectedSquadID)
-	unitIDs := sdm.Queries.SquadCache.GetUnitIDsInSquad(sdm.selectedSquadID)
+	squadName := squadcore.GetSquadName(sdm.selectedSquadID, sdm.Queries.ECSManager)
+	unitIDs := squadcore.GetUnitIDsInSquad(sdm.selectedSquadID, sdm.Queries.ECSManager)
 
 	// Get current deployment position (if any)
 	allPositions := sdm.deploymentService.GetAllSquadPositions()

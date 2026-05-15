@@ -26,13 +26,10 @@ func validateSquadExists(squadID ecs.EntityID, manager *common.EntityManager) er
 	return nil
 }
 
-// validateGridPosition checks if grid coordinates are within valid bounds (0-2)
-// Returns error if position is outside the 3x3 squad grid
+// validateGridPosition checks if grid coordinates are within the squad grid.
+// Returns error if the anchor cell is outside SquadGridSize x SquadGridSize.
 func validateGridPosition(row, col int) error {
-	if row < 0 || row > 2 || col < 0 || col > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", row, col)
-	}
-	return nil
+	return squadcore.ValidateGridAnchor(row, col)
 }
 
 // validateUnitInSquad checks if a unit exists and belongs to the specified squad

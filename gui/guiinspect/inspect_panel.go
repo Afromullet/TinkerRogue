@@ -92,7 +92,7 @@ func (ip *InspectPanelController) PopulateGrid(squadID ecs.EntityID) {
 	ip.ClearGrid()
 
 	// Get unit IDs in this squad
-	unitIDs := ip.queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, ip.queries.ECSManager)
 
 	for _, unitID := range unitIDs {
 		info := ip.queries.GetUnitGridInfo(unitID)

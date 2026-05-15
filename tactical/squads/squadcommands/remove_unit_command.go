@@ -70,38 +70,15 @@ func (c *RemoveUnitCommand) Execute() error {
 		return fmt.Errorf("player roster not found")
 	}
 
-	// Mark unit as available in roster tracking
-	if err := roster.MarkUnitAvailable(c.unitID); err != nil {
-		return fmt.Errorf("failed to mark unit available: %w", err)
-	}
-
-	// Unassign from squad (entity stays alive, returns to roster pool)
-	if err := squadcore.UnassignUnitFromSquad(c.unitID, c.manager); err != nil {
-		return fmt.Errorf("failed to unassign unit from squad: %w", err)
-	}
-
-	return nil
+	return rstr.UnassignUnitFromSquad(roster, c.unitID, c.squadID, c.manager)
 }
 
 func (c *RemoveUnitCommand) Undo() error {
-	// Place the same entity back into the squad at its previous position
-	err := squadcore.PlaceUnitInSquad(c.squadID, c.unitID, c.manager, c.previousGridRow, c.previousGridCol)
-	if err != nil {
-		return fmt.Errorf("failed to re-place unit in squad: %w", err)
-	}
-
 	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
 	if roster == nil {
 		return fmt.Errorf("player roster not found")
 	}
-
-	// Mark as in squad in roster tracking
-	err = roster.MarkUnitInSquad(c.unitID, c.squadID)
-	if err != nil {
-		return fmt.Errorf("failed to mark unit in squad: %w", err)
-	}
-
-	return nil
+	return rstr.AssignUnitToSquad(roster, c.unitID, c.squadID, c.previousGridRow, c.previousGridCol, c.manager)
 }
 
 func (c *RemoveUnitCommand) Description() string {

@@ -6,6 +6,7 @@ import (
 	"game_main/gui/builders"
 	"game_main/gui/specs"
 	rstr "game_main/tactical/squads/roster"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -55,7 +56,7 @@ func (sem *SquadEditorMode) refreshCurrentSquad() {
 	}
 
 	// Update status
-	squadName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
+	squadName := squadcore.GetSquadName(currentSquadID, sem.Queries.ECSManager)
 	sem.SetStatus(fmt.Sprintf("Editing squad: %s", squadName))
 }
 
@@ -79,7 +80,7 @@ func (sem *SquadEditorMode) refreshSquadSelector() {
 
 // rebuildUnitListWidget updates the unit list for the current squad (rebuilds widget)
 func (sem *SquadEditorMode) rebuildUnitListWidget(squadID ecs.EntityID) {
-	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
 
 	panelWidth := int(float64(sem.Layout.ScreenWidth) * specs.SquadEditorUnitPanelWidth)
 	panelHeight := int(float64(sem.Layout.ScreenHeight) * specs.SquadEditorUnitPanelHeight)

@@ -46,6 +46,81 @@ func RemoveLeaderComponents(entity *ecs.Entity) {
 }
 
 // ========================================
+// GRID VALIDATION HELPERS
+// ========================================
+
+// ValidateGridPlacement validates that a unit of the given size fits within the
+// squad grid at the specified anchor position. width/height of 0 are treated as 1.
+// Used by all squad creation and placement paths.
+func ValidateGridPlacement(row, col, width, height int) error {
+	if width <= 0 {
+		width = 1
+	}
+	if height <= 0 {
+		height = 1
+	}
+	if row < 0 || col < 0 {
+		return fmt.Errorf("invalid anchor position (%d, %d)", row, col)
+	}
+	if width > SquadGridSize {
+		return fmt.Errorf("invalid grid width %d: must be 1-%d", width, SquadGridSize)
+	}
+	if height > SquadGridSize {
+		return fmt.Errorf("invalid grid height %d: must be 1-%d", height, SquadGridSize)
+	}
+	if row+height > SquadGridSize || col+width > SquadGridSize {
+		return fmt.Errorf("unit would extend outside grid at position (%d, %d) with size %dx%d",
+			row, col, width, height)
+	}
+	return nil
+}
+
+// ValidateGridAnchor validates that an anchor cell (row, col) is within the squad grid.
+// Equivalent to ValidateGridPlacement with width=1, height=1.
+func ValidateGridAnchor(row, col int) error {
+	return ValidateGridPlacement(row, col, 1, 1)
+}
+
+// hideUnitRenderable marks a unit's renderable as invisible. Units inside a squad
+// never render themselves on the world map; only the squad entity does.
+// No-op if the unit has no RenderableComponent.
+func hideUnitRenderable(unitEntity *ecs.Entity) {
+	r := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
+	if r != nil {
+		r.Visible = false
+	}
+}
+
+// attachUnitToSquadAtGrid is the shared tail of all unit-placement paths:
+// link the unit to its squad, write its grid anchor, hide its renderable, and
+// promote it to leader (refreshing the squad's renderable) when the squad
+// has none. Callers must validate capacity and occupancy first.
+func attachUnitToSquadAtGrid(
+	squadID ecs.EntityID,
+	unitEntity *ecs.Entity,
+	gridRow, gridCol int,
+	manager *common.EntityManager,
+) {
+	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
+		SquadID: squadID,
+	})
+
+	if gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent); gridPos != nil {
+		gridPos.AnchorRow = gridRow
+		gridPos.AnchorCol = gridCol
+	}
+
+	hideUnitRenderable(unitEntity)
+
+	if GetLeaderID(squadID, manager) == 0 {
+		AddLeaderComponents(unitEntity)
+		if squadEntity := GetSquadEntity(squadID, manager); squadEntity != nil {
+			SetSquadRenderableFromLeader(squadID, squadEntity, manager)
+		}
+	}
+}
+
+// ========================================
 // SQUAD RELATED
 // ========================================
 
@@ -61,7 +136,7 @@ func CreateEmptySquad(squadmanager *common.EntityManager,
 		Name:       squadName,
 		Morale:     100,
 		TurnCount:  0,
-		MaxUnits:   9,
+		MaxUnits:   SquadMaxUnits,
 		IsDeployed: false, // New squads start in reserves (not on map)
 	})
 
@@ -78,8 +153,8 @@ func AddUnitToSquad(
 	gridRow, gridCol int) (ecs.EntityID, error) {
 
 	// Validate position using the provided parameters, not unit template values
-	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		return 0, fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
+	if err := ValidateGridAnchor(gridRow, gridCol); err != nil {
+		return 0, err
 	}
 
 	// Check if position occupied
@@ -102,26 +177,7 @@ func AddUnitToSquad(
 		return 0, fmt.Errorf("invalid unit for %s: %w", unit.UnitType, err)
 	}
 
-	// Add SquadMemberComponent to link unit to squad
-	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
-		SquadID: squadID,
-	})
-
-	// Update GridPositionComponent with actual grid position
-	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
-	gridPos.AnchorRow = gridRow
-	gridPos.AnchorCol = gridCol
-
-	// Hide unit renderable - only the squad entity renders on the world map
-	unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
-	if unitRenderable != nil {
-		unitRenderable.Visible = false
-	}
-
-	// Auto-promote first unit to leader if squad has none
-	if GetLeaderID(squadID, squadmanager) == 0 {
-		AddLeaderComponents(unitEntity)
-	}
+	attachUnitToSquadAtGrid(squadID, unitEntity, gridRow, gridCol, squadmanager)
 
 	return unitEntity.GetID(), nil
 }
@@ -148,8 +204,8 @@ func RemoveUnitFromSquad(unitEntityID ecs.EntityID, squadmanager *common.EntityM
 // The entity must already have GridPositionComponent and AttributeComponent.
 func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *common.EntityManager, gridRow, gridCol int) error {
 	// Validate grid position
-	if gridRow < 0 || gridRow > 2 || gridCol < 0 || gridCol > 2 {
-		return fmt.Errorf("invalid grid position (%d, %d)", gridRow, gridCol)
+	if err := ValidateGridAnchor(gridRow, gridCol); err != nil {
+		return err
 	}
 
 	// Check if position occupied
@@ -175,34 +231,12 @@ func PlaceUnitInSquad(squadID ecs.EntityID, unitEntityID ecs.EntityID, manager *
 		return fmt.Errorf("unit entity %d not found", unitEntityID)
 	}
 
-	// Add SquadMemberComponent to link unit to squad
-	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
-		SquadID: squadID,
-	})
-
-	// Update GridPositionComponent with target grid position
-	gridPos := common.GetComponentType[*GridPositionData](unitEntity, GridPositionComponent)
-	if gridPos == nil {
+	// Caller contract: entity must already have GridPositionComponent.
+	if !unitEntity.HasComponent(GridPositionComponent) {
 		return fmt.Errorf("unit entity has no GridPositionComponent")
 	}
-	gridPos.AnchorRow = gridRow
-	gridPos.AnchorCol = gridCol
 
-	// Hide unit renderable - only the squad entity renders on the world map
-	unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
-	if unitRenderable != nil {
-		unitRenderable.Visible = false
-	}
-
-	// Auto-promote first unit to leader if squad has none
-	if GetLeaderID(squadID, manager) == 0 {
-		AddLeaderComponents(unitEntity)
-		squadEntity := GetSquadEntity(squadID, manager)
-		if squadEntity != nil {
-			SetSquadRenderableFromLeader(squadID, squadEntity, manager)
-		}
-	}
-
+	attachUnitToSquadAtGrid(squadID, unitEntity, gridRow, gridCol, manager)
 	return nil
 }
 
@@ -246,15 +280,9 @@ func MoveUnitInSquad(unitEntityID ecs.EntityID, newRow, newCol int, ecsmanager *
 		return fmt.Errorf("unit entity not found")
 	}
 
-	// Validate new anchor position is in bounds
-	if newRow < 0 || newCol < 0 {
-		return fmt.Errorf("invalid anchor position (%d, %d)", newRow, newCol)
-	}
-
-	// Validate unit fits within grid at new position
-	if newRow+gridPosData.Height > 3 || newCol+gridPosData.Width > 3 {
-		return fmt.Errorf("unit would extend outside grid at position (%d, %d) with size %dx%d",
-			newRow, newCol, gridPosData.Width, gridPosData.Height)
+	// Validate new anchor position and that unit fits within grid
+	if err := ValidateGridPlacement(newRow, newCol, gridPosData.Width, gridPosData.Height); err != nil {
+		return err
 	}
 
 	memberData := common.GetComponentTypeByID[*SquadMemberData](ecsmanager, unitEntityID, SquadMemberComponent)
@@ -298,10 +326,7 @@ func CreateSquadFromTemplate(
 	worldPos coords.LogicalPosition,
 	unitTemplates []unitdefs.UnitTemplate,
 ) ecs.EntityID {
-
-	// Create squad entity
 	squadEntity := ecsmanager.World.NewEntity()
-
 	squadID := squadEntity.GetID()
 
 	squadEntity.AddComponent(SquadComponent, &SquadData{
@@ -310,111 +335,76 @@ func CreateSquadFromTemplate(
 		Formation:  formation,
 		Morale:     100,
 		TurnCount:  0,
-		MaxUnits:   9,
-		IsDeployed: false, // New squads start in reserves (not on map)
+		MaxUnits:   SquadMaxUnits,
+		IsDeployed: false,
 	})
 	squadEntity.AddComponent(common.PositionComponent, &worldPos)
 
-	// Track occupied grid positions (keyed by "row,col")
-	occupied := make(map[string]bool)
-
-	// Create units
+	var occupied [SquadGridSize][SquadGridSize]bool
 	for _, template := range unitTemplates {
-		// Default to 1x1 if not specified
-		width := template.GridWidth
-		if width == 0 {
-			width = 1
-		}
-		height := template.GridHeight
-		if height == 0 {
-			height = 1
-		}
-
-		// Validate that unit fits within 3x3 grid
-		if template.GridRow < 0 || template.GridCol < 0 {
-			fmt.Printf("Warning: Invalid anchor position (%d, %d), skipping\n", template.GridRow, template.GridCol)
-			continue
-		}
-		if template.GridRow+height > 3 || template.GridCol+width > 3 {
-			fmt.Printf("Warning: Unit extends outside grid (anchor=%d,%d, size=%dx%d), skipping\n",
-				template.GridRow, template.GridCol, width, height)
-			continue
-		}
-
-		// Check if ANY cell this unit would occupy is already occupied
-		canPlace := true
-		var cellsToOccupy [][2]int
-		for r := template.GridRow; r < template.GridRow+height; r++ {
-			for c := template.GridCol; c < template.GridCol+width; c++ {
-				key := fmt.Sprintf("%d,%d", r, c)
-				if occupied[key] {
-					canPlace = false
-					fmt.Printf("Warning: Cell (%d,%d) already occupied, cannot place %dx%d unit at (%d,%d)\n",
-						r, c, width, height, template.GridRow, template.GridCol)
-					break
-				}
-				cellsToOccupy = append(cellsToOccupy, [2]int{r, c})
-			}
-			if !canPlace {
-				break
-			}
-		}
-
-		if !canPlace {
-			continue
-		}
-
-		// Create unit entity
-		unitEntity := templates.CreateEntityFromTemplate(
-			ecsmanager,
-			template.EntityConfig,
-			template.EntityData,
-		)
-
-		// Generate a display name (e.g., "Karathos the Warrior") instead of raw unit type
-		displayName := templates.GenerateName("default", template.UnitType)
-		unitEntity.AddComponent(common.NameComponent, &common.Name{NameStr: displayName})
-
-		// Make unit's renderable invisible - only the squad should render on the world map
-		// Units are internal to squads; the squad entity shows the leader's sprite
-		unitRenderable := common.GetComponentType[*common.Renderable](unitEntity, common.RenderableComponent)
-		if unitRenderable != nil {
-			unitRenderable.Visible = false
-		}
-
-		// Update unit's world position to match squad position
-		// (CreateEntityFromTemplate sets position to 0,0 by default)
-		// Re-add PositionComponent with correct world position
-		unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{
-			X: worldPos.X,
-			Y: worldPos.Y,
-		})
-
-		// Add squad membership (uses ID, not entity pointer)
-		unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{
-			SquadID: squadID,
-		})
-
-		// Add all squad-specific components from template
-		ApplyUnitComponents(unitEntity, template, template.GridRow, template.GridCol)
-
-		// Add leader component if needed
-		if template.IsLeader {
-			AddLeaderComponents(unitEntity)
-		}
-
-		// Mark ALL cells as occupied
-		for _, cell := range cellsToOccupy {
-			key := fmt.Sprintf("%d,%d", cell[0], cell[1])
-			occupied[key] = true
-		}
+		placeTemplateUnit(ecsmanager, squadID, worldPos, template, &occupied)
 	}
 
-	// Set squad's renderable to the leader's sprite
-	// This makes the squad display the leader's image on the world map
+	// Set squad's renderable to the leader's sprite so it appears on the world map.
 	SetSquadRenderableFromLeader(squadID, squadEntity, ecsmanager)
 
 	return squadID
+}
+
+// placeTemplateUnit validates, creates, and registers a single template-driven
+// unit inside a squad-under-construction, mutating `occupied` to mark its cells.
+// Logs a warning and returns without mutating state if the unit cannot be placed.
+func placeTemplateUnit(
+	ecsmanager *common.EntityManager,
+	squadID ecs.EntityID,
+	worldPos coords.LogicalPosition,
+	template unitdefs.UnitTemplate,
+	occupied *[SquadGridSize][SquadGridSize]bool,
+) {
+	width := template.GridWidth
+	if width == 0 {
+		width = 1
+	}
+	height := template.GridHeight
+	if height == 0 {
+		height = 1
+	}
+
+	if err := ValidateGridPlacement(template.GridRow, template.GridCol, width, height); err != nil {
+		fmt.Printf("Warning: %v, skipping\n", err)
+		return
+	}
+
+	for r := template.GridRow; r < template.GridRow+height; r++ {
+		for c := template.GridCol; c < template.GridCol+width; c++ {
+			if occupied[r][c] {
+				fmt.Printf("Warning: Cell (%d,%d) already occupied, cannot place %dx%d unit at (%d,%d)\n",
+					r, c, width, height, template.GridRow, template.GridCol)
+				return
+			}
+		}
+	}
+
+	unitEntity := templates.CreateEntityFromTemplate(ecsmanager, template.EntityConfig, template.EntityData)
+	unitEntity.AddComponent(common.NameComponent, &common.Name{
+		NameStr: templates.GenerateName("default", template.UnitType),
+	})
+	hideUnitRenderable(unitEntity)
+
+	// Re-bind world position to the squad's tile (CreateEntityFromTemplate defaults to 0,0).
+	unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{X: worldPos.X, Y: worldPos.Y})
+
+	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})
+	ApplyUnitComponents(unitEntity, template, template.GridRow, template.GridCol)
+	if template.IsLeader {
+		AddLeaderComponents(unitEntity)
+	}
+
+	for r := template.GridRow; r < template.GridRow+height; r++ {
+		for c := template.GridCol; c < template.GridCol+width; c++ {
+			occupied[r][c] = true
+		}
+	}
 }
 
 // SetSquadRenderableFromLeader copies the leader unit's sprite to the squad entity.

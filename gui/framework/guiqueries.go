@@ -3,41 +3,35 @@ package framework
 
 import (
 	"game_main/core/common"
-	"game_main/tactical/combat/combatstate"
-	"game_main/tactical/squads/squadcore"
 	"game_main/core/coords"
+	"game_main/tactical/combat/combatstate"
 
 	"github.com/bytearena/ecs"
 )
 
 // GUIQueries provides centralized ECS query functions for all UI modes.
 // This eliminates query duplication and provides a consistent query interface.
+//
+// Squad queries are served by the package-level views in squadcore (initialized
+// during subsystem registration), so no per-instance squad cache is required.
 type GUIQueries struct {
 	ECSManager     *common.EntityManager
 	factionManager *combatstate.CombatFactionManager
 
-	// Query caches (own Views that are automatically maintained by ECS library)
-	SquadCache     *squadcore.SquadQueryCache
 	CombatCache    *combatstate.CombatQueryCache
 	squadInfoCache *SquadInfoCache // Event-driven cache for turn-based game
-
 }
 
 // NewGUIQueries creates a new query service
 func NewGUIQueries(ecsManager *common.EntityManager) *GUIQueries {
-	// Create shared combat cache first
 	combatCache := combatstate.NewCombatQueryCache(ecsManager)
 
 	gq := &GUIQueries{
 		ECSManager:     ecsManager,
 		factionManager: combatstate.NewCombatFactionManager(ecsManager, combatCache),
-
-		// Initialize query caches (own Views that are automatically maintained by ECS library)
-		SquadCache:  squadcore.NewSquadQueryCache(ecsManager),
-		CombatCache: combatCache,
+		CombatCache:    combatCache,
 	}
 
-	// Initialize smart squad info cache (event-driven, not frame-level)
 	gq.squadInfoCache = NewSquadInfoCache(gq)
 
 	return gq

@@ -266,7 +266,7 @@ func (sem *SquadEditorMode) onRenameSquad() {
 	}
 
 	currentSquadID := sem.squadNav.CurrentID()
-	currentName := sem.Queries.SquadCache.GetSquadName(currentSquadID)
+	currentName := squadcore.GetSquadName(currentSquadID, sem.Queries.ECSManager)
 
 	// Show text input dialog
 	dialog := builders.CreateTextInputDialog(builders.TextInputDialogConfig{
@@ -315,7 +315,7 @@ func (sem *SquadEditorMode) backfillRosterWithSquadUnits() {
 
 	for _, squadID := range allSquads {
 		// Get all units in this squad
-		unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
+		unitIDs := squadcore.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
 
 		for _, unitID := range unitIDs {
 			// Check if unit is already in roster

@@ -11,7 +11,7 @@ import (
 // GetAllSquadIDs returns all squad entity IDs.
 // Satisfies rendering.SquadInfoProvider.
 func (gq *GUIQueries) GetAllSquadIDs() []ecs.EntityID {
-	return gq.SquadCache.FindAllSquads()
+	return squadcore.FindAllSquads(gq.ECSManager)
 }
 
 // GetSquadRenderInfo returns minimal squad data for rendering.
@@ -34,7 +34,7 @@ func (gq *GUIQueries) GetSquadRenderInfo(squadID ecs.EntityID) *combatrender.Squ
 // GetUnitIDsInSquad returns all unit entity IDs in a squad.
 // Satisfies rendering.UnitInfoProvider.
 func (gq *GUIQueries) GetUnitIDsInSquad(squadID ecs.EntityID) []ecs.EntityID {
-	return gq.SquadCache.GetUnitIDsInSquad(squadID)
+	return squadcore.GetUnitIDsInSquad(squadID, gq.ECSManager)
 }
 
 // GetUnitRenderInfo returns minimal unit data for combat animation rendering.

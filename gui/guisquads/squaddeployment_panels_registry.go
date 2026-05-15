@@ -8,6 +8,7 @@ import (
 	"game_main/gui/framework"
 	"game_main/gui/specs"
 	"game_main/gui/widgets"
+	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"
@@ -60,8 +61,8 @@ func init() {
 				MinHeight: listHeight,
 				EntryLabelFunc: func(e interface{}) string {
 					if squadID, ok := e.(ecs.EntityID); ok {
-						squadName := sdm.Queries.SquadCache.GetSquadName(squadID)
-						unitCount := len(sdm.Queries.SquadCache.GetUnitIDsInSquad(squadID))
+						squadName := squadcore.GetSquadName(squadID, sdm.Queries.ECSManager)
+						unitCount := len(squadcore.GetUnitIDsInSquad(squadID, sdm.Queries.ECSManager))
 
 						// Check if squad has been placed
 						allPositions := sdm.deploymentService.GetAllSquadPositions()

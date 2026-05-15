@@ -83,7 +83,7 @@ func (sem *SquadEditorMode) loadSquadFormation(squadID ecs.EntityID) {
 	guiinspect.ClearGridCells(sem.supportGridCells)
 
 	// Get units in squad and display them
-	unitIDs := sem.Queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, sem.Queries.ECSManager)
 
 	for _, unitID := range unitIDs {
 		info := sem.Queries.GetUnitGridInfo(unitID)

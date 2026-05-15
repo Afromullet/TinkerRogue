@@ -18,12 +18,12 @@ import (
 func CreateUnitEntity(squadmanager *common.EntityManager, unit unitdefs.UnitTemplate) (*ecs.Entity, error) {
 
 	// Validate grid dimensions
-	if unit.GridWidth < 1 || unit.GridWidth > 3 {
-		return nil, fmt.Errorf("invalid grid width %d for unit %s: must be 1-3", unit.GridWidth, unit.UnitType)
+	if unit.GridWidth < 1 || unit.GridWidth > SquadGridSize {
+		return nil, fmt.Errorf("invalid grid width %d for unit %s: must be 1-%d", unit.GridWidth, unit.UnitType, SquadGridSize)
 	}
 
-	if unit.GridHeight < 1 || unit.GridHeight > 3 {
-		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-3", unit.GridHeight, unit.UnitType)
+	if unit.GridHeight < 1 || unit.GridHeight > SquadGridSize {
+		return nil, fmt.Errorf("invalid grid height %d for unit %s: must be 1-%d", unit.GridHeight, unit.UnitType, SquadGridSize)
 	}
 
 	// Generate a unique display name for this unit

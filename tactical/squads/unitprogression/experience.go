@@ -69,24 +69,24 @@ func processLevelUp(unitID ecs.EntityID, manager *common.EntityManager, rng *ran
 		return
 	}
 
-	// Roll each stat independently against its growth chance
-	if rng.Intn(100) < GrowthChance(growthData.Strength) {
-		attr.Strength++
+	// Roll each stat independently against its growth chance.
+	// Adding a new growable stat requires only adding a row to this table
+	// (plus matching fields on StatGrowthData and Attributes).
+	growthRolls := []struct {
+		grade GrowthGrade
+		stat  *int
+	}{
+		{growthData.Strength, &attr.Strength},
+		{growthData.Dexterity, &attr.Dexterity},
+		{growthData.Magic, &attr.Magic},
+		{growthData.Leadership, &attr.Leadership},
+		{growthData.Armor, &attr.Armor},
+		{growthData.Weapon, &attr.Weapon},
 	}
-	if rng.Intn(100) < GrowthChance(growthData.Dexterity) {
-		attr.Dexterity++
-	}
-	if rng.Intn(100) < GrowthChance(growthData.Magic) {
-		attr.Magic++
-	}
-	if rng.Intn(100) < GrowthChance(growthData.Leadership) {
-		attr.Leadership++
-	}
-	if rng.Intn(100) < GrowthChance(growthData.Armor) {
-		attr.Armor++
-	}
-	if rng.Intn(100) < GrowthChance(growthData.Weapon) {
-		attr.Weapon++
+	for _, roll := range growthRolls {
+		if rng.Intn(100) < GrowthChance(roll.grade) {
+			*roll.stat++
+		}
 	}
 }
 

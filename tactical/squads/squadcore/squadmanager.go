@@ -9,9 +9,14 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// squadMemberView is a package-level ECS View for zero-allocation squad member queries.
+// Package-level ECS Views for zero-allocation squad queries.
 // Initialized once during subsystem registration; automatically maintained by the ECS library.
-var squadMemberView *ecs.View
+// All canonical squad queries in squadqueries.go iterate these views directly.
+var (
+	squadView       *ecs.View // All SquadTag entities
+	squadMemberView *ecs.View // All SquadMemberTag entities
+	leaderView      *ecs.View // All LeaderTag entities
+)
 
 // init registers the squads subsystem with the ECS component registry.
 // This allows the squads package to self-register its components without
@@ -20,7 +25,9 @@ func init() {
 	common.RegisterSubsystem(func(em *common.EntityManager) {
 		InitSquadComponents(em)
 		InitSquadTags(em)
+		squadView = em.World.CreateView(SquadTag)
 		squadMemberView = em.World.CreateView(SquadMemberTag)
+		leaderView = em.World.CreateView(LeaderTag)
 	})
 }
 

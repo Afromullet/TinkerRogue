@@ -1,4 +1,4 @@
-// Package squads implements an Entity Component System (ECS) for squad-based
+// Package squadcore implements an Entity Component System (ECS) for squad-based
 // tactical combat. It provides components for squad management, unit positioning
 // in a 3x3 grid, role-based combat behavior, and leader abilities.
 //
@@ -11,6 +11,13 @@ import (
 	"game_main/tactical/squads/unitdefs"
 
 	"github.com/bytearena/ecs"
+)
+
+// Grid layout limits. Change these to resize the squad grid; all queries,
+// validators, and creation paths derive bounds from these constants.
+const (
+	SquadGridSize = 3                             // Width and height of the squad grid (3x3)
+	SquadMaxUnits = SquadGridSize * SquadGridSize // Maximum units a squad can hold
 )
 
 // Global components
@@ -97,8 +104,8 @@ type GridPositionData struct {
 // GetOccupiedCells returns all grid cells this unit occupies
 func (g *GridPositionData) GetOccupiedCells() [][2]int {
 	var cells [][2]int
-	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < 3; r++ {
-		for c := g.AnchorCol; c < g.AnchorCol+g.Width && c < 3; c++ {
+	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < SquadGridSize; r++ {
+		for c := g.AnchorCol; c < g.AnchorCol+g.Width && c < SquadGridSize; c++ {
 			cells = append(cells, [2]int{r, c})
 		}
 	}
@@ -114,7 +121,7 @@ func (g *GridPositionData) OccupiesCell(row, col int) bool {
 // GetRows returns all row indices this unit occupies
 func (g *GridPositionData) GetRows() []int {
 	var rows []int
-	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < 3; r++ {
+	for r := g.AnchorRow; r < g.AnchorRow+g.Height && r < SquadGridSize; r++ {
 		rows = append(rows, r)
 	}
 	return rows

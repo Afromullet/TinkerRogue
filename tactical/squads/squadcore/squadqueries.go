@@ -49,7 +49,7 @@ func CountLivingUnitsInSquad(manager *common.EntityManager, squadID ecs.EntityID
 func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *common.EntityManager) []ecs.EntityID {
 	var unitIDs []ecs.EntityID
 
-	for _, result := range squadmanager.World.Query(SquadMemberTag) {
+	for _, result := range squadMemberView.Get() {
 		unitEntity := result.Entity
 
 		memberData := common.GetComponentType[*SquadMemberData](unitEntity, SquadMemberComponent)
@@ -65,8 +65,7 @@ func GetUnitIDsAtGridPosition(squadID ecs.EntityID, row, col int, squadmanager *
 
 		// Check if this unit occupies the queried cell (supports multi-cell units)
 		if gridPos.OccupiesCell(row, col) {
-			unitID := unitEntity.GetID() //  Native method!
-			unitIDs = append(unitIDs, unitID)
+			unitIDs = append(unitIDs, unitEntity.GetID())
 		}
 	}
 
@@ -92,38 +91,42 @@ func GetUnitIDsInSquad(squadID ecs.EntityID, squadmanager *common.EntityManager)
 	return unitIDs
 }
 
-// GetSquadEntity finds squad entity by squad ID
-// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetSquadEntity() when available for better performance.
-// Returns entity pointer directly from query
+// GetSquadEntity finds squad entity by squad ID using the package-level squad view.
+// Returns the entity pointer, or nil if no squad has the given ID.
 func GetSquadEntity(squadID ecs.EntityID, squadmanager *common.EntityManager) *ecs.Entity {
-	// Note: This uses a component field match (SquadData.SquadID), not a direct entity ID match
-	// So it cannot use the generic FindEntityByIDWithTag helper. Keeping specialized implementation.
-	for _, result := range squadmanager.World.Query(SquadTag) {
+	for _, result := range squadView.Get() {
 		squadEntity := result.Entity
 		squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
-
-		if squadData.SquadID == squadID {
+		if squadData != nil && squadData.SquadID == squadID {
 			return squadEntity
 		}
 	}
-
 	return nil
 }
 
-// GetLeaderID finds the leader unit ID of a squad
-// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetLeaderID() when available for better performance.
-// Returns ecs.EntityID (native type), not entity pointer
+// GetLeaderID finds the leader unit ID of a squad using the package-level leader view.
+// Returns 0 if the squad has no leader.
 func GetLeaderID(squadID ecs.EntityID, squadmanager *common.EntityManager) ecs.EntityID {
-	for _, result := range squadmanager.World.Query(LeaderTag) {
+	for _, result := range leaderView.Get() {
 		leaderEntity := result.Entity
 		memberData := common.GetComponentType[*SquadMemberData](leaderEntity, SquadMemberComponent)
-
-		if memberData.SquadID == squadID {
-			return leaderEntity.GetID() //  Native method!
+		if memberData != nil && memberData.SquadID == squadID {
+			return leaderEntity.GetID()
 		}
 	}
-
 	return 0
+}
+
+// FindAllSquads returns every squad ID currently in the world.
+func FindAllSquads(squadmanager *common.EntityManager) []ecs.EntityID {
+	allSquads := make([]ecs.EntityID, 0)
+	for _, result := range squadView.Get() {
+		squadData := common.GetComponentType[*SquadData](result.Entity, SquadComponent)
+		if squadData != nil {
+			allSquads = append(allSquads, squadData.SquadID)
+		}
+	}
+	return allSquads
 }
 
 // GetUnitType returns the unit type string for a unit entity, or "" if not found.
@@ -341,16 +344,16 @@ func GetSquadMovementSpeedOrDefault(squadID ecs.EntityID, manager *common.Entity
 	return speed
 }
 
-// GetSquadName returns the squad name
-// NOTE: This is the non-cached version (O(n)). Prefer using SquadQueryCache.GetSquadName() when available for better performance.
-// Returns "Unknown Squad" if squad not found
+// GetSquadName returns the squad's display name, or "Unknown Squad" if not found.
 func GetSquadName(squadID ecs.EntityID, squadmanager *common.EntityManager) string {
 	squadEntity := GetSquadEntity(squadID, squadmanager)
 	if squadEntity == nil {
 		return "Unknown Squad"
 	}
-
 	squadData := common.GetComponentType[*SquadData](squadEntity, SquadComponent)
+	if squadData == nil {
+		return "Unknown Squad"
+	}
 	return squadData.Name
 }
 
@@ -404,7 +407,7 @@ func ComputeGenericPatternFiltered(squadID ecs.EntityID, manager *common.EntityM
 		cells := computeGenericTargetCells(targetData, gridPos)
 		for _, cell := range cells {
 			r, c := cell[0], cell[1]
-			if r >= 0 && r < 3 && c >= 0 && c < 3 {
+			if r >= 0 && r < SquadGridSize && c >= 0 && c < SquadGridSize {
 				pattern[r][c].UnitNames = append(pattern[r][c].UnitNames, unitName)
 			}
 		}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/core/common"
 	rstr "game_main/tactical/squads/roster"
-	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
 )
@@ -79,20 +78,11 @@ func (c *AddUnitCommand) Execute() error {
 		return fmt.Errorf("no available unit entity for template '%s'", c.templateName)
 	}
 
-	// Place the existing entity into the squad (no cloning)
-	err := squadcore.PlaceUnitInSquad(c.squadID, unitEntityID, c.manager, c.gridRow, c.gridCol)
-	if err != nil {
-		return fmt.Errorf("failed to place unit in squad: %w", err)
+	if err := rstr.AssignUnitToSquad(roster, unitEntityID, c.squadID, c.gridRow, c.gridCol, c.manager); err != nil {
+		return err
 	}
 
 	c.addedUnitID = unitEntityID
-
-	// Mark unit as in squad in roster tracking
-	err = roster.MarkUnitInSquad(c.addedUnitID, c.squadID)
-	if err != nil {
-		return fmt.Errorf("failed to mark unit in roster: %w", err)
-	}
-
 	return nil
 }
 
@@ -106,16 +96,8 @@ func (c *AddUnitCommand) Undo() error {
 		return fmt.Errorf("player roster not found")
 	}
 
-	// Mark as available in roster tracking
-	err := roster.MarkUnitAvailable(c.addedUnitID)
-	if err != nil {
-		return fmt.Errorf("failed to mark unit available: %w", err)
-	}
-
-	// Unassign from squad (entity stays alive, returns to roster pool)
-	err = squadcore.UnassignUnitFromSquad(c.addedUnitID, c.manager)
-	if err != nil {
-		return fmt.Errorf("failed to unassign unit from squad: %w", err)
+	if err := rstr.UnassignUnitFromSquad(roster, c.addedUnitID, c.squadID, c.manager); err != nil {
+		return err
 	}
 
 	c.addedUnitID = 0

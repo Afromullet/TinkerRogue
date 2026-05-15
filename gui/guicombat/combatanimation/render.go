@@ -3,6 +3,8 @@ package combatanimation
 import (
 	"image/color"
 
+	"game_main/tactical/squads/squadcore"
+
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -37,15 +39,15 @@ func (cam *CombatAnimationMode) drawGridBackground(screen *ebiten.Image, baseX, 
 }
 
 func (cam *CombatAnimationMode) drawSquadNames(screen *ebiten.Image) {
-	_ = cam.Queries.SquadCache.GetSquadName(cam.attackerSquadID)
-	_ = cam.Queries.SquadCache.GetSquadName(cam.defenderSquadID)
+	_ = squadcore.GetSquadName(cam.attackerSquadID, cam.Queries.ECSManager)
+	_ = squadcore.GetSquadName(cam.defenderSquadID, cam.Queries.ECSManager)
 }
 
 func (cam *CombatAnimationMode) renderSquadWithUnitColors(
 	screen *ebiten.Image, squadID ecs.EntityID,
 	baseX, baseY, cellSize int, facingLeft bool, isAttacker bool,
 ) {
-	unitIDs := cam.Queries.SquadCache.GetUnitIDsInSquad(squadID)
+	unitIDs := squadcore.GetUnitIDsInSquad(squadID, cam.Queries.ECSManager)
 
 	for _, unitID := range unitIDs {
 		var colorScale *ebiten.ColorScale
