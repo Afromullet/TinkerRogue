@@ -2,41 +2,46 @@ package combatservices
 
 import (
 	"fmt"
-	"game_main/core/common"
-	"game_main/tactical/combat/combatstate"
+
 	"game_main/tactical/powers/artifacts"
-	"game_main/tactical/powers/perks"
 	"game_main/tactical/powers/powercore"
 
 	"github.com/bytearena/ecs"
 )
 
-// setupPowerDispatch configures the shared PowerLogger and creates the perk dispatcher.
-// The actual dispatch wiring happens in NewCombatService, where subscribers are
-// registered on cs.powerPipeline in declared execution order.
+// setupPowerDispatch builds the canonical combat PowerLogger and hands it to
+// the orchestrator, which fans it out to artifacts, perks, ability messages,
+// and gear messages. After this returns, cs.logger and cs.Powers.Logger() are
+// the same instance.
 //
-// Execution order per event (declared by On* calls in NewCombatService):
+// Source-tag → prefix routing:
 //
-//	PostReset:        artifacts.OnPostReset → perks.TurnStart
-//	OnAttackComplete: artifacts.OnAttackComplete → perks state tracking → GUI
-//	OnTurnEnd:        artifacts charge refresh + OnTurnEnd → perks round reset → GUI
-//	OnMoveComplete:   perks movement tracking → GUI (no artifact hook)
-func setupPowerDispatch(cs *CombatService, manager *common.EntityManager, cache *combatstate.CombatQueryCache) {
-	// Single PowerLogger shared by artifacts and perks. Source tags ("engagement_chains",
-	// "counterpunch") flow through unchanged; the [GEAR] / [PERK] prefix is decided
-	// here by asking the artifacts registry whether the source is a known behavior.
+//	known artifact behavior → "[GEAR]"
+//	"service"               → "[COMBAT]"
+//	otherwise               → "[PERK]"
+func setupPowerDispatch(cs *CombatService) {
 	logger := powercore.LoggerFunc(func(source string, squadID ecs.EntityID, message string) {
-		prefix := "[PERK]"
-		if artifacts.IsRegisteredBehavior(source) {
-			prefix = "[GEAR]"
+		prefix := classifyLogPrefix(source)
+		if squadID == 0 {
+			fmt.Printf("%s %s\n", prefix, message)
+			return
 		}
 		fmt.Printf("%s %s: %s (squad %d)\n", prefix, source, message, squadID)
 	})
 
-	cs.artifactDispatcher.SetLogger(logger)
+	cs.logger = logger
+	cs.Powers.InstallLogger(logger)
+}
 
-	perkDispatcher := &perks.SquadPerkDispatcher{}
-	perkDispatcher.SetLogger(logger)
-	cs.perkDispatcher = perkDispatcher
-	cs.CombatActSystem.SetPerkDispatcher(cs.perkDispatcher)
+// classifyLogPrefix maps a log source tag to its display prefix. The mapping
+// is centralized here so the combat logger format stays consistent across
+// subsystems.
+func classifyLogPrefix(source string) string {
+	if artifacts.IsRegisteredBehavior(source) {
+		return "[GEAR]"
+	}
+	if source == "service" {
+		return "[COMBAT]"
+	}
+	return "[PERK]"
 }

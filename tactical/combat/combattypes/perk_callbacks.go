@@ -21,3 +21,31 @@ type PerkDispatcher interface {
 	DeathOverride(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool
 	DamageRedirect(defenderID, defenderSquadID ecs.EntityID, damageAmount int, manager *common.EntityManager) (reducedDamage int, redirectTargetID ecs.EntityID, redirectAmount int)
 }
+
+// NoopPerkDispatcher is a null-object implementation of PerkDispatcher used when
+// no perk system is wired (default state, tests). All mutating hooks are no-ops;
+// pass-through hooks return their inputs unchanged.
+type NoopPerkDispatcher struct{}
+
+func (NoopPerkDispatcher) AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID, modifiers *DamageModifiers, manager *common.EntityManager) {
+}
+func (NoopPerkDispatcher) DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID, modifiers *DamageModifiers, manager *common.EntityManager) {
+}
+func (NoopPerkDispatcher) CoverMod(attackerID, defenderID ecs.EntityID, cover *CoverBreakdown, manager *common.EntityManager) {
+}
+func (NoopPerkDispatcher) TargetOverride(attackerID, defenderSquadID ecs.EntityID, targets []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	return targets
+}
+func (NoopPerkDispatcher) CounterMod(defenderSquadID, attackerID ecs.EntityID, modifiers *DamageModifiers, manager *common.EntityManager) bool {
+	return false
+}
+func (NoopPerkDispatcher) AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID, damage int, wasKill bool, manager *common.EntityManager) {
+}
+func (NoopPerkDispatcher) DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID, damage int, wasKill bool, manager *common.EntityManager) {
+}
+func (NoopPerkDispatcher) DeathOverride(unitID, squadID ecs.EntityID, manager *common.EntityManager) bool {
+	return false
+}
+func (NoopPerkDispatcher) DamageRedirect(defenderID, defenderSquadID ecs.EntityID, damageAmount int, manager *common.EntityManager) (int, ecs.EntityID, int) {
+	return damageAmount, 0, 0
+}

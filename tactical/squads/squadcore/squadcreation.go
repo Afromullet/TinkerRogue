@@ -14,34 +14,18 @@ import (
 // LEADER COMPONENT HELPERS
 // ========================================
 
-// AddLeaderComponents adds all leader-related components to a unit entity.
-// Includes LeaderComponent, AbilitySlotComponent, and CooldownTrackerComponent.
+// AddLeaderComponents adds the LeaderComponent to a unit entity.
 func AddLeaderComponents(entity *ecs.Entity) {
 	entity.AddComponent(LeaderComponent, &LeaderData{
 		Leadership: 10,
 		Experience: 0,
 	})
-
-	entity.AddComponent(AbilitySlotComponent, &AbilitySlotData{
-		Slots: [4]AbilitySlot{},
-	})
-
-	entity.AddComponent(CooldownTrackerComponent, &CooldownTrackerData{
-		Cooldowns:    [4]int{0, 0, 0, 0},
-		MaxCooldowns: [4]int{0, 0, 0, 0},
-	})
 }
 
-// RemoveLeaderComponents removes all leader-related components from a unit entity.
+// RemoveLeaderComponents removes the LeaderComponent from a unit entity.
 func RemoveLeaderComponents(entity *ecs.Entity) {
 	if entity.HasComponent(LeaderComponent) {
 		entity.RemoveComponent(LeaderComponent)
-	}
-	if entity.HasComponent(AbilitySlotComponent) {
-		entity.RemoveComponent(AbilitySlotComponent)
-	}
-	if entity.HasComponent(CooldownTrackerComponent) {
-		entity.RemoveComponent(CooldownTrackerComponent)
 	}
 }
 

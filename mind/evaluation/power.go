@@ -101,36 +101,13 @@ func CalculateUtilityPower(
 	config *PowerConfig,
 ) float64 {
 	// Sum all utility components (no sub-weights, just add them together)
-	return calculateRoleValue(roleData) + calculateAbilityValue(entity) + calculateCoverValue(entity)
+	return calculateRoleValue(roleData) + calculateCoverValue(entity)
 }
 
 // calculateRoleValue returns power value based on unit role.
 func calculateRoleValue(roleData *squadcore.UnitRoleData) float64 {
 	roleMultiplier := GetRoleMultiplierFromConfig(roleData.Role)
 	return roleMultiplier * RoleScalingFactor
-}
-
-// calculateAbilityValue returns power value from leader abilities.
-func calculateAbilityValue(entity *ecs.Entity) float64 {
-	// Check if unit is a leader
-	if !entity.HasComponent(squadcore.LeaderComponent) {
-		return 0.0
-	}
-
-	// Get ability slots to find equipped abilities
-	abilitySlots := common.GetComponentType[*squadcore.AbilitySlotData](entity, squadcore.AbilitySlotComponent)
-	if abilitySlots == nil {
-		return 0.0
-	}
-
-	// Sum power values from all equipped abilities
-	totalAbilityPower := 0.0
-	for _, slot := range abilitySlots.Slots {
-		if slot.IsEquipped {
-			totalAbilityPower += GetAbilityPowerValue(slot.AbilityType)
-		}
-	}
-	return totalAbilityPower
 }
 
 // calculateCoverValue returns power value from cover provision.
@@ -344,12 +321,6 @@ func EstimateUnitPowerFromTemplate(unit unitdefs.UnitTemplate, config *PowerConf
 	roleMultiplier := GetRoleMultiplierFromConfig(unit.Role)
 	roleValue := roleMultiplier * RoleScalingFactor
 
-	// Ability value (simplified - assume leader gets average ability value)
-	abilityValue := 0.0
-	if unit.IsLeader {
-		abilityValue = 15.0 // Average of Rally (15.0), Heal (20.0), BattleCry (12.0)
-	}
-
 	// Cover value
 	coverValue := 0.0
 	if unit.CoverValue > 0 {
@@ -362,7 +333,7 @@ func EstimateUnitPowerFromTemplate(unit unitdefs.UnitTemplate, config *PowerConf
 		healValue = float64(attr.GetHealingAmount()) * 1.5 // Heal utility scales with Magic
 	}
 
-	utilityPower := roleValue + abilityValue + coverValue + healValue
+	utilityPower := roleValue + coverValue + healValue
 
 	// === WEIGHTED SUM ===
 	totalPower := (offensivePower * config.OffensiveWeight) +

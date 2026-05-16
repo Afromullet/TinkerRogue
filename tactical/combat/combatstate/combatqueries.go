@@ -163,7 +163,7 @@ func MarkSquadAsActed(cache *CombatQueryCache, squadID ecs.EntityID, manager *co
 	}
 	if actionState.BonusAttackActive {
 		actionState.BonusAttackActive = false
-		fmt.Printf("[GEAR] bonus_attack: squad %d retains attack action\n", squadID)
+		gearLogger("bonus_attack", squadID, "retains attack action")
 		return
 	}
 	actionState.HasActed = true

@@ -73,22 +73,20 @@ func stringsToSpellIDs(ids []string) []templates.SpellID {
 }
 
 type savedSquadMember struct {
-	EntityID      ecs.EntityID       `json:"entityID"`
-	SquadID       ecs.EntityID       `json:"squadID"`
-	Name          string             `json:"name"`
-	UnitType      string             `json:"unitType"`
-	Attrs         savedAttributes    `json:"attributes"`
-	GridPos       savedGridPosition  `json:"gridPosition"`
-	Role          int                `json:"role"`
-	TargetRow     *savedTargetRow    `json:"targetRow,omitempty"`
-	Cover         *savedCover        `json:"cover,omitempty"`
-	AttackRange   int                `json:"attackRange"`
-	MovementSpeed int                `json:"movementSpeed"`
-	Experience    *savedExperience   `json:"experience,omitempty"`
-	StatGrowth    *savedStatGrowth   `json:"statGrowth,omitempty"`
-	Leader        *savedLeader       `json:"leader,omitempty"`
-	AbilitySlots  *savedAbilitySlots `json:"abilitySlots,omitempty"`
-	Cooldowns     *savedCooldowns    `json:"cooldowns,omitempty"`
+	EntityID      ecs.EntityID      `json:"entityID"`
+	SquadID       ecs.EntityID      `json:"squadID"`
+	Name          string            `json:"name"`
+	UnitType      string            `json:"unitType"`
+	Attrs         savedAttributes   `json:"attributes"`
+	GridPos       savedGridPosition `json:"gridPosition"`
+	Role          int               `json:"role"`
+	TargetRow     *savedTargetRow   `json:"targetRow,omitempty"`
+	Cover         *savedCover       `json:"cover,omitempty"`
+	AttackRange   int               `json:"attackRange"`
+	MovementSpeed int               `json:"movementSpeed"`
+	Experience    *savedExperience  `json:"experience,omitempty"`
+	StatGrowth    *savedStatGrowth  `json:"statGrowth,omitempty"`
+	Leader        *savedLeader      `json:"leader,omitempty"`
 }
 
 type savedGridPosition struct {
@@ -127,23 +125,6 @@ type savedStatGrowth struct {
 type savedLeader struct {
 	Leadership int `json:"leadership"`
 	Experience int `json:"experience"`
-}
-
-type savedAbilitySlots struct {
-	Slots [4]savedAbilitySlot `json:"slots"`
-}
-
-type savedAbilitySlot struct {
-	AbilityType  int     `json:"abilityType"`
-	TriggerType  int     `json:"triggerType"`
-	Threshold    float64 `json:"threshold"`
-	HasTriggered bool    `json:"hasTriggered"`
-	IsEquipped   bool    `json:"isEquipped"`
-}
-
-type savedCooldowns struct {
-	Cooldowns    [4]int `json:"cooldowns"`
-	MaxCooldowns [4]int `json:"maxCooldowns"`
 }
 
 // --- Save ---
@@ -272,24 +253,6 @@ func saveSquadMember(entity *ecs.Entity, entityID ecs.EntityID, em *common.Entit
 		}
 	}
 
-	if abilityData := common.GetComponentType[*squadcore.AbilitySlotData](entity, squadcore.AbilitySlotComponent); abilityData != nil {
-		sa := &savedAbilitySlots{}
-		for i, slot := range abilityData.Slots {
-			sa.Slots[i] = savedAbilitySlot{
-				AbilityType: int(slot.AbilityType), TriggerType: int(slot.TriggerType),
-				Threshold: slot.Threshold, HasTriggered: slot.HasTriggered,
-				IsEquipped: slot.IsEquipped,
-			}
-		}
-		sm.AbilitySlots = sa
-	}
-
-	if cdData := common.GetComponentType[*squadcore.CooldownTrackerData](entity, squadcore.CooldownTrackerComponent); cdData != nil {
-		sm.Cooldowns = &savedCooldowns{
-			Cooldowns: cdData.Cooldowns, MaxCooldowns: cdData.MaxCooldowns,
-		}
-	}
-
 	return sm
 }
 
@@ -411,25 +374,6 @@ func loadSquadMember(em *common.EntityManager, sm savedSquadMember, newSquadID e
 	if sm.Leader != nil {
 		entity.AddComponent(squadcore.LeaderComponent, &squadcore.LeaderData{
 			Leadership: sm.Leader.Leadership, Experience: sm.Leader.Experience,
-		})
-	}
-
-	if sm.AbilitySlots != nil {
-		asd := &squadcore.AbilitySlotData{}
-		for i, slot := range sm.AbilitySlots.Slots {
-			asd.Slots[i] = squadcore.AbilitySlot{
-				AbilityType: squadcore.AbilityType(slot.AbilityType),
-				TriggerType: squadcore.TriggerType(slot.TriggerType),
-				Threshold:   slot.Threshold, HasTriggered: slot.HasTriggered,
-				IsEquipped: slot.IsEquipped,
-			}
-		}
-		entity.AddComponent(squadcore.AbilitySlotComponent, asd)
-	}
-
-	if sm.Cooldowns != nil {
-		entity.AddComponent(squadcore.CooldownTrackerComponent, &squadcore.CooldownTrackerData{
-			Cooldowns: sm.Cooldowns.Cooldowns, MaxCooldowns: sm.Cooldowns.MaxCooldowns,
 		})
 	}
 

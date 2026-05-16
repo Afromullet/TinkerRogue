@@ -26,8 +26,9 @@ type CombatActionSystem struct {
 
 func NewCombatActionSystem(manager *common.EntityManager, cache *combatstate.CombatQueryCache) *CombatActionSystem {
 	return &CombatActionSystem{
-		manager:     manager,
-		combatCache: cache,
+		manager:        manager,
+		combatCache:    cache,
+		perkDispatcher: combattypes.NoopPerkDispatcher{},
 	}
 }
 
@@ -42,8 +43,13 @@ func (cas *CombatActionSystem) SetOnAttackComplete(fn func(ecs.EntityID, ecs.Ent
 }
 
 // SetPerkDispatcher injects the perk dispatcher for damage pipeline hooks.
-// Must be called before combat begins for perk hooks to fire.
+// Passing nil falls back to NoopPerkDispatcher so processing code can always
+// dereference the field without nil guards.
 func (cas *CombatActionSystem) SetPerkDispatcher(dispatcher combattypes.PerkDispatcher) {
+	if dispatcher == nil {
+		cas.perkDispatcher = combattypes.NoopPerkDispatcher{}
+		return
+	}
 	cas.perkDispatcher = dispatcher
 }
 
@@ -122,10 +128,7 @@ func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.E
 	}
 
 	// Check if counter should be suppressed by perks
-	skipCounter := false
-	if cas.perkDispatcher != nil {
-		skipCounter = cas.perkDispatcher.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
-	}
+	skipCounter := cas.perkDispatcher.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)
 
 	if !defenderWouldSurvive || skipCounter || counterModifiers.SkipCounter {
 		return attackIndex
@@ -200,13 +203,11 @@ func (cas *CombatActionSystem) applyPostCombatEffects(attackerID, defenderID ecs
 		combatstate.RemoveSquadFromMap(defenderID, cas.manager)
 	}
 
-	// Trigger abilities and dispose dead units for surviving squads
+	// Dispose dead units for surviving squads
 	if !attackerDestroyed {
-		CheckAndTriggerAbilities(attackerID, cas.manager)
 		squadcore.DisposeDeadUnitsInSquad(attackerID, cas.manager)
 	}
 	if !defenderDestroyed {
-		CheckAndTriggerAbilities(defenderID, cas.manager)
 		squadcore.DisposeDeadUnitsInSquad(defenderID, cas.manager)
 	}
 

@@ -20,6 +20,9 @@ func rollD100Check(threshold int) (roll int, passed bool) {
 // CalculateDamage handles the full damage pipeline: hit roll, dodge roll, base damage, crit, resistance, cover.
 func CalculateDamage(attackerID, defenderID ecs.EntityID, modifiers combattypes.DamageModifiers,
 	dispatcher combattypes.PerkDispatcher, squadmanager *common.EntityManager) (int, *combattypes.AttackEvent) {
+	if dispatcher == nil {
+		dispatcher = combattypes.NoopPerkDispatcher{}
+	}
 	attackerAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, attackerID, common.AttributeComponent)
 	defenderAttr := common.GetComponentTypeByID[*common.Attributes](squadmanager, defenderID, common.AttributeComponent)
 
@@ -125,8 +128,12 @@ func calculateBaseDamageAndCrit(attackerID ecs.EntityID, attackerAttr, defenderA
 		event.HitResult.CritThreshold = critThreshold
 
 		if wasCrit {
-			baseDamage = int(float64(baseDamage) * 1.5)
-			event.CritMultiplier = 1.5
+			critMult := CombatBalance.Critical.DamageMultiplier
+			if critMult < 1.0 {
+				critMult = 1.5
+			}
+			baseDamage = int(float64(baseDamage) * critMult)
+			event.CritMultiplier = critMult
 			event.HitResult.Type = combattypes.HitTypeCritical
 		} else if modifiers.IsCounterattack {
 			event.HitResult.Type = combattypes.HitTypeCounterattack
@@ -159,10 +166,8 @@ func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, re
 	// Apply cover
 	coverBreakdown := CalculateCoverBreakdown(defenderID, squadmanager)
 
-	// Run perk cover mod hooks
-	if dispatcher != nil {
-		dispatcher.CoverMod(attackerID, defenderID, &coverBreakdown, squadmanager)
-	}
+	// Run perk cover mod hooks (dispatcher is normalized to NoopPerkDispatcher upstream).
+	dispatcher.CoverMod(attackerID, defenderID, &coverBreakdown, squadmanager)
 
 	// Apply perk cover bonus
 	if modifiers.CoverBonus > 0 {

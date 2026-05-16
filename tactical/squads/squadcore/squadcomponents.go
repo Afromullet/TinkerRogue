@@ -22,16 +22,14 @@ const (
 
 // Global components
 var (
-	SquadComponent           *ecs.Component
-	SquadMemberComponent     *ecs.Component
-	GridPositionComponent    *ecs.Component
-	UnitRoleComponent        *ecs.Component
-	CoverComponent           *ecs.Component
-	LeaderComponent          *ecs.Component
-	TargetRowComponent       *ecs.Component
-	AbilitySlotComponent     *ecs.Component
-	CooldownTrackerComponent *ecs.Component
-	AttackRangeComponent     *ecs.Component
+	SquadComponent        *ecs.Component
+	SquadMemberComponent  *ecs.Component
+	GridPositionComponent *ecs.Component
+	UnitRoleComponent     *ecs.Component
+	CoverComponent        *ecs.Component
+	LeaderComponent       *ecs.Component
+	TargetRowComponent    *ecs.Component
+	AttackRangeComponent  *ecs.Component
 	MovementSpeedComponent   *ecs.Component
 	UnitTypeComponent        *ecs.Component
 
@@ -183,114 +181,8 @@ type UnitTypeData struct {
 // LEADER ABILITY COMPONENTS
 // ========================================
 
-// LeaderData marks a unit as the squad leader with special abilities
+// LeaderData marks a unit as the squad leader.
 type LeaderData struct {
 	Leadership int // Bonus to squad stats
 	Experience int // Leader progression (future)
-}
-
-// AbilitySlotData represents equipped abilities on a leader (4 slots, FFT-style)
-// bytearena/ecs limitation: can't have multiple components of same type,
-// so we store all slots in one component as an array
-type AbilitySlotData struct {
-	Slots [4]AbilitySlot // 4 ability slots
-}
-
-type AbilitySlot struct {
-	AbilityType  AbilityType // Rally, Heal, BattleCry, Fireball
-	TriggerType  TriggerType // When to activate
-	Threshold    float64     // Condition threshold
-	HasTriggered bool        // Once-per-combat flag
-	IsEquipped   bool        // Whether slot is active
-}
-
-// AbilityType enum (replaces string-based registry)
-type AbilityType int
-
-const (
-	AbilityNone AbilityType = iota
-	AbilityRally
-	AbilityHeal
-	AbilityBattleCry
-	AbilityFireball
-)
-
-func (a AbilityType) String() string {
-	switch a {
-	case AbilityRally:
-		return "Rally"
-	case AbilityHeal:
-		return "Healing Aura"
-	case AbilityBattleCry:
-		return "Battle Cry"
-	case AbilityFireball:
-		return "Fireball"
-	default:
-		return "Unknown"
-	}
-}
-
-// TriggerType defines when abilities are checked
-type TriggerType int
-
-const (
-	TriggerNone         TriggerType = iota
-	TriggerSquadHPBelow             // Squad average HP < threshold
-	TriggerTurnCount                // Specific turn number
-	TriggerEnemyCount               // Number of enemy squads
-	TriggerMoraleBelow              // Squad morale < threshold
-	TriggerCombatStart              // First turn of combat
-)
-
-// CooldownTrackerData tracks ability cooldowns per slot
-// One component per leader entity
-type CooldownTrackerData struct {
-	Cooldowns    [4]int // Turns remaining for slots 0-3
-	MaxCooldowns [4]int // Base cooldown durations
-}
-
-// ========================================
-// ABILITY PARAMETERS (Data-Driven)
-// ========================================
-
-// AbilityParams defines ability effects (pure data, no logic)
-// Systems read these to execute abilities
-type AbilityParams struct {
-	StrengthBonus int // Damage increase (Rally, BattleCry)
-	HealAmount    int // HP restored (Heal)
-	MoraleBonus   int // Morale increase (BattleCry)
-	BaseDamage    int // Direct damage (Fireball)
-	Duration      int // Effect duration in turns (Rally)
-	BaseCooldown  int // Default cooldown
-}
-
-// GetAbilityParams returns parameters for each ability type
-// This is a lookup table, not a registry with function pointers
-func GetAbilityParams(abilityType AbilityType) AbilityParams {
-	switch abilityType {
-	case AbilityRally:
-		return AbilityParams{
-			StrengthBonus: 5,
-			Duration:      3,
-			BaseCooldown:  5,
-		}
-	case AbilityHeal:
-		return AbilityParams{
-			HealAmount:   10,
-			BaseCooldown: 4,
-		}
-	case AbilityBattleCry:
-		return AbilityParams{
-			StrengthBonus: 3,
-			MoraleBonus:   10,
-			BaseCooldown:  999, // Once per combat
-		}
-	case AbilityFireball:
-		return AbilityParams{
-			BaseDamage:   15,
-			BaseCooldown: 3,
-		}
-	default:
-		return AbilityParams{}
-	}
 }

@@ -109,7 +109,7 @@ func CreateHighCapacitySquad(manager *common.EntityManager, squadName string, ca
 	)
 	leaderEntity.AddComponent(common.AttributeComponent, &leaderAttr)
 
-	// Add leader components (LeaderComponent, AbilitySlotComponent, CooldownTrackerComponent)
+	// Add leader components (LeaderComponent)
 	AddLeaderComponents(leaderEntity)
 
 	// Add GridPositionComponent at invalid position so it doesn't interfere with grid

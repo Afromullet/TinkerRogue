@@ -123,7 +123,6 @@ type SupportLayerConfig struct {
 type JSONPowerConfig struct {
 	Profiles           []PowerProfileConfig     `json:"profiles"`
 	RoleMultipliers    []RoleMultiplierConfig   `json:"roleMultipliers"`
-	AbilityValues      []AbilityValueConfig     `json:"abilityValues"`
 	CompositionBonuses []CompositionBonusConfig `json:"compositionBonuses"`
 	LeaderBonus        float64                  `json:"leaderBonus"`
 }
@@ -142,12 +141,6 @@ type PowerProfileConfig struct {
 type RoleMultiplierConfig struct {
 	Role       string  `json:"role"`
 	Multiplier float64 `json:"multiplier"`
-}
-
-// AbilityValueConfig defines ability power value
-type AbilityValueConfig struct {
-	Ability string  `json:"ability"`
-	Power   float64 `json:"power"`
 }
 
 // CompositionBonusConfig defines composition bonus

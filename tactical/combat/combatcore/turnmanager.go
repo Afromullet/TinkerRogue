@@ -58,20 +58,15 @@ func (tm *TurnManager) InitializeCombat(factionIDs []ecs.EntityID) error {
 	// Cache the turn state entity ID to avoid O(n) queries
 	tm.turnStateEntityID = turnEntity.GetID()
 
-	// Create action states and check combat-start abilities for all squads
-	// TODO: Abilities are not yet implemented, but I forsee not needing this.
-	// It will overcomplicate things. Abilities should trigger during an attack, not at combat start
+	// Create action states for all squads
 	for _, factionID := range factionIDs {
 		factionSquads := combatstate.GetSquadsForFaction(factionID, tm.manager)
 		for _, squadID := range factionSquads {
 			combatstate.CreateActionStateForSquad(tm.manager, squadID)
-
-			// Check for combat-start abilities (like Battle Cry)
-			CheckAndTriggerAbilities(squadID, tm.manager)
 		}
 	}
 
-	//Reset actions for first faction (this will also check abilities again)
+	// Reset actions for first faction
 	firstFaction := turnOrder[0]
 	tm.ResetSquadActions(firstFaction)
 
@@ -100,9 +95,6 @@ func (tm *TurnManager) ResetSquadActions(factionID ecs.EntityID) error {
 		// Tick effects at start of turn (decrements duration, removes expired)
 		unitIDs := squadcore.GetUnitIDsInSquad(squadID, tm.manager)
 		effects.TickEffectsForUnits(unitIDs, tm.manager)
-
-		// Check and trigger abilities at start of turn
-		CheckAndTriggerAbilities(squadID, tm.manager)
 	}
 
 	// Fire post-reset hook (e.g., artifact bonus movement)

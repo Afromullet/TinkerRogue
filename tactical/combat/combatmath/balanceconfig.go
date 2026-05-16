@@ -1,4 +1,4 @@
-package combatcore
+package combatmath
 
 import (
 	"encoding/json"
@@ -10,11 +10,16 @@ import (
 // CombatBalanceConfig holds combat balance tuning values, loaded from JSON.
 type CombatBalanceConfig struct {
 	Counterattack CounterattackBalance `json:"counterattack"`
+	Critical      CriticalBalance      `json:"critical"`
 }
 
 type CounterattackBalance struct {
 	DamageMultiplier float64 `json:"damageMultiplier"` // Fraction of normal damage on counterattack (e.g. 0.5 = 50%)
 	HitPenalty       int     `json:"hitPenalty"`       // Hit chance penalty on counterattack (e.g. 20 = -20%)
+}
+
+type CriticalBalance struct {
+	DamageMultiplier float64 `json:"damageMultiplier"` // Damage multiplier on critical hit (e.g. 1.5 = 150%)
 }
 
 // CombatBalance is the global combat balance config, loaded at startup.
@@ -45,5 +50,8 @@ func validateCombatBalance(cfg *CombatBalanceConfig) {
 	}
 	if cfg.Counterattack.HitPenalty < 0 {
 		fmt.Println("WARNING: counterattack.hitPenalty should be non-negative")
+	}
+	if cfg.Critical.DamageMultiplier < 1.0 {
+		fmt.Println("WARNING: critical.damageMultiplier should be >= 1.0")
 	}
 }

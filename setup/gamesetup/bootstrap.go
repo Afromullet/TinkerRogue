@@ -11,7 +11,7 @@ import (
 	"game_main/core/common"
 	"game_main/core/config"
 	"game_main/core/coords"
-	"game_main/tactical/combat/combatcore"
+	"game_main/tactical/combat/combatmath"
 	"game_main/tactical/commander"
 	"game_main/tactical/powers/artifacts"
 	"game_main/tactical/powers/perks"
@@ -40,7 +40,7 @@ func (gb *GameBootstrap) LoadGameData() {
 	artifacts.LoadArtifactBalanceConfig()
 	reportCoverage("artifact", artifacts.ValidateBehaviorCoverage())
 	reportCoverage("perk", perks.ValidateHookCoverage())
-	combatcore.LoadCombatBalanceConfig()
+	combatmath.LoadCombatBalanceConfig()
 	core.ValidateNodeRegistry()
 }
 

@@ -32,7 +32,7 @@ func GenerateEngagementSummary(log *combattypes.CombatLog) *EngagementSummary {
 	// Build attacker summaries
 	attackerSummaries := make([]UnitActionSummary, 0, len(log.AttackingUnits))
 	for _, unitSnapshot := range log.AttackingUnits {
-		summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, log.AttackEvents)
+		summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, log.AttackEvents, nameMap)
 		// Add heal data for this unit
 		applyHealData(&summary, unitSnapshot.UnitID, log.HealEvents, nameMap)
 		attackerSummaries = append(attackerSummaries, summary)
@@ -47,7 +47,7 @@ func GenerateEngagementSummary(log *combattypes.CombatLog) *EngagementSummary {
 		// Only create summary if this unit counterattacked or healed
 		healEvents := filterHealEventsByHealer(unitSnapshot.UnitID, log.HealEvents)
 		if len(counterEvents) > 0 || len(healEvents) > 0 {
-			summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, counterEvents)
+			summary := buildUnitSummary(unitSnapshot.UnitID, unitSnapshot, counterEvents, nameMap)
 			applyHealData(&summary, unitSnapshot.UnitID, log.HealEvents, nameMap)
 			defenderSummaries = append(defenderSummaries, summary)
 		}
@@ -59,8 +59,9 @@ func GenerateEngagementSummary(log *combattypes.CombatLog) *EngagementSummary {
 	}
 }
 
-// buildUnitSummary aggregates AttackEvents for a specific attacker.
-func buildUnitSummary(unitID ecs.EntityID, unitSnapshot combattypes.UnitSnapshot, events []combattypes.AttackEvent) UnitActionSummary {
+// buildUnitSummary aggregates AttackEvents for a specific attacker. nameMap supplies
+// display names for engagement targets and must include every unit referenced by events.
+func buildUnitSummary(unitID ecs.EntityID, unitSnapshot combattypes.UnitSnapshot, events []combattypes.AttackEvent, nameMap map[ecs.EntityID]string) UnitActionSummary {
 	// Filter events for this attacker
 	unitEvents := filterEventsByAttacker(unitID, events)
 
@@ -108,7 +109,7 @@ func buildUnitSummary(unitID ecs.EntityID, unitSnapshot combattypes.UnitSnapshot
 			// New engagement
 			engagementMap[event.DefenderID] = &UnitEngagement{
 				TargetID:    event.DefenderID,
-				TargetName:  getTargetName(event, events),
+				TargetName:  getTargetName(event, nameMap),
 				Outcome:     formatOutcome(event.HitResult.Type),
 				DamageDealt: event.FinalDamage,
 				WasKilled:   event.WasKilled,
@@ -229,11 +230,13 @@ func getTargetMode(events []combattypes.AttackEvent) string {
 	return events[0].TargetInfo.TargetMode
 }
 
-// getTargetName looks up the defender's name from events.
-// This is a helper to extract the name from the first matching event.
-func getTargetName(event combattypes.AttackEvent, allEvents []combattypes.AttackEvent) string {
-	// In a real implementation, you'd look this up from entity manager
-	// For now, we use a simple placeholder based on DefenderID
+// getTargetName looks up the defender's display name from the per-engagement nameMap.
+// Falls back to Unit_<id> only when the target is not in either squad snapshot —
+// which should not happen for normal combat but guards against malformed logs.
+func getTargetName(event combattypes.AttackEvent, nameMap map[ecs.EntityID]string) string {
+	if name, ok := nameMap[event.DefenderID]; ok && name != "" {
+		return name
+	}
 	return fmt.Sprintf("Unit_%d", event.DefenderID)
 }
 

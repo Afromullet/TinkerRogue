@@ -249,6 +249,13 @@ func (sdm *SquadDeploymentMode) placeSquadAt(squadID ecs.EntityID, pos coords.Lo
 		return
 	}
 
+	// Mark the squad as deployed so encounter setup includes it in the player
+	// faction. Without this flag the squad has a position but is invisible to
+	// roster.GetDeployedSquads, leaving combat to enroll it via a safety net.
+	if squadData != nil {
+		squadData.IsDeployed = true
+	}
+
 	fmt.Printf("Placed %s at (%d, %d) [was at (%d, %d)]\n", squadName, pos.X, pos.Y, oldPos.X, oldPos.Y)
 
 	// Refresh list to show updated placement status

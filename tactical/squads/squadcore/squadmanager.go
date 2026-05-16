@@ -41,8 +41,6 @@ func InitSquadComponents(squadManager *common.EntityManager) {
 	CoverComponent = squadManager.World.NewComponent()
 	LeaderComponent = squadManager.World.NewComponent()
 	TargetRowComponent = squadManager.World.NewComponent()
-	AbilitySlotComponent = squadManager.World.NewComponent()
-	CooldownTrackerComponent = squadManager.World.NewComponent()
 	AttackRangeComponent = squadManager.World.NewComponent()
 	MovementSpeedComponent = squadManager.World.NewComponent()
 	UnitTypeComponent = squadManager.World.NewComponent()

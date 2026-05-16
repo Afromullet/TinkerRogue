@@ -2,5 +2,8 @@
   "counterattack": {
     "damageMultiplier": 0.5,
     "hitPenalty": 20
+  },
+  "critical": {
+    "damageMultiplier": 1.5
   }
 }

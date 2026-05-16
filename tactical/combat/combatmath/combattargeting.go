@@ -64,7 +64,7 @@ func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common
 
 // selectMeleeRowTargets targets front row (row 0), piercing to next row if empty
 func selectMeleeRowTargets(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
-	for row := 0; row <= 2; row++ {
+	for row := 0; row < squadcore.SquadGridSize; row++ {
 		targets := getUnitsInRow(defenderSquadID, row, manager)
 		if len(targets) > 0 {
 			return targets
@@ -82,8 +82,8 @@ func selectMeleeColumnTargets(attackerID, defenderSquadID ecs.EntityID, manager 
 
 	attackerCol := attackerPos.AnchorCol
 
-	for offset := 0; offset < 3; offset++ {
-		col := (attackerCol + offset) % 3
+	for offset := 0; offset < squadcore.SquadGridSize; offset++ {
+		col := (attackerCol + offset) % squadcore.SquadGridSize
 		targets := getUnitsInColumn(defenderSquadID, col, manager)
 		if len(targets) > 0 {
 			return targets
@@ -136,7 +136,7 @@ func getUnitsInLine(squadID ecs.EntityID, lineIndex int, isRow bool, manager *co
 	var units []ecs.EntityID
 	seen := make(map[ecs.EntityID]bool)
 
-	for i := 0; i <= 2; i++ {
+	for i := 0; i < squadcore.SquadGridSize; i++ {
 		var cellUnits []ecs.EntityID
 		if isRow {
 			cellUnits = squadcore.GetUnitIDsAtGridPosition(squadID, lineIndex, i, manager)
@@ -175,7 +175,7 @@ func selectLowestArmorTarget(squadID ecs.EntityID, manager *common.EntityManager
 	var bestTarget ecs.EntityID
 	lowestArmor := int(^uint(0) >> 1)
 	furthestRow := -1
-	leftmostCol := 3
+	leftmostCol := squadcore.SquadGridSize
 
 	for _, unitID := range allUnits {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
