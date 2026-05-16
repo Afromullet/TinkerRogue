@@ -1,4 +1,4 @@
-package combatcore
+﻿package combatcore
 
 import (
 	"game_main/core/common"
@@ -261,8 +261,8 @@ func TestExecuteAttackAction_MeleeAttack(t *testing.T) {
 
 	combatSys := NewCombatActionSystem(manager, cache)
 	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
-	if !result.Success {
-		t.Fatalf("Failed to execute attack: %s", result.ErrorReason)
+	if !result.Status.Success {
+		t.Fatalf("Failed to execute attack: %s", result.Status.ErrorReason)
 	}
 
 	// Verify squad marked as acted (using cache for O(k) lookup instead of O(n) query)
@@ -290,19 +290,19 @@ func TestCounterattack_DamagePredictionPreventsDeadUnits(t *testing.T) {
 
 	combatSys := NewCombatActionSystem(manager, cache)
 	result := combatSys.ExecuteAttackAction(playerSquad, enemySquad)
-	if !result.Success {
-		t.Fatalf("Failed to execute attack: %s", result.ErrorReason)
+	if !result.Status.Success {
+		t.Fatalf("Failed to execute attack: %s", result.Status.ErrorReason)
 	}
 
 	// Verify that counterattack events only come from units that would survive
-	if result.CombatLog != nil {
-		for _, event := range result.CombatLog.AttackEvents {
+	if result.Log != nil {
+		for _, event := range result.Log.AttackEvents {
 			if !event.IsCounterattack {
 				continue
 			}
 			// The counterattacker should have predicted HP > 0 after main attack damage
 			counterAttackerID := event.AttackerID
-			dmgFromMainAttack := result.DamageByUnit[counterAttackerID]
+			dmgFromMainAttack := result.Damage.DamageByUnit[counterAttackerID]
 			entity := manager.FindEntityByID(counterAttackerID)
 			if entity == nil {
 				continue // Entity already disposed

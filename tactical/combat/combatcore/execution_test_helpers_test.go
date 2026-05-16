@@ -1,4 +1,4 @@
-package combatcore
+﻿package combatcore
 
 import (
 	"game_main/core/common"
@@ -26,14 +26,12 @@ import (
 // executeTestAttack replicates what ExecuteSquadAttack did using the extracted pipeline functions.
 func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *common.EntityManager) *combattypes.CombatResult {
 	result := &combattypes.CombatResult{
-		DamageByUnit:  make(map[ecs.EntityID]int),
-		HealingByUnit: make(map[ecs.EntityID]int),
-		UnitsKilled:   []ecs.EntityID{},
+		Damage: combattypes.NewDamageRecord(),
 	}
 
 	combatLog := battlelog.InitializeCombatLog(attackerSquadID, defenderSquadID, manager)
 	if combatLog.SquadDistance < 0 {
-		result.CombatLog = combatLog
+		result.Log = combatLog
 		return result
 	}
 
@@ -44,7 +42,7 @@ func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *c
 	attackerUnitIDs := squadcore.GetUnitIDsInSquad(attackerSquadID, manager)
 
 	for _, attackerID := range attackerUnitIDs {
-		if !combatmath.CanUnitAttack(attackerID, combatLog.SquadDistance, manager) {
+		if !squadcore.CanUnitAttack(attackerID, combatLog.SquadDistance, manager) {
 			continue
 		}
 
@@ -54,7 +52,7 @@ func executeTestAttack(attackerSquadID, defenderSquadID ecs.EntityID, manager *c
 
 	combatmath.ApplyRecordedDamage(result, manager)
 	battlelog.FinalizeCombatLog(result, combatLog, defenderSquadID, attackerSquadID, manager)
-	result.CombatLog = combatLog
+	result.Log = combatLog
 	return result
 }
 

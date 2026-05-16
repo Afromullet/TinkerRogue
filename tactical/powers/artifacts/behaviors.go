@@ -101,7 +101,7 @@ type EngagementChainsBehavior struct{ BaseBehavior }
 func (EngagementChainsBehavior) BehaviorKey() string { return BehaviorEngagementChains }
 
 func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
-	if !result.TargetDestroyed || result.AttackerDestroyed {
+	if !result.Status.TargetDestroyed || result.Status.AttackerDestroyed {
 		return
 	}
 	actionState := ctx.Cache.FindActionStateBySquadID(attackerID)

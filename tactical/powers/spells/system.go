@@ -3,6 +3,7 @@ package spells
 import (
 	"fmt"
 	"game_main/core/common"
+	"game_main/tactical/combat/combatdisposal"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/commander"
 	"game_main/tactical/powers/effects"
@@ -191,7 +192,7 @@ func applyDamageSpell(
 		// Check if squad was destroyed
 		if squadcore.IsSquadDestroyed(squadID, manager) {
 			result.SquadsDestroyed = append(result.SquadsDestroyed, squadID)
-			if err := combatstate.RemoveSquadFromMap(squadID, manager); err != nil {
+			if err := combatdisposal.RemoveSquadFromMap(squadID, manager); err != nil {
 				fmt.Printf("Warning: failed to remove destroyed squad %d from map: %v\n", squadID, err)
 			}
 		}

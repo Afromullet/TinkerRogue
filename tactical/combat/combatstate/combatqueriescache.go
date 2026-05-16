@@ -6,19 +6,19 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CombatQueryCache provides cached access to combat-related queries using ECS Views
-// Views are automatically maintained by the ECS library when components are added/removed
+// CombatQueryCache provides cached access to combat-related queries using ECS Views.
+// Views are automatically maintained by the ECS library when components are added/removed.
+//
+// Faction lookups use the package-level factionView (combatcomponents.go) so we keep
+// a single canonical view per tag rather than duplicating across cache instances.
 type CombatQueryCache struct {
-	// ECS Views (automatically maintained by ECS library)
 	ActionStateView *ecs.View // All ActionStateTag entities
-	FactionView     *ecs.View // All FactionTag entities
 }
 
 // NewCombatQueryCache creates a cache with new ECS Views
 func NewCombatQueryCache(manager *common.EntityManager) *CombatQueryCache {
 	return &CombatQueryCache{
 		ActionStateView: manager.World.CreateView(ActionStateTag),
-		FactionView:     manager.World.CreateView(FactionTag),
 	}
 }
 
@@ -52,9 +52,9 @@ func (c *CombatQueryCache) FindActionStateBySquadID(squadID ecs.EntityID) *Actio
 // CACHED FACTION QUERIES
 // ========================================
 
-// FindFactionByID finds a faction entity by faction ID using cached view
+// FindFactionByID finds a faction entity by faction ID using the package-level view.
 func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID) *ecs.Entity {
-	for _, result := range c.FactionView.Get() {
+	for _, result := range factionView.Get() {
 		faction := result.Entity
 		factionData := common.GetComponentType[*FactionData](faction, CombatFactionComponent)
 		if factionData != nil && factionData.FactionID == factionID {
@@ -64,9 +64,9 @@ func (c *CombatQueryCache) FindFactionByID(factionID ecs.EntityID) *ecs.Entity {
 	return nil
 }
 
-// FindFactionDataByID returns FactionData for a faction ID using cached view
+// FindFactionDataByID returns FactionData for a faction ID using the package-level view.
 func (c *CombatQueryCache) FindFactionDataByID(factionID ecs.EntityID) *FactionData {
-	for _, result := range c.FactionView.Get() {
+	for _, result := range factionView.Get() {
 		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
 		if factionData != nil && factionData.FactionID == factionID {
 			return factionData

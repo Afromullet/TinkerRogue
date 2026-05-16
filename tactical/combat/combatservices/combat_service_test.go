@@ -1,4 +1,4 @@
-package combatservices
+﻿package combatservices
 
 import (
 	"game_main/core/common"
@@ -46,7 +46,7 @@ func TestExecuteSquadAttack_NoSquads(t *testing.T) {
 		t.Error("Result should not be nil")
 	}
 
-	if result.Success {
+	if result.Status.Success {
 		t.Error("Attack with non-existent squads should fail")
 	}
 }
@@ -54,32 +54,36 @@ func TestExecuteSquadAttack_NoSquads(t *testing.T) {
 // TestCombatResult_Structure tests that CombatResult struct is properly populated
 func TestCombatResult_Structure(t *testing.T) {
 	result := &combattypes.CombatResult{
-		Success:         true,
-		ErrorReason:     "",
-		TargetDestroyed: false,
-		TotalDamage:     25,
-		UnitsKilled:     []ecs.EntityID{},
-		DamageByUnit:    make(map[ecs.EntityID]int),
-		CombatLog:       nil,
+		Status: combattypes.CombatStatus{
+			Success:         true,
+			ErrorReason:     "",
+			TargetDestroyed: false,
+		},
+		Damage: &combattypes.DamageRecord{
+			TotalDamage:   25,
+			UnitsKilled:   []ecs.EntityID{},
+			DamageByUnit:  make(map[ecs.EntityID]int),
+			HealingByUnit: make(map[ecs.EntityID]int),
+		},
 	}
 
-	if !result.Success {
+	if !result.Status.Success {
 		t.Error("Success field should be true")
 	}
 
-	if result.TargetDestroyed {
+	if result.Status.TargetDestroyed {
 		t.Error("TargetDestroyed should be false")
 	}
 
-	if result.TotalDamage != 25 {
+	if result.Damage.TotalDamage != 25 {
 		t.Error("TotalDamage should be 25")
 	}
 
-	if result.UnitsKilled == nil {
+	if result.Damage.UnitsKilled == nil {
 		t.Error("UnitsKilled should not be nil")
 	}
 
-	if result.DamageByUnit == nil {
+	if result.Damage.DamageByUnit == nil {
 		t.Error("DamageByUnit should not be nil")
 	}
 }

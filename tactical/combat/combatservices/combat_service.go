@@ -32,13 +32,10 @@ type CombatService struct {
 	// Battle recording for export
 	BattleRecorder *battlelog.BattleRecorder
 
-	// Threat evaluation system (injected via SetThreatProvider/SetThreatEvaluatorFactory)
-	threatProvider  ThreatProvider
-	layerEvaluators map[ecs.EntityID]ThreatLayerEvaluator
-	evalFactory     func(factionID ecs.EntityID) ThreatLayerEvaluator
-
-	// AI decision-making (set via SetAIController due to import cycle: ai -> combatservices)
-	aiController AITurnController
+	// AI controller + threat provider + per-faction evaluators. Injected once
+	// via cs.AI.Install(...) from setup/gamesetup so the three orthogonal AI
+	// dependencies share a single entry point.
+	AI *AICoordinator
 
 	// Power pipeline + artifact/perk dispatchers + charge tracker live here.
 	Powers *PowerOrchestrator
@@ -78,7 +75,7 @@ func NewCombatService(manager *common.EntityManager) *CombatService {
 		CombatCache:     cache,
 		CombatActSystem: combatActSystem,
 		BattleRecorder:  battleRecorder,
-		layerEvaluators: make(map[ecs.EntityID]ThreatLayerEvaluator),
+		AI:              NewAICoordinator(),
 		Powers:          NewPowerOrchestrator(manager, cache),
 		guiHooks:        &GUIHooks{},
 		exit:            NewCombatExitController(manager, turnManager, cache),
@@ -171,60 +168,32 @@ func (cs *CombatService) CheckVictoryCondition() *VictoryCheckResult {
 	return cs.exit.CheckVictoryCondition()
 }
 
-// GetThreatEvaluator returns composite evaluator for a faction (lazy initialization).
-// Requires SetThreatEvaluatorFactory to have been called first.
+// GetThreatEvaluator delegates to the AICoordinator.
 func (cs *CombatService) GetThreatEvaluator(factionID ecs.EntityID) ThreatLayerEvaluator {
-	if eval, exists := cs.layerEvaluators[factionID]; exists {
-		return eval
-	}
-	if cs.evalFactory == nil {
-		return nil
-	}
-	eval := cs.evalFactory(factionID)
-	cs.layerEvaluators[factionID] = eval
-	return eval
+	return cs.AI.GetThreatEvaluator(factionID)
 }
 
-// GetThreatProvider returns the threat provider (must be injected via SetThreatProvider).
-func (cs *CombatService) GetThreatProvider() ThreatProvider {
-	return cs.threatProvider
-}
+// GetThreatProvider delegates to the AICoordinator.
+func (cs *CombatService) GetThreatProvider() ThreatProvider { return cs.AI.ThreatProvider() }
 
-// SetThreatProvider injects the threat data provider.
-// Must be set externally because the concrete type lives in mind/behavior.
-func (cs *CombatService) SetThreatProvider(tp ThreatProvider) {
-	cs.threatProvider = tp
-}
+// SetThreatProvider delegates to the AICoordinator. Prefer cs.AI.Install(...)
+// for new code; this setter is kept for callers that swap providers ad-hoc.
+func (cs *CombatService) SetThreatProvider(tp ThreatProvider) { cs.AI.SetThreatProvider(tp) }
 
-// SetThreatEvaluatorFactory injects a factory for creating per-faction threat evaluators.
-// Must be set externally because the concrete type lives in mind/behavior.
+// SetThreatEvaluatorFactory delegates to the AICoordinator.
 func (cs *CombatService) SetThreatEvaluatorFactory(fn func(factionID ecs.EntityID) ThreatLayerEvaluator) {
-	cs.evalFactory = fn
+	cs.AI.SetThreatEvaluatorFactory(fn)
 }
 
-// UpdateThreatLayers updates all threat layers at start of AI turn
-func (cs *CombatService) UpdateThreatLayers() {
-	// Update base threat data first
-	if cs.threatProvider != nil {
-		cs.threatProvider.UpdateAllFactions()
-	}
+// UpdateThreatLayers delegates to the AICoordinator.
+func (cs *CombatService) UpdateThreatLayers() { cs.AI.UpdateThreatLayers() }
 
-	// Then update composite layers
-	for _, evaluator := range cs.layerEvaluators {
-		evaluator.Update()
-	}
-}
+// GetAIController delegates to the AICoordinator.
+func (cs *CombatService) GetAIController() AITurnController { return cs.AI.Controller() }
 
-// GetAIController returns the AI controller (must be injected via SetAIController)
-func (cs *CombatService) GetAIController() AITurnController {
-	return cs.aiController
-}
-
-// SetAIController injects the AI turn controller.
-// Must be set externally due to import cycle (ai -> combatservices).
-func (cs *CombatService) SetAIController(ctrl AITurnController) {
-	cs.aiController = ctrl
-}
+// SetAIController delegates to the AICoordinator. Prefer cs.AI.Install(...) for
+// new code.
+func (cs *CombatService) SetAIController(ctrl AITurnController) { cs.AI.SetController(ctrl) }
 
 // ================================
 // Combat Lifecycle Methods
@@ -275,12 +244,25 @@ func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) {
 	cs.logger.Log("service", 0, "=== Combat Teardown Complete ===")
 }
 
-// cleanupEffects removes all active effects from all player squad units.
-// This ensures no stale buffs/debuffs persist between battles.
+// cleanupEffects removes all active effects from player squad units only.
+// Enemy units are skipped — they're disposed seconds later in TeardownCombat and
+// don't need their effect components scrubbed. Filtering to player squads avoids
+// pointless work and the surprise of an effect counter incrementing for units
+// that are about to be deleted.
 func (cs *CombatService) cleanupEffects() {
+	playerSquadSet := make(map[ecs.EntityID]bool)
+	for _, id := range cs.collectPlayerSquadIDs() {
+		playerSquadSet[id] = true
+	}
+
 	cleaned := 0
 	for _, result := range cs.EntityManager.World.Query(squadcore.SquadMemberTag) {
-		unitID := result.Entity.GetID()
+		entity := result.Entity
+		member := common.GetComponentType[*squadcore.SquadMemberData](entity, squadcore.SquadMemberComponent)
+		if member == nil || !playerSquadSet[member.SquadID] {
+			continue
+		}
+		unitID := entity.GetID()
 		if effects.HasActiveEffects(unitID, cs.EntityManager) {
 			effects.RemoveAllEffects(unitID, cs.EntityManager)
 			cleaned++

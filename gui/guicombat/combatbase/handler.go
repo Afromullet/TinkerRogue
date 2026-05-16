@@ -5,7 +5,7 @@ import (
 
 	"game_main/core/coords"
 	"game_main/gui/guicombat/combatanimation"
-	"game_main/tactical/combat/combatstate"
+	"game_main/tactical/combat/combatdisposal"
 	"game_main/tactical/squads/squadcommands"
 
 	"github.com/bytearena/ecs"
@@ -96,7 +96,7 @@ func (cah *CombatActionHandler) ExecuteAttack() {
 
 	cah.deps.BattleState.InAttackMode = false
 
-	if !result.Success {
+	if !result.Status.Success {
 		return
 	}
 
@@ -208,7 +208,7 @@ func (cah *CombatActionHandler) DebugKillSquad(squadID ecs.EntityID) {
 		cah.deps.BattleState.SelectedSquadID = 0
 	}
 
-	if err := combatstate.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
+	if err := combatdisposal.RemoveSquadFromMap(squadID, cah.deps.Queries.ECSManager); err != nil {
 		return
 	}
 

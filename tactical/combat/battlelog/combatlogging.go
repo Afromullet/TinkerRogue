@@ -27,7 +27,7 @@ func snapshotUnits(squadID ecs.EntityID, squadDistance int, filterByRange bool, 
 	unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
 
 	for _, unitID := range unitIDs {
-		if filterByRange && !combatmath.CanUnitAttack(unitID, squadDistance, manager) {
+		if filterByRange && !squadcore.CanUnitAttack(unitID, squadDistance, manager) {
 			continue
 		}
 
@@ -84,8 +84,8 @@ func SnapshotAllUnits(squadID ecs.EntityID, manager *common.EntityManager) []com
 }
 
 func FinalizeCombatLog(result *combattypes.CombatResult, log *combattypes.CombatLog, defenderSquadID, attackerSquadID ecs.EntityID, manager *common.EntityManager) {
-	result.TotalDamage = combatmath.SumDamageMap(result.DamageByUnit)
-	log.TotalDamage = result.TotalDamage
-	log.UnitsKilled = len(result.UnitsKilled)
+	result.Damage.TotalDamage = combatmath.SumDamageMap(result.Damage.DamageByUnit)
+	log.TotalDamage = result.Damage.TotalDamage
+	log.UnitsKilled = len(result.Damage.UnitsKilled)
 	log.DefenderStatus = combatmath.CalculateSquadStatus(defenderSquadID, manager)
 }

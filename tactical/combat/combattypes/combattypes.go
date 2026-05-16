@@ -171,19 +171,45 @@ type DamageModifiers struct {
 	SkipCrit    bool    // If true, crits become normal hits (Vigilance)
 }
 
-// CombatResult - Unified result type for combat operations
-// Contains both combat execution data and orchestration status
+// CombatResult is the unified result of a combat action. It groups three
+// separately-owned concerns so callers can reach into the part they care about
+// without scanning a flat 9-field struct:
+//
+//   - Status: orchestration outcome (Success, ErrorReason, destruction flags)
+//     set by CombatActionSystem.
+//   - Damage: execution data (damage and healing totals, kill list) populated
+//     by the damage pipeline in combatprocessing/combatcalculation.
+//   - Log: display data (squad names, per-attack events) populated by battlelog.
 type CombatResult struct {
-	// Orchestration status (set by combat action system)
+	Status CombatStatus
+	Damage *DamageRecord
+	Log    *CombatLog
+}
+
+// CombatStatus carries the orchestration outcome of an attack action.
+type CombatStatus struct {
 	Success           bool
 	ErrorReason       string
 	TargetDestroyed   bool
 	AttackerDestroyed bool
+}
 
-	// Combat execution data (set by combat calculation logic)
+// DamageRecord accumulates the execution data of an attack: total damage,
+// per-unit damage and healing maps, and the kill list. The maps must be
+// initialized before use; helpers in combatmath rely on map[id]int semantics.
+type DamageRecord struct {
 	TotalDamage   int
 	UnitsKilled   []ecs.EntityID
 	DamageByUnit  map[ecs.EntityID]int
 	HealingByUnit map[ecs.EntityID]int
-	CombatLog     *CombatLog // Contains AttackerSquadName, DefenderSquadName for display
+}
+
+// NewDamageRecord returns a DamageRecord with all maps and slices initialized
+// to non-nil empty values, ready for the damage pipeline to populate.
+func NewDamageRecord() *DamageRecord {
+	return &DamageRecord{
+		DamageByUnit:  make(map[ecs.EntityID]int),
+		HealingByUnit: make(map[ecs.EntityID]int),
+		UnitsKilled:   []ecs.EntityID{},
+	}
 }

@@ -8,28 +8,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// CanUnitAttack checks if a unit is alive, can act, and within attack range
-func CanUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
-	entity := manager.FindEntityByID(attackerID)
-	if entity == nil {
-		return false
-	}
-
-	// Check if unit is alive and can act
-	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
-	if attr == nil || attr.CurrentHealth <= 0 || !attr.CanAct {
-		return false
-	}
-
-	// Check if unit has attack range component and is within range
-	if !entity.HasComponent(squadcore.AttackRangeComponent) {
-		return false
-	}
-
-	rangeData := common.GetComponentType[*squadcore.AttackRangeData](entity, squadcore.AttackRangeComponent)
-	return rangeData != nil && rangeData.Range >= squadDistance
-}
-
 // SelectTargetUnits determines targets based on attack type (public for GUI and internal use)
 func SelectTargetUnits(attackerID, defenderSquadID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
 	entity := manager.FindEntityByID(attackerID)

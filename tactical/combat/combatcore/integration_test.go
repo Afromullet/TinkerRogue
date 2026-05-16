@@ -40,11 +40,11 @@ func TestCombatWithCoverSystem_Integration(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify cover reduced damage
-	if len(result.DamageByUnit) != 1 {
-		t.Fatalf("Expected 1 unit damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 1 {
+		t.Fatalf("Expected 1 unit damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 
-	damageDealt := result.DamageByUnit[backLine.GetID()]
+	damageDealt := result.Damage.DamageByUnit[backLine.GetID()]
 	baseDamage := attackerAttr.GetPhysicalDamage()
 	resistance := backLineAttr.GetPhysicalResistance()
 	_ = resistance // May be used in future assertions
@@ -103,7 +103,7 @@ func TestMultiRoundCombat_Integration(t *testing.T) {
 		}
 
 		t.Logf("Round %d: Squad1 dealt %d damage, Squad2 dealt %d damage",
-			rounds, result1.TotalDamage, result2.TotalDamage)
+			rounds, result1.Damage.TotalDamage, result2.Damage.TotalDamage)
 	}
 
 	if rounds >= maxRounds {
@@ -170,8 +170,8 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 
 	// Check if wizard dealt damage
 	t.Logf("=== MAGIC DAMAGE DEBUG ===")
-	t.Logf("Total damage dealt: %d", result.TotalDamage)
-	t.Logf("Number of attacks: %d", len(result.CombatLog.AttackEvents))
+	t.Logf("Total damage dealt: %d", result.Damage.TotalDamage)
+	t.Logf("Number of attacks: %d", len(result.Log.AttackEvents))
 
 	expectedMagicDamage := wizardAttr.GetMagicDamage()
 	t.Logf("Expected magic damage: %d", expectedMagicDamage)
@@ -179,8 +179,8 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	fighterMagicDefense := fighterAttr.GetMagicDefense()
 	t.Logf("Fighter magic defense: %d", fighterMagicDefense)
 
-	if len(result.CombatLog.AttackEvents) > 0 {
-		for i, event := range result.CombatLog.AttackEvents {
+	if len(result.Log.AttackEvents) > 0 {
+		for i, event := range result.Log.AttackEvents {
 			attackerName := common.GetComponentTypeByID[*common.Name](manager, event.AttackerID, common.NameComponent)
 			defenderName := common.GetComponentTypeByID[*common.Name](manager, event.DefenderID, common.NameComponent)
 
@@ -213,9 +213,9 @@ func TestMagicDamageInRealCombat(t *testing.T) {
 	if minExpected < 1 {
 		minExpected = 1
 	}
-	if result.TotalDamage < minExpected/2 {
+	if result.Damage.TotalDamage < minExpected/2 {
 		t.Errorf("Wizard should deal around %d magic damage (%d - %d), but total damage was only %d",
-			minExpected, expectedMagicDamage, fighterMagicDefense, result.TotalDamage)
+			minExpected, expectedMagicDamage, fighterMagicDefense, result.Damage.TotalDamage)
 	}
 }
 

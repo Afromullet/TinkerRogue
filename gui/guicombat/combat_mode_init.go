@@ -242,10 +242,10 @@ func (cm *CombatMode) registerCombatCallbacks() {
 	cm.combatService.SetOnAttackCompleteGUI(func(attackerID, defenderID ecs.EntityID, result *combattypes.CombatResult) {
 		cm.Queries.MarkSquadDirty(attackerID)
 		cm.Queries.MarkSquadDirty(defenderID)
-		if result.AttackerDestroyed {
+		if result.Status.AttackerDestroyed {
 			cm.Queries.InvalidateSquad(attackerID)
 		}
-		if result.TargetDestroyed {
+		if result.Status.TargetDestroyed {
 			cm.Queries.InvalidateSquad(defenderID)
 		}
 	})

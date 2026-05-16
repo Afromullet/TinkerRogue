@@ -164,25 +164,12 @@ func (gq *GUIQueries) GetEnemySquadsForEncounter(currentFactionID ecs.EntityID, 
 
 // GetFactionsForEncounter returns all faction IDs belonging to a specific encounter
 func (gq *GUIQueries) GetFactionsForEncounter(encounterID ecs.EntityID) []ecs.EntityID {
-	factionIDs := []ecs.EntityID{}
-	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatstate.FactionData](result.Entity, combatstate.CombatFactionComponent)
-		if factionData != nil && factionData.EncounterID == encounterID {
-			factionIDs = append(factionIDs, factionData.FactionID)
-		}
-	}
-	return factionIDs
+	return combatstate.GetFactionsForEncounter(encounterID)
 }
 
 // GetAllFactions returns all faction IDs
 func (gq *GUIQueries) GetAllFactions() []ecs.EntityID {
-	factionIDs := []ecs.EntityID{}
-	// Use cached View instead of Query (avoids 30,000+ map allocations per second)
-	for _, result := range gq.CombatCache.FactionView.Get() {
-		factionData := common.GetComponentType[*combatstate.FactionData](result.Entity, combatstate.CombatFactionComponent)
-		factionIDs = append(factionIDs, factionData.FactionID)
-	}
-	return factionIDs
+	return combatstate.GetAllFactions(gq.ECSManager)
 }
 
 // ===== ENCOUNTER-SCOPED FACTION QUERIES =====

@@ -56,15 +56,15 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 	result := combatActSystem.ExecuteAttackAction(aa.attackerID, aa.targetID)
 
 	// Log result for debugging
-	if result.Success {
+	if result.Status.Success {
 		attackerName := "Unknown"
 		defenderName := "Unknown"
-		if result.CombatLog != nil {
-			attackerName = result.CombatLog.AttackerSquadName
-			defenderName = result.CombatLog.DefenderSquadName
+		if result.Log != nil {
+			attackerName = result.Log.AttackerSquadName
+			defenderName = result.Log.DefenderSquadName
 		}
 		fmt.Printf("[AI] %s attacked %s\n", attackerName, defenderName)
-		if result.TargetDestroyed {
+		if result.Status.TargetDestroyed {
 			fmt.Printf("[AI] %s was destroyed!\n", defenderName)
 		}
 
@@ -74,10 +74,10 @@ func (aa *AttackAction) Execute(manager *common.EntityManager, movementSystem *c
 			aa.aiController.QueueAttack(aa.attackerID, aa.targetID)
 		}
 	} else {
-		fmt.Printf("[AI] Attack failed: %s\n", result.ErrorReason)
+		fmt.Printf("[AI] Attack failed: %s\n", result.Status.ErrorReason)
 	}
 
-	return result.Success
+	return result.Status.Success
 }
 
 // WaitAction represents doing nothing (skip turn)

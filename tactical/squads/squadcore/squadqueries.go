@@ -10,6 +10,28 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// CanUnitAttack reports whether a unit is alive, can act, and is within attack range
+// of a target at the given squad distance. Lives in squadcore because every component
+// it inspects (Attributes, AttackRange) is squad-owned data — no combat-math concern.
+func CanUnitAttack(attackerID ecs.EntityID, squadDistance int, manager *common.EntityManager) bool {
+	entity := manager.FindEntityByID(attackerID)
+	if entity == nil {
+		return false
+	}
+
+	attr := common.GetComponentType[*common.Attributes](entity, common.AttributeComponent)
+	if attr == nil || attr.CurrentHealth <= 0 || !attr.CanAct {
+		return false
+	}
+
+	if !entity.HasComponent(AttackRangeComponent) {
+		return false
+	}
+
+	rangeData := common.GetComponentType[*AttackRangeData](entity, AttackRangeComponent)
+	return rangeData != nil && rangeData.Range >= squadDistance
+}
+
 // ForEachUnitWithAttrs invokes fn for every unit across the given squads that has an
 // Attributes component. Missing entities and units without Attributes are skipped.
 // Return false from fn to stop iteration early; returns true if iteration completed,

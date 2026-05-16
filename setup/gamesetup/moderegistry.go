@@ -100,9 +100,7 @@ func newCombatServiceFactory() func(*common.EntityManager) *combatservices.Comba
 			manager, service.TurnManager, service.MovementSystem,
 			service.CombatActSystem, service.CombatCache,
 		)
-		service.SetAIController(aiSetup.Controller)
-		service.SetThreatProvider(aiSetup.ThreatProvider)
-		service.SetThreatEvaluatorFactory(aiSetup.EvalFactory)
+		service.AI.Install(aiSetup.Controller, aiSetup.ThreatProvider, aiSetup.EvalFactory)
 		return service
 	}
 }

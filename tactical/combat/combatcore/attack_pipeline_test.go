@@ -31,7 +31,7 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 		t.Fatal("Expected combat result, got nil")
 	}
 
-	if result.TotalDamage <= 0 {
+	if result.Damage.TotalDamage <= 0 {
 		t.Error("Expected damage > 0")
 	}
 
@@ -39,8 +39,8 @@ func TestExecuteSquadAttack_SingleAttackerVsSingleDefender(t *testing.T) {
 		t.Errorf("Expected defender HP to decrease from %d, got %d", initialHP, defenderAttr.CurrentHealth)
 	}
 
-	if len(result.DamageByUnit) != 1 {
-		t.Errorf("Expected 1 unit damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 }
 
@@ -63,13 +63,13 @@ func TestExecuteSquadAttack_MultipleAttackersVsMultipleDefenders(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify result
-	if result.TotalDamage <= 0 {
+	if result.Damage.TotalDamage <= 0 {
 		t.Error("Expected total damage > 0")
 	}
 
 	// Each attacker should hit one target (lowest HP)
-	if len(result.DamageByUnit) < 1 {
-		t.Errorf("Expected at least 1 unit damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) < 1 {
+		t.Errorf("Expected at least 1 unit damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 }
 
@@ -92,8 +92,8 @@ func TestExecuteSquadAttack_DeadAttackersDoNotAttack(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify no damage dealt
-	if result.TotalDamage != 0 {
-		t.Errorf("Expected no damage from dead attacker, got %d", result.TotalDamage)
+	if result.Damage.TotalDamage != 0 {
+		t.Errorf("Expected no damage from dead attacker, got %d", result.Damage.TotalDamage)
 	}
 
 	if defenderAttr.CurrentHealth != initialHP {
@@ -123,8 +123,8 @@ func TestExecuteSquadAttack_MultiTargetAttack(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify exactly 2 targets hit (the ones in targeted cells)
-	if len(result.DamageByUnit) != 2 {
-		t.Errorf("Expected 2 units damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 2 {
+		t.Errorf("Expected 2 units damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 }
 
@@ -151,8 +151,8 @@ func TestExecuteSquadAttack_CellBasedTargeting(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify 3 units hit (3 in the 2x2 pattern)
-	if len(result.DamageByUnit) != 3 {
-		t.Errorf("Expected 3 units damaged (2x2 pattern), got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 3 {
+		t.Errorf("Expected 3 units damaged (2x2 pattern), got %d", len(result.Damage.DamageByUnit))
 	}
 }
 
@@ -171,8 +171,8 @@ func TestExecuteSquadAttack_UnitsKilledTracking(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify unit was killed
-	if len(result.UnitsKilled) != 1 {
-		t.Errorf("Expected 1 unit killed, got %d", len(result.UnitsKilled))
+	if len(result.Damage.UnitsKilled) != 1 {
+		t.Errorf("Expected 1 unit killed, got %d", len(result.Damage.UnitsKilled))
 	}
 }
 
@@ -213,14 +213,14 @@ func TestExecuteSquadAttack_MultiCellUnit_HitOnce(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify the multi-cell unit was only hit ONCE, not twice
-	if len(result.DamageByUnit) != 1 {
-		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 
 	// Verify total damage equals damage to single unit (not doubled)
-	unitDamage := result.DamageByUnit[multiCellUnit.GetID()]
-	if result.TotalDamage != unitDamage {
-		t.Errorf("Expected total damage %d to equal unit damage %d", result.TotalDamage, unitDamage)
+	unitDamage := result.Damage.DamageByUnit[multiCellUnit.GetID()]
+	if result.Damage.TotalDamage != unitDamage {
+		t.Errorf("Expected total damage %d to equal unit damage %d", result.Damage.TotalDamage, unitDamage)
 	}
 
 	// Verify defender lost appropriate HP (not doubled)
@@ -289,14 +289,14 @@ func TestExecuteSquadAttack_MultiCellUnit_CellBased_HitOnce(t *testing.T) {
 	result := executeTestAttack(attackerSquadID, defenderSquadID, manager)
 
 	// Verify the multi-cell unit was only hit ONCE despite occupying 4 cells
-	if len(result.DamageByUnit) != 1 {
-		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.DamageByUnit))
+	if len(result.Damage.DamageByUnit) != 1 {
+		t.Errorf("Expected 1 unit to be damaged, got %d", len(result.Damage.DamageByUnit))
 	}
 
 	// Verify total damage equals damage to single unit (not quadrupled)
-	unitDamage := result.DamageByUnit[multiCellUnit.GetID()]
-	if result.TotalDamage != unitDamage {
-		t.Errorf("Expected total damage %d to equal unit damage %d", result.TotalDamage, unitDamage)
+	unitDamage := result.Damage.DamageByUnit[multiCellUnit.GetID()]
+	if result.Damage.TotalDamage != unitDamage {
+		t.Errorf("Expected total damage %d to equal unit damage %d", result.Damage.TotalDamage, unitDamage)
 	}
 
 	// Verify defender lost appropriate HP (not quadrupled)

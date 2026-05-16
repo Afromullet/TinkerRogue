@@ -192,32 +192,32 @@ func applyResistanceAndCover(attackerID, defenderID ecs.EntityID, baseDamage, re
 // RecordDamageToUnit records damage in the combat result without modifying HP (pure calculation)
 func RecordDamageToUnit(unitID ecs.EntityID, damage int, result *combattypes.CombatResult, squadmanager *common.EntityManager) {
 	// Accumulate damage (in case unit is hit multiple times)
-	result.DamageByUnit[unitID] += damage
+	result.Damage.DamageByUnit[unitID] += damage
 
 	// Check if unit would be killed (prediction based on current HP)
 	attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
 	if attr != nil {
-		totalDamageTaken := result.DamageByUnit[unitID]
+		totalDamageTaken := result.Damage.DamageByUnit[unitID]
 		if attr.CurrentHealth-totalDamageTaken <= 0 {
 			// Only add to UnitsKilled once
 			alreadyMarked := false
-			for _, killedID := range result.UnitsKilled {
+			for _, killedID := range result.Damage.UnitsKilled {
 				if killedID == unitID {
 					alreadyMarked = true
 					break
 				}
 			}
 			if !alreadyMarked {
-				result.UnitsKilled = append(result.UnitsKilled, unitID)
+				result.Damage.UnitsKilled = append(result.Damage.UnitsKilled, unitID)
 			}
 		}
 	}
 }
 
-// ApplyRecordedDamage applies all recorded damage from result.DamageByUnit to actual unit HP.
+// ApplyRecordedDamage applies all recorded damage from result.Damage.DamageByUnit to actual unit HP.
 // This is called during orchestration phase after all combat calculations are complete.
 func ApplyRecordedDamage(result *combattypes.CombatResult, squadmanager *common.EntityManager) {
-	for unitID, damage := range result.DamageByUnit {
+	for unitID, damage := range result.Damage.DamageByUnit {
 		attr := common.GetComponentTypeByID[*common.Attributes](squadmanager, unitID, common.AttributeComponent)
 		if attr == nil {
 			continue
@@ -226,10 +226,10 @@ func ApplyRecordedDamage(result *combattypes.CombatResult, squadmanager *common.
 	}
 }
 
-// ApplyRecordedHealing applies all recorded healing from result.HealingByUnit to actual unit HP.
+// ApplyRecordedHealing applies all recorded healing from result.Damage.HealingByUnit to actual unit HP.
 // Called AFTER ApplyRecordedDamage so healers can offset damage taken in the same round.
 func ApplyRecordedHealing(result *combattypes.CombatResult, manager *common.EntityManager) {
-	for unitID, healing := range result.HealingByUnit {
+	for unitID, healing := range result.Damage.HealingByUnit {
 		attr := common.GetComponentTypeByID[*common.Attributes](manager, unitID, common.AttributeComponent)
 		if attr == nil {
 			continue

@@ -63,6 +63,20 @@ func GetAllFactions(manager *common.EntityManager) []ecs.EntityID {
 	return factionIDs
 }
 
+// GetFactionsForEncounter returns all faction IDs that belong to the given encounter.
+// Uses the package-level faction view; safe to call from any package that needs
+// encounter-scoped faction enumeration.
+func GetFactionsForEncounter(encounterID ecs.EntityID) []ecs.EntityID {
+	var factionIDs []ecs.EntityID
+	for _, result := range factionView.Get() {
+		factionData := common.GetComponentType[*FactionData](result.Entity, CombatFactionComponent)
+		if factionData != nil && factionData.EncounterID == encounterID {
+			factionIDs = append(factionIDs, factionData.FactionID)
+		}
+	}
+	return factionIDs
+}
+
 // GetSquadsForFaction returns all squads owned by a faction.
 // Uses package-level ecs.View for zero-allocation reads.
 func GetSquadsForFaction(factionID ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
@@ -188,33 +202,6 @@ func DecrementMovementRemaining(cache *CombatQueryCache, squadID ecs.EntityID, a
 	if actionState.MovementRemaining < 0 {
 		actionState.MovementRemaining = 0
 	}
-}
-
-// ========================================
-// COMBAT STATE HELPERS
-// ========================================
-
-// RemoveSquadFromMap removes a destroyed squad from the combat map and disposes all entities.
-// This performs complete cleanup: removes from position system, disposes all units, and disposes the squad.
-func RemoveSquadFromMap(squadID ecs.EntityID, manager *common.EntityManager) error {
-	squad := manager.FindEntityByID(squadID)
-	if squad == nil {
-		return fmt.Errorf("squad %d not found", squadID)
-	}
-
-	// Get position before removal (for position system cleanup)
-	position := common.GetComponentType[*coords.LogicalPosition](squad, common.PositionComponent)
-	if position != nil {
-		common.GlobalPositionSystem.RemoveEntity(squadID, *position)
-	}
-
-	// Remove FactionMembershipComponent (squad exits combat) before disposal
-	squad.RemoveComponent(FactionMembershipComponent)
-
-	// Dispose the squad and all its units (dead or alive) from the ECS world
-	squadcore.DisposeSquadAndUnits(squadID, manager)
-
-	return nil
 }
 
 // ========================================

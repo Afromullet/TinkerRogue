@@ -19,10 +19,21 @@ func counterattackHitPenalty() int {
 	return combatmath.CombatBalance.Counterattack.HitPenalty
 }
 
-// processAttack is the unified attack processing function.
-// defenderSquadID is needed for perk target override hooks (0 if unknown).
-// A nil dispatcher is normalized to NoopPerkDispatcher so all hooks can be
-// invoked unconditionally inside this function.
+// processAttack is the unified attack processing function. Each target follows
+// the same ordered pipeline; the helpers below name each step so the loop body
+// reads as orchestration rather than mechanics.
+//
+//	1. resolveAttackerSquadID    – look up the attacker's squad once per call
+//	2. runTargetOverride         – perk-driven target swap (Cleave, etc.)
+//	3. applyDamageMods           – per-target attacker/defender modifier hooks
+//	4. combatmath.CalculateDamage – core damage roll
+//	5. enrichTargetingInfo       – attach grid position + attack mode to the event
+//	6. applyDamageWithRedirect   – Guardian Protocol redirect + record damage
+//	7. applyDeathOverride        – Resolute prevents lethal damage
+//	8. runPostDamageHooks        – Attacker/Defender post-damage hooks
+//
+// A nil dispatcher is normalized to NoopPerkDispatcher so every helper can call
+// the dispatcher unconditionally.
 func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 	targetIDs []ecs.EntityID, result *combattypes.CombatResult,
 	log *combattypes.CombatLog, attackIndex int, modifiers combattypes.DamageModifiers,
@@ -32,99 +43,137 @@ func processAttack(attackerID ecs.EntityID, defenderSquadID ecs.EntityID,
 		dispatcher = combattypes.NoopPerkDispatcher{}
 	}
 
-	// Determine attacker's squad ID for perk hooks
-	attackerSquadID := ecs.EntityID(0)
-	memberData := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, attackerID, squadcore.SquadMemberComponent)
-	if memberData != nil {
-		attackerSquadID = memberData.SquadID
-	}
-
-	// Run target override hooks (attacker perks like Cleave, Precision Strike).
-	// defenderSquadID==0 means unknown squad — skip the hook because it can't
-	// resolve which squad's perks apply.
-	if defenderSquadID != 0 {
-		targetIDs = dispatcher.TargetOverride(attackerID, defenderSquadID, targetIDs, manager)
-	}
+	attackerSquadID := resolveAttackerSquadID(attackerID, manager)
+	targetIDs = runTargetOverride(dispatcher, attackerID, defenderSquadID, targetIDs, manager)
 
 	for _, defenderID := range targetIDs {
 		attackIndex++
 
-		// Make a copy of modifiers for this specific target (perks may modify per-target)
-		targetModifiers := modifiers
-
-		dispatcher.AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
-		dispatcher.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &targetModifiers, manager)
-
-		// Calculate damage
+		targetModifiers := applyDamageMods(dispatcher, attackerID, defenderID, attackerSquadID, defenderSquadID, modifiers, manager)
 		damage, event := combatmath.CalculateDamage(attackerID, defenderID, targetModifiers, dispatcher, manager)
+		enrichTargetingInfo(event, attackerID, defenderID, attackIndex, manager)
+		damage = applyDamageWithRedirect(dispatcher, defenderID, defenderSquadID, damage, result, manager)
+		applyDeathOverride(dispatcher, event, defenderID, defenderSquadID, result, manager)
+		runPostDamageHooks(dispatcher, attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
 
-		// Add targeting info
-		defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent)
-		event.AttackIndex = attackIndex
-		if defenderPos != nil {
-			event.TargetInfo.TargetRow = defenderPos.AnchorRow
-			event.TargetInfo.TargetCol = defenderPos.AnchorCol
-		}
-
-		// Set target mode
-		targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](manager, attackerID, squadcore.TargetRowComponent)
-		if targetData != nil {
-			event.TargetInfo.TargetMode = targetData.AttackType.String()
-		}
-
-		// Run damage redirect hooks (Guardian Protocol)
-		if damage > 0 {
-			reducedDmg, redirectTarget, redirectAmt := dispatcher.DamageRedirect(defenderID, defenderSquadID, damage, manager)
-			if redirectTarget != 0 && redirectAmt > 0 {
-				damage = reducedDmg
-				combatmath.RecordDamageToUnit(redirectTarget, redirectAmt, result, manager)
-			}
-		}
-
-		// Apply damage
-		combatmath.RecordDamageToUnit(defenderID, damage, result, manager)
-
-		// Death override check (Resolute) — must run BEFORE PostDamage hooks
-		// so that prevented deaths are not counted as kills by perks like Bloodlust.
-		if event.WasKilled {
-			defenderMember := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, defenderID, squadcore.SquadMemberComponent)
-			defSquadID := defenderSquadID
-			if defenderMember != nil {
-				defSquadID = defenderMember.SquadID
-			}
-			if dispatcher.DeathOverride(defenderID, defSquadID, manager) {
-				// Prevent death: adjust recorded damage so unit survives at 1 HP
-				attr := common.GetComponentTypeByID[*common.Attributes](manager, defenderID, common.AttributeComponent)
-				if attr != nil {
-					totalRecorded := result.DamageByUnit[defenderID]
-					maxAllowedDamage := attr.CurrentHealth - 1
-					if maxAllowedDamage < 0 {
-						maxAllowedDamage = 0
-					}
-					if totalRecorded > maxAllowedDamage {
-						result.DamageByUnit[defenderID] = maxAllowedDamage
-					}
-					for i, killedID := range result.UnitsKilled {
-						if killedID == defenderID {
-							result.UnitsKilled = append(result.UnitsKilled[:i], result.UnitsKilled[i+1:]...)
-							break
-						}
-					}
-					event.WasKilled = false
-					event.DefenderHPAfter = 1
-				}
-			}
-		}
-
-		// Post-damage hooks run AFTER death override so WasKilled reflects prevented deaths.
-		dispatcher.AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
-		dispatcher.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, event.WasKilled, manager)
-
-		// Store event
 		log.AttackEvents = append(log.AttackEvents, *event)
 	}
 
 	return attackIndex
+}
+
+// resolveAttackerSquadID looks up the squad an attacker belongs to. Returns 0
+// if the attacker is not a squad member (e.g., a free-standing entity in a test).
+func resolveAttackerSquadID(attackerID ecs.EntityID, manager *common.EntityManager) ecs.EntityID {
+	memberData := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, attackerID, squadcore.SquadMemberComponent)
+	if memberData == nil {
+		return 0
+	}
+	return memberData.SquadID
+}
+
+// runTargetOverride lets attacker perks (Cleave, Precision Strike) mutate the
+// target list before damage rolls. Skips when defenderSquadID==0 because the
+// hook can't resolve which squad's perks apply.
+func runTargetOverride(dispatcher combattypes.PerkDispatcher, attackerID, defenderSquadID ecs.EntityID,
+	targetIDs []ecs.EntityID, manager *common.EntityManager) []ecs.EntityID {
+	if defenderSquadID == 0 {
+		return targetIDs
+	}
+	return dispatcher.TargetOverride(attackerID, defenderSquadID, targetIDs, manager)
+}
+
+// applyDamageMods runs both AttackerDamageMod and DefenderDamageMod hooks on a
+// copy of modifiers and returns the modified copy. The caller-provided
+// modifiers are not mutated so the next target sees a fresh starting state.
+func applyDamageMods(dispatcher combattypes.PerkDispatcher,
+	attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
+	modifiers combattypes.DamageModifiers, manager *common.EntityManager) combattypes.DamageModifiers {
+	out := modifiers
+	dispatcher.AttackerDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &out, manager)
+	dispatcher.DefenderDamageMod(attackerID, defenderID, attackerSquadID, defenderSquadID, &out, manager)
+	return out
+}
+
+// enrichTargetingInfo attaches the defender's grid position and the attacker's
+// attack-mode tag to a calculated event. Mutates event in place.
+func enrichTargetingInfo(event *combattypes.AttackEvent,
+	attackerID, defenderID ecs.EntityID, attackIndex int, manager *common.EntityManager) {
+	event.AttackIndex = attackIndex
+	if defenderPos := common.GetComponentTypeByID[*squadcore.GridPositionData](manager, defenderID, squadcore.GridPositionComponent); defenderPos != nil {
+		event.TargetInfo.TargetRow = defenderPos.AnchorRow
+		event.TargetInfo.TargetCol = defenderPos.AnchorCol
+	}
+	if targetData := common.GetComponentTypeByID[*squadcore.TargetRowData](manager, attackerID, squadcore.TargetRowComponent); targetData != nil {
+		event.TargetInfo.TargetMode = targetData.AttackType.String()
+	}
+}
+
+// applyDamageWithRedirect runs the Guardian Protocol redirect hook (when damage
+// is positive), records any redirected portion against the redirect target,
+// then records the (possibly reduced) primary damage against defenderID.
+// Returns the final damage applied to the primary target.
+func applyDamageWithRedirect(dispatcher combattypes.PerkDispatcher,
+	defenderID, defenderSquadID ecs.EntityID, damage int,
+	result *combattypes.CombatResult, manager *common.EntityManager) int {
+	if damage > 0 {
+		reducedDmg, redirectTarget, redirectAmt := dispatcher.DamageRedirect(defenderID, defenderSquadID, damage, manager)
+		if redirectTarget != 0 && redirectAmt > 0 {
+			damage = reducedDmg
+			combatmath.RecordDamageToUnit(redirectTarget, redirectAmt, result, manager)
+		}
+	}
+	combatmath.RecordDamageToUnit(defenderID, damage, result, manager)
+	return damage
+}
+
+// applyDeathOverride lets the Resolute perk cancel a killing blow. Must run
+// BEFORE post-damage hooks so prevented deaths aren't counted as kills by
+// perks like Bloodlust. Mutates event.WasKilled and result.DamageByUnit /
+// result.UnitsKilled on success.
+func applyDeathOverride(dispatcher combattypes.PerkDispatcher, event *combattypes.AttackEvent,
+	defenderID, defenderSquadID ecs.EntityID,
+	result *combattypes.CombatResult, manager *common.EntityManager) {
+	if !event.WasKilled {
+		return
+	}
+	defenderMember := common.GetComponentTypeByID[*squadcore.SquadMemberData](manager, defenderID, squadcore.SquadMemberComponent)
+	defSquadID := defenderSquadID
+	if defenderMember != nil {
+		defSquadID = defenderMember.SquadID
+	}
+	if !dispatcher.DeathOverride(defenderID, defSquadID, manager) {
+		return
+	}
+
+	attr := common.GetComponentTypeByID[*common.Attributes](manager, defenderID, common.AttributeComponent)
+	if attr == nil {
+		return
+	}
+	maxAllowedDamage := attr.CurrentHealth - 1
+	if maxAllowedDamage < 0 {
+		maxAllowedDamage = 0
+	}
+	if result.Damage.DamageByUnit[defenderID] > maxAllowedDamage {
+		result.Damage.DamageByUnit[defenderID] = maxAllowedDamage
+	}
+	for i, killedID := range result.Damage.UnitsKilled {
+		if killedID == defenderID {
+			result.Damage.UnitsKilled = append(result.Damage.UnitsKilled[:i], result.Damage.UnitsKilled[i+1:]...)
+			break
+		}
+	}
+	event.WasKilled = false
+	event.DefenderHPAfter = 1
+}
+
+// runPostDamageHooks fires the AttackerPostDamage + DefenderPostDamage hooks.
+// Runs after applyDeathOverride so wasKill reflects prevented deaths.
+func runPostDamageHooks(dispatcher combattypes.PerkDispatcher,
+	attackerID, defenderID, attackerSquadID, defenderSquadID ecs.EntityID,
+	damage int, wasKill bool, manager *common.EntityManager) {
+	dispatcher.AttackerPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, wasKill, manager)
+	dispatcher.DefenderPostDamage(attackerID, defenderID, attackerSquadID, defenderSquadID, damage, wasKill, manager)
 }
 
 // ProcessAttackOnTargets applies damage to all targets and creates combat events.
@@ -161,7 +210,7 @@ func ProcessHealOnTargets(healerID ecs.EntityID, targetIDs []ecs.EntityID, resul
 
 		if healAmount > 0 {
 			// Record healing (accumulated per unit)
-			result.HealingByUnit[targetID] += healAmount
+			result.Damage.HealingByUnit[targetID] += healAmount
 		}
 
 		log.HealEvents = append(log.HealEvents, *event)
