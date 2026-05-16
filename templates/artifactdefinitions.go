@@ -1,10 +1,6 @@
 package templates
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-)
+import "log"
 
 // ArtifactStatModifier defines one stat change an artifact applies.
 type ArtifactStatModifier struct {
@@ -30,38 +26,40 @@ func GetArtifactDefinition(id string) *ArtifactDefinition {
 	return ArtifactRegistry[id]
 }
 
-// Artifact data file paths within the assets directory.
-const (
-	MinorArtifactDataPath = "gamedata/minor_artifacts.json"
-	MajorArtifactDataPath = "gamedata/major_artifacts.json"
-)
-
 // artifactDataFile is the JSON wrapper for artifact definitions.
 type artifactDataFile struct {
 	Artifacts []ArtifactDefinition `json:"artifacts"`
 }
 
 // LoadArtifactDefinitions reads artifact definitions from JSON files and populates ArtifactRegistry.
-func LoadArtifactDefinitions() {
+// Missing files are non-fatal (registry stays empty).
+func LoadArtifactDefinitions() error {
 	total := 0
-	total += loadArtifactFile(MinorArtifactDataPath)
-	total += loadArtifactFile(MajorArtifactDataPath)
-	fmt.Printf("Loaded %d artifact definitions\n", total)
+	n, err := loadArtifactFile(MinorArtifactDataPath)
+	if err != nil {
+		return err
+	}
+	total += n
+	n, err = loadArtifactFile(MajorArtifactDataPath)
+	if err != nil {
+		return err
+	}
+	total += n
+	log.Printf("[templates] artifacts loaded: %d definitions", total)
+	return nil
 }
 
 // loadArtifactFile reads a single artifact JSON file and adds entries to ArtifactRegistry.
 // Returns the number of artifacts loaded.
-func loadArtifactFile(path string) int {
-	data, err := os.ReadFile(AssetPath(path))
-	if err != nil {
-		fmt.Printf("WARNING: Failed to read artifact data from %s: %v\n", path, err)
-		return 0
+func loadArtifactFile(path string) (int, error) {
+	loader := Loader[artifactDataFile]{
+		Name:     "artifacts",
+		Path:     path,
+		Optional: true,
 	}
-
-	var artifactFile artifactDataFile
-	if err := json.Unmarshal(data, &artifactFile); err != nil {
-		fmt.Printf("WARNING: Failed to parse artifact data from %s: %v\n", path, err)
-		return 0
+	artifactFile, err := loader.Load()
+	if err != nil {
+		return 0, err
 	}
 
 	for i := range artifactFile.Artifacts {
@@ -73,5 +71,5 @@ func loadArtifactFile(path string) int {
 		ArtifactRegistry[artifact.ID] = artifact
 	}
 
-	return len(artifactFile.Artifacts)
+	return len(artifactFile.Artifacts), nil
 }

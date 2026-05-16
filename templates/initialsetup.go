@@ -65,56 +65,57 @@ var validFactionTypeIDs = map[string]bool{
 	"cultists":     true,
 }
 
-func validateInitialSetup(cfg *JSONInitialSetup) {
+func validateInitialSetup(cfg *JSONInitialSetup) error {
 	if len(cfg.Commanders) == 0 {
-		panic("initialsetup: at least one commander required")
+		return fmt.Errorf("at least one commander required")
 	}
 
 	primaryCount := 0
 	for i, c := range cfg.Commanders {
 		if c.Name == "" {
-			panic(fmt.Sprintf("initialsetup: commander[%d] missing name", i))
+			return fmt.Errorf("commander[%d] missing name", i)
 		}
 		if c.Squads.Count < 0 {
-			panic(fmt.Sprintf("initialsetup: commander[%d] squads.count must be >= 0", i))
+			return fmt.Errorf("commander[%d] squads.count must be >= 0", i)
 		}
 		if c.Squads.Count > 0 && len(c.Squads.TypePool) == 0 {
-			panic(fmt.Sprintf("initialsetup: commander[%d] squads.typePool empty but count > 0", i))
+			return fmt.Errorf("commander[%d] squads.typePool empty but count > 0", i)
 		}
 		for _, t := range c.Squads.TypePool {
 			if !validSquadTypeIDs[t] {
-				panic(fmt.Sprintf("initialsetup: commander[%d] unknown squad type %q", i, t))
+				return fmt.Errorf("commander[%d] unknown squad type %q", i, t)
 			}
 		}
 		if c.IsPrimary {
 			primaryCount++
 			if c.OffsetX != 0 || c.OffsetY != 0 {
-				panic(fmt.Sprintf("initialsetup: primary commander %q must have offset (0,0)", c.Name))
+				return fmt.Errorf("primary commander %q must have offset (0,0)", c.Name)
 			}
 		}
 	}
 	if primaryCount != 1 {
-		panic(fmt.Sprintf("initialsetup: exactly one commander must be marked isPrimary (found %d)", primaryCount))
+		return fmt.Errorf("exactly one commander must be marked isPrimary (found %d)", primaryCount)
 	}
 
 	if cfg.RosterUnits.Count < 0 {
-		panic("initialsetup: rosterUnits.count must be >= 0")
+		return fmt.Errorf("rosterUnits.count must be >= 0")
 	}
 
 	f := cfg.Factions
 	if f.StrengthMin < 1 {
-		panic("initialsetup: factions.strengthMin must be >= 1")
+		return fmt.Errorf("factions.strengthMin must be >= 1")
 	}
 	if f.StrengthMax < f.StrengthMin {
-		panic("initialsetup: factions.strengthMax must be >= strengthMin")
+		return fmt.Errorf("factions.strengthMax must be >= strengthMin")
 	}
 	if len(f.FallbackPositions) < len(f.Entries) {
-		panic(fmt.Sprintf("initialsetup: fallbackPositions (%d) must have at least one entry per faction (%d)",
-			len(f.FallbackPositions), len(f.Entries)))
+		return fmt.Errorf("fallbackPositions (%d) must have at least one entry per faction (%d)",
+			len(f.FallbackPositions), len(f.Entries))
 	}
 	for i, e := range f.Entries {
 		if !validFactionTypeIDs[e.Type] {
-			panic(fmt.Sprintf("initialsetup: factions.entries[%d] unknown faction type %q", i, e.Type))
+			return fmt.Errorf("factions.entries[%d] unknown faction type %q", i, e.Type)
 		}
 	}
+	return nil
 }

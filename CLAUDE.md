@@ -54,7 +54,7 @@ go vet ./...                    # Check for mistakes
 - **Spawning:** `mind/spawning/` (Automatic Squad creation and composition)
 - **Overworld:** `campaign/overworld/` (Factions, garrisons, influence, threats, victory conditions)
 - **Raid:** `campaign/raid/` (Raid encounters, floor graph, deployment, recovery)
-- **Templates:** `templates/` (Entity factory, artifact/spell definitions, game config, name generation)
+- **Templates:** `templates/` (JSON loaders + DTOs + validators for all gamedata, plus entity factory; uses `Loader[T]` helper, see "Templates package conventions")
 - **GUI Framework:** `gui/framework/`, `gui/specs/` (Mode manager, context switching, layout specs)
 - **GUI Widgets:** `gui/builders/`, `gui/widgetresources/`, `gui/widgets/` (Reusable GUI elements)
 - **GUI Combat:** `gui/guicombat/` (Combat mode, combat animation, attacking, moving)
@@ -271,6 +271,10 @@ func init() {
     RegisterGenerator("my_algorithm", &MyGenerator{})
 }
 ```
+
+### Templates package conventions
+
+When adding a new gamedata JSON file, follow the recipe in `resources/docs/project_documentation/Architecture/GAMEDATA_OVERVIEW.md` → "Adding a New Gamedata File". Hard rule: validators must return `error`, never `panic` — the package is panic-free by design and `setup/gamesetup.LoadGameData` is the single boot-time `log.Fatalf` point.
 
 ---
 

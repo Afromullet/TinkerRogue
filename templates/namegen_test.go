@@ -88,13 +88,7 @@ func TestGenerateNameProducesVariety(t *testing.T) {
 	}
 }
 
-func TestValidateNameConfigPanicsOnMissingDefault(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for missing default pool")
-		}
-	}()
-
+func TestValidateNameConfigErrorsOnMissingDefault(t *testing.T) {
 	config := &JSONNameConfig{
 		NameFormat:   "{name} the {type}",
 		MinSyllables: 2,
@@ -106,16 +100,12 @@ func TestValidateNameConfigPanicsOnMissingDefault(t *testing.T) {
 			},
 		},
 	}
-	validateNameConfig(config)
+	if err := validateNameConfig(config); err == nil {
+		t.Error("expected error for missing default pool")
+	}
 }
 
-func TestValidateNameConfigPanicsOnEmptyPrefixes(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for empty prefixes")
-		}
-	}()
-
+func TestValidateNameConfigErrorsOnEmptyPrefixes(t *testing.T) {
 	config := &JSONNameConfig{
 		NameFormat:   "{name} the {type}",
 		MinSyllables: 2,
@@ -127,16 +117,12 @@ func TestValidateNameConfigPanicsOnEmptyPrefixes(t *testing.T) {
 			},
 		},
 	}
-	validateNameConfig(config)
+	if err := validateNameConfig(config); err == nil {
+		t.Error("expected error for empty prefixes")
+	}
 }
 
-func TestValidateNameConfigPanicsOnInvalidSyllables(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for minSyllables < 2")
-		}
-	}()
-
+func TestValidateNameConfigErrorsOnInvalidSyllables(t *testing.T) {
 	config := &JSONNameConfig{
 		NameFormat:   "{name} the {type}",
 		MinSyllables: 1,
@@ -148,5 +134,7 @@ func TestValidateNameConfigPanicsOnInvalidSyllables(t *testing.T) {
 			},
 		},
 	}
-	validateNameConfig(config)
+	if err := validateNameConfig(config); err == nil {
+		t.Error("expected error for minSyllables < 2")
+	}
 }

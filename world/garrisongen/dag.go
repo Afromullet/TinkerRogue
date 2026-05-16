@@ -1,17 +1,22 @@
 package garrisongen
 
-import "game_main/core/common"
+import (
+	"game_main/core/common"
+	"game_main/world/garrisongen/roomtypes"
+)
 
-// Room type constants for garrison raid floors
+// Room type constants for garrison raid floors. Aliased from
+// world/garrisongen/roomtypes so templates (which validates them) and this
+// package (which uses them) share one source of truth.
 const (
-	GarrisonRoomBarracks    = "barracks"
-	GarrisonRoomGuardPost   = "guard_post"
-	GarrisonRoomArmory      = "armory"
-	GarrisonRoomCommandPost = "command_post"
-	GarrisonRoomPatrolRoute = "patrol_route"
-	GarrisonRoomMageTower   = "mage_tower"
-	GarrisonRoomRestRoom    = "rest_room"
-	GarrisonRoomStairs      = "stairs"
+	GarrisonRoomBarracks    = roomtypes.Barracks
+	GarrisonRoomGuardPost   = roomtypes.GuardPost
+	GarrisonRoomArmory      = roomtypes.Armory
+	GarrisonRoomCommandPost = roomtypes.CommandPost
+	GarrisonRoomPatrolRoute = roomtypes.PatrolRoute
+	GarrisonRoomMageTower   = roomtypes.MageTower
+	GarrisonRoomRestRoom    = roomtypes.RestRoom
+	GarrisonRoomStairs      = roomtypes.Stairs
 )
 
 // FloorNode represents a room in the abstract DAG

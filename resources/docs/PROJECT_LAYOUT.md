@@ -157,6 +157,8 @@ TinkerRogue/
 │   │   └── gen_helpers.go          # Shared generator helpers
 │   └── garrisongen/        # Garrison-specific map generation (multi-floor DAG)
 │       ├── generator.go, dag.go, terrain.go, meta.go
+│       └── roomtypes/      # Leaf sub-package: shared room-type ID constants
+│                           # (imported by templates/ to avoid worldmap deps)
 │
 ├── visual/                 # Rendering pipeline
 │   ├── graphics/           # Graphics primitives (color matrices, shapes, types)
@@ -239,15 +241,26 @@ TinkerRogue/
 ├── input/                  # Input handling
 │   └── cameracontroller.go         # WASD movement, diagonals, map scroll toggle
 │
-├── templates/              # JSON-based entity/data factory
-│   ├── registry.go                 # Template registry
-│   ├── entity_factory.go           # Factory functions
-│   ├── readdata.go                 # JSON loading
-│   ├── artifactdefinitions.go      # Artifact JSON schema
-│   ├── spelldefinitions.go, unitspelldefinitions.go
-│   ├── difficulty.go               # Difficulty scaling
-│   ├── gameconfig.go               # Game-wide config from JSON
-│   ├── jsonschema.go, validation.go
+├── templates/              # JSON loaders + DTOs + validators for all gamedata
+│   ├── doc.go                      # Package overview, conventions
+│   ├── registry.go                 # Globals + ReadGameData() phase orchestrator
+│   ├── paths.go                    # *Path constants for every gamedata file
+│   ├── loader.go                   # Generic Loader[T] helper
+│   ├── readdata.go                 # Orchestrated Read* functions per subsystem
+│   ├── gameconfig.go               # Game-wide config loader + validator
+│   ├── difficulty.go               # Difficulty scaling loader + validator
+│   ├── artifactdefinitions.go      # Artifact loader + registry
+│   ├── spelldefinitions.go         # Spell loader + registry
+│   ├── unitspelldefinitions.go     # Unit-to-spell mapping loader
+│   ├── initialsetup.go             # Initial commanders/squads/factions schema + validator
+│   ├── entity_factory.go           # CreateCreatureEntity / CreateUnit
+│   ├── schema_monster.go           # Monster + util + name DTOs
+│   ├── schema_combat.go            # AI + power tuning DTOs
+│   ├── schema_overworld.go         # Overworld + influence + node/encounter DTOs
+│   ├── schema_mapgen.go            # Map-generation DTOs
+│   ├── schema_game.go              # Game-config DTOs (root JSONGameConfig + subs)
+│   ├── validate_shared.go          # Shared helpers (requiredRoles, markFound, etc.)
+│   ├── validation.go               # All subsystem validators (return error, never panic)
 │   └── namegen.go                  # Procedural name generation
 │
 ├── setup/                  # Game configuration and save system

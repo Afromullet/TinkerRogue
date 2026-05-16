@@ -12,9 +12,8 @@ import (
 type UnitTemplate struct {
 	UnitType     string
 	Attributes   common.Attributes
-	EntityType   templates.EntityType
 	EntityConfig templates.EntityConfig
-	EntityData   any      // JSONMonster, etc.
+	EntityData   templates.JSONMonster
 	GridRow      int      // Anchor row (0-2)
 	GridCol      int      // Anchor col (0-2)
 	GridWidth    int      // Width in cells (1-3), defaults to 1
@@ -63,13 +62,11 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 	}
 
 	entityConfig := templates.EntityConfig{
-		Type:      templates.EntityCreature,
 		Name:      monsterData.UnitType,
 		ImagePath: monsterData.ImageName,
 		AssetDir:  config.AssetPath("creatures"),
 		Visible:   true,
 		Position:  nil,
-		GameMap:   nil,
 	}
 
 	growths := unitprogression.StatGrowthData{
@@ -84,7 +81,6 @@ func CreateUnitTemplates(monsterData templates.JSONMonster) (UnitTemplate, error
 	unit := UnitTemplate{
 		UnitType:       monsterData.UnitType,
 		Attributes:     monsterData.Attributes.NewAttributesFromJson(),
-		EntityType:     templates.EntityCreature,
 		EntityConfig:   entityConfig,
 		EntityData:     monsterData,
 		GridRow:        0,

@@ -562,10 +562,11 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - core/common
 
 ## templates
+- campaign/overworld/ids
 - core/common
 - core/config
 - core/coords
-- world/worldmapcore
+- world/garrisongen/roomtypes
 
 ## testing
 - core/common
@@ -628,8 +629,12 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## world/garrisongen
 - core/common
 - core/coords
+- world/garrisongen/roomtypes
 - world/worldgen
 - world/worldmapcore
+
+## world/garrisongen/roomtypes
+- (leaf — no game_main imports; provides shared room-type ID constants)
 
 ## world/worldgen
 - core/common

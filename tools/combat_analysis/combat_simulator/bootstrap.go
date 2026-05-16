@@ -13,7 +13,9 @@ import (
 // Replicates game_main/componentinit.go logic without any rendering/ebiten dependencies.
 func bootstrapECS() {
 	// 1. Load game data from JSON files (monster templates, configs, etc.)
-	templates.ReadGameData()
+	if err := templates.ReadGameData(); err != nil {
+		panic(fmt.Sprintf("bootstrapECS: %v", err))
+	}
 
 	// 2. Convert JSON monster data into UnitTemplates
 	if err := unitdefs.InitUnitTemplatesFromJSON(); err != nil {

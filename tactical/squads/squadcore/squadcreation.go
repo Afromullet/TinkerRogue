@@ -357,13 +357,13 @@ func placeTemplateUnit(
 		}
 	}
 
-	unitEntity := templates.CreateEntityFromTemplate(ecsmanager, template.EntityConfig, template.EntityData)
+	unitEntity := templates.CreateCreatureEntity(ecsmanager, template.EntityConfig, template.EntityData)
 	unitEntity.AddComponent(common.NameComponent, &common.Name{
 		NameStr: templates.GenerateName("default", template.UnitType),
 	})
 	hideUnitRenderable(unitEntity)
 
-	// Re-bind world position to the squad's tile (CreateEntityFromTemplate defaults to 0,0).
+	// Re-bind world position to the squad's tile (CreateCreatureEntity defaults to 0,0).
 	unitEntity.AddComponent(common.PositionComponent, &coords.LogicalPosition{X: worldPos.X, Y: worldPos.Y})
 
 	unitEntity.AddComponent(SquadMemberComponent, &SquadMemberData{SquadID: squadID})

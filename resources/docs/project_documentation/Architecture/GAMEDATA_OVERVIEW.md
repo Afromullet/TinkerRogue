@@ -1,6 +1,6 @@
 # Game Data Overview
 
-**Last Updated:** 2026-04-21
+**Last Updated:** 2026-05-16
 
 The `assets/gamedata/` folder contains all JSON files that define game templates, tuning parameters, and configuration. Most files are loaded at startup by `templates.ReadGameData()` (called from the bootstrap layer). A handful of subsystem-specific files (raid, perks, artifacts, combat, spells, artifacts-inventory) are loaded by their owning packages through dedicated loaders.
 
@@ -170,9 +170,25 @@ Several files reference shared identifiers that must stay in sync:
 
 - **Perk IDs** — `perkdata.json` defines perk IDs. `perkbalanceconfig.json` keys tuning values by camelCase perk name. The behavior registry in `tactical/powers/perks/behaviors.go` keys handlers by perk ID and registers hook entries into the dispatcher.
 
-- **Archetype room types** — `raidarchetypes.json` uses `preferredRooms` strings that must match garrison room-type constants in `world/garrisongen` (e.g., `barracks`, `guard_post`, `mage_tower`). `mapgenconfig.json` also keys per-room size bounds by the same names.
+- **Archetype room types** — `raidarchetypes.json` uses `preferredRooms` strings that must match garrison room-type constants in `world/garrisongen/roomtypes` (e.g., `barracks`, `guard_post`, `mage_tower`). `mapgenconfig.json` also keys per-room size bounds by the same names, and `templates/validation.go` references the same `roomtypes.Valid` set for validation.
 
 - **Ability names** — `powerconfig.json` defines ability values (e.g., `Rally`, `Heal`, `Fireball`). These are referenced by the power calculation system when evaluating squad strength.
+
+---
+
+## Adding a New Gamedata File
+
+The `templates/` package follows a fixed recipe for every gamedata JSON file.
+When adding a new file:
+
+1. **Path constant** — add a `*Path = "gamedata/yourfile.json"` constant in `templates/paths.go`.
+2. **Schema struct** — add the JSON DTO struct to the matching `templates/schema_*.go` (`monster`, `combat`, `overworld`, `mapgen`, or `game`). If none fits, the file is a schema for a new subsystem and warrants a new `schema_<subsystem>.go`.
+3. **Validator** — add a `validate*` function returning `error` (never `panic`) in `templates/validation.go`. Shared helpers like `requiredRoles`, `markFound`, and `checkRequired` live in `validate_shared.go`.
+4. **Loader declaration** — declare a `Loader[T]` value in `templates/readdata.go` (or alongside the registry for self-contained loaders like spells/artifacts). Set `Optional: true` only when missing files should silently fall back to defaults.
+5. **Read function** — add a `Read*`/`Load*` function that calls the loader, assigns the result to its registry global, and logs `[templates] <name> loaded`.
+6. **Phase registration** — register the new `Read*` function in `ReadGameData()` in `templates/registry.go` in the correct phase (see the phase comments).
+
+**Do not add bespoke loaders.** `Loader[T]` is the contract that unifies error semantics and logging across the package.
 
 ---
 
@@ -194,6 +210,7 @@ Files loaded by `templates.ReadGameData()` during startup, in this order:
 12. `spelldata.json` — spell definitions (via `LoadSpellDefinitions`)
 13. `unitspells.json` — unit-type → spell mappings (via `LoadUnitSpellDefinitions`; loaded after spell data so it can validate spell IDs)
 14. `minor_artifacts.json` and `major_artifacts.json` — artifact definitions (via `LoadArtifactDefinitions`)
+15. `initialsetup.json` — initial commanders/squads/factions/roster, loaded last so squad type IDs from earlier configs are available for validation
 
 Files loaded by subsystem-specific loaders, outside `ReadGameData`:
 
@@ -204,4 +221,4 @@ Files loaded by subsystem-specific loaders, outside `ReadGameData`:
 - `artifactbalanceconfig.json` — `artifacts.LoadArtifactBalanceConfig`
 - `combatbalanceconfig.json` — `combatcore.LoadCombatBalanceConfig`
 
-Loading failures cause the game to panic at startup rather than proceeding with missing data, except for the optional `mapgenconfig.json`.
+Loading failures surface as wrapped errors that propagate through `ReadGameData()`. `setup/gamesetup.LoadGameData` then calls `log.Fatalf` once with the wrapped chain (e.g., `LoadGameData: ReadGameData: ai: templates: validate ai: …`), so the failing loader is always identified. `mapgenconfig.json` is the only optional file; absence logs a warning and is non-fatal.

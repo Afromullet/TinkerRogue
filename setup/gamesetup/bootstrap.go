@@ -34,7 +34,9 @@ func NewGameBootstrap() *GameBootstrap {
 // LoadGameData loads static game data from JSON files.
 // Phase 1: No dependencies, must run first.
 func (gb *GameBootstrap) LoadGameData() {
-	templates.ReadGameData()
+	if err := templates.ReadGameData(); err != nil {
+		log.Fatalf("LoadGameData: %v", err)
+	}
 	perks.LoadPerkDefinitions()
 	perks.LoadPerkBalanceConfig()
 	artifacts.LoadArtifactBalanceConfig()

@@ -1,109 +1,26 @@
 package templates
 
-import "game_main/core/config"
-
-// JSONGameConfig is the root container for game balance configuration.
-// Loaded from gamedata/gameconfig.json at startup.
-type JSONGameConfig struct {
-	Player    PlayerConfig            `json:"player"`
-	Commander CommanderConfig         `json:"commander"`
-	FactionAI FactionAIConfig2        `json:"factionAI"`
-	Combat    CombatConfig            `json:"combat"`
-	Display   DisplayConfig           `json:"display"`
-	Encounter EncounterRewardsConfig  `json:"encounter"`
-}
-
-type PlayerConfig struct {
-	Attributes PlayerAttributesConfig `json:"attributes"`
-	Resources  PlayerResourcesConfig  `json:"resources"`
-	Limits     PlayerLimitsConfig     `json:"limits"`
-}
-
-type PlayerAttributesConfig struct {
-	Strength   int `json:"strength"`
-	Dexterity  int `json:"dexterity"`
-	Magic      int `json:"magic"`
-	Leadership int `json:"leadership"`
-	Armor      int `json:"armor"`
-	Weapon     int `json:"weapon"`
-}
-
-type PlayerResourcesConfig struct {
-	Gold  int `json:"gold"`
-	Iron  int `json:"iron"`
-	Wood  int `json:"wood"`
-	Stone int `json:"stone"`
-}
-
-type PlayerLimitsConfig struct {
-	MaxUnits               int `json:"maxUnits"`
-	MaxSquads              int `json:"maxSquads"`
-	MaxArtifacts           int `json:"maxArtifacts"`
-	MaxArtifactsPerCommander int `json:"maxArtifactsPerCommander"`
-}
-
-type CommanderConfig struct {
-	MovementSpeed  int      `json:"movementSpeed"`
-	MaxCommanders  int      `json:"maxCommanders"`
-	Cost           int      `json:"cost"`
-	MaxSquads      int      `json:"maxSquads"`
-	StartingMana   int      `json:"startingMana"`
-	MaxMana        int      `json:"maxMana"`
-	StartingPerks  []string `json:"startingPerks"`
-	StartingSpells []string `json:"startingSpells"`
-}
-
-// FactionAIConfig2 avoids name collision with the existing FactionAIConfig in jsonschema.go.
-type FactionAIConfig2 struct {
-	StartingGold  int `json:"startingGold"`
-	StartingIron  int `json:"startingIron"`
-	StartingWood  int `json:"startingWood"`
-	StartingStone int `json:"startingStone"`
-}
-
-type CombatConfig struct {
-	DefaultMovementSpeed int     `json:"defaultMovementSpeed"`
-	DefaultAttackRange   int     `json:"defaultAttackRange"`
-	BaseHitChance        int     `json:"baseHitChance"`
-	MaxHitRate           int     `json:"maxHitRate"`
-	MaxCritChance        int     `json:"maxCritChance"`
-	MaxDodgeChance       int     `json:"maxDodgeChance"`
-	BaseCapacity         int     `json:"baseCapacity"`
-	MaxCapacity          int     `json:"maxCapacity"`
-	BaseMagicResist      int     `json:"baseMagicResist"`
-	CritDamageBonus      float64 `json:"critDamageBonus"`
-}
-
-type DisplayConfig struct {
-	MapWidth       int `json:"mapWidth"`
-	MapHeight      int `json:"mapHeight"`
-	TilePixels     int `json:"tilePixels"`
-	ScaleFactor    int `json:"scaleFactor"`
-	RightPadding   int `json:"rightPadding"`
-	ZoomSquares    int `json:"zoomSquares"`
-	StaticUIOffset int `json:"staticUIOffset"`
-}
-
-// EncounterRewardsConfig holds the tunables for overworld threat-encounter reward
-// scaling. Consumed by mind/encounter.CalculateIntensityReward.
-//
-// Formula: reward = (Base + PerIntensity * intensity) * (1.0 + MultiplierStep * intensity)
-type EncounterRewardsConfig struct {
-	BaseGold                int     `json:"baseGold"`
-	GoldPerIntensity        int     `json:"goldPerIntensity"`
-	BaseXP                  int     `json:"baseXP"`
-	XPPerIntensity          int     `json:"xpPerIntensity"`
-	BasePoints              int     `json:"basePoints"`
-	PointsPerIntensity      int     `json:"pointsPerIntensity"`
-	IntensityMultiplierStep float64 `json:"intensityMultiplierStep"`
-}
+import (
+	"fmt"
+	"game_main/core/config"
+	"log"
+)
 
 // GameConfig holds the loaded game configuration. Initialized by ReadGameConfig().
 var GameConfig JSONGameConfig
 
-func ReadGameConfig() {
-	readAndUnmarshal("gamedata/gameconfig.json", &GameConfig)
-	validateGameConfig(&GameConfig)
+var gameConfigLoader = Loader[JSONGameConfig]{
+	Name:     "gameconfig",
+	Path:     GameConfigPath,
+	Validate: validateGameConfig,
+}
+
+func ReadGameConfig() error {
+	cfg, err := gameConfigLoader.Load()
+	if err != nil {
+		return err
+	}
+	GameConfig = cfg
 
 	// Populate config package variables for packages that can't import templates
 	config.SetConfigFromJSON(
@@ -126,69 +43,71 @@ func ReadGameConfig() {
 		GameConfig.Display.MapHeight,
 	)
 
-	println("Game config loaded")
+	log.Printf("[templates] gameconfig loaded")
+	return nil
 }
 
-func validateGameConfig(cfg *JSONGameConfig) {
+func validateGameConfig(cfg *JSONGameConfig) error {
 	// Player attributes
 	if cfg.Player.Attributes.Strength < 0 || cfg.Player.Attributes.Dexterity < 0 {
-		panic("Player attributes must be non-negative")
+		return fmt.Errorf("player attributes must be non-negative")
 	}
 
 	// Player resources
 	if cfg.Player.Resources.Gold < 0 {
-		panic("Player starting gold must be non-negative")
+		return fmt.Errorf("player starting gold must be non-negative")
 	}
 
 	// Player limits
 	if cfg.Player.Limits.MaxUnits <= 0 || cfg.Player.Limits.MaxArtifacts <= 0 {
-		panic("Player limits must be positive")
+		return fmt.Errorf("player limits must be positive")
 	}
 
 	// Commander
 	if cfg.Commander.MovementSpeed <= 0 || cfg.Commander.MaxCommanders <= 0 {
-		panic("Commander config values must be positive")
+		return fmt.Errorf("commander config values must be positive")
 	}
 	if len(cfg.Commander.StartingPerks) == 0 {
-		panic("Commander.startingPerks must not be empty")
+		return fmt.Errorf("commander.startingPerks must not be empty")
 	}
 	if len(cfg.Commander.StartingSpells) == 0 {
-		panic("Commander.startingSpells must not be empty")
+		return fmt.Errorf("commander.startingSpells must not be empty")
 	}
 
 	// Combat
 	if cfg.Combat.DefaultMovementSpeed <= 0 || cfg.Combat.DefaultAttackRange <= 0 {
-		panic("Combat movement speed and attack range must be positive")
+		return fmt.Errorf("combat movement speed and attack range must be positive")
 	}
 	if cfg.Combat.BaseHitChance < 0 || cfg.Combat.MaxHitRate <= 0 {
-		panic("Combat hit chance values invalid")
+		return fmt.Errorf("combat hit chance values invalid")
 	}
 	if cfg.Combat.BaseCapacity <= 0 || cfg.Combat.MaxCapacity <= 0 {
-		panic("Combat capacity values must be positive")
+		return fmt.Errorf("combat capacity values must be positive")
 	}
 	if cfg.Combat.CritDamageBonus < 0 {
-		panic("Crit damage bonus must be non-negative")
+		return fmt.Errorf("crit damage bonus must be non-negative")
 	}
 
 	// Display
 	if cfg.Display.MapWidth <= 0 || cfg.Display.MapHeight <= 0 {
-		panic("Display map dimensions must be positive")
+		return fmt.Errorf("display map dimensions must be positive")
 	}
 	if cfg.Display.TilePixels <= 0 || cfg.Display.ScaleFactor <= 0 {
-		panic("Display tile/scale values must be positive")
+		return fmt.Errorf("display tile/scale values must be positive")
 	}
 
 	// Encounter rewards
 	if cfg.Encounter.BaseGold < 0 || cfg.Encounter.GoldPerIntensity < 0 {
-		panic("Encounter gold values must be non-negative")
+		return fmt.Errorf("encounter gold values must be non-negative")
 	}
 	if cfg.Encounter.BaseXP < 0 || cfg.Encounter.XPPerIntensity < 0 {
-		panic("Encounter XP values must be non-negative")
+		return fmt.Errorf("encounter XP values must be non-negative")
 	}
 	if cfg.Encounter.BasePoints < 0 || cfg.Encounter.PointsPerIntensity < 0 {
-		panic("Encounter point values must be non-negative")
+		return fmt.Errorf("encounter point values must be non-negative")
 	}
 	if cfg.Encounter.IntensityMultiplierStep < 0 {
-		panic("Encounter intensityMultiplierStep must be non-negative")
+		return fmt.Errorf("encounter intensityMultiplierStep must be non-negative")
 	}
+	return nil
 }

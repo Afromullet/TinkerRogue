@@ -1,10 +1,6 @@
 package templates
 
-import (
-	"encoding/json"
-	"fmt"
-	"os"
-)
+import "log"
 
 // SpellID is a typed string for spell identifiers, providing compile-time safety
 // at API boundaries. Values originate from JSON (gamedata/spelldata.json); unlike
@@ -98,24 +94,23 @@ type spellDataFile struct {
 	Spells []SpellDefinition `json:"spells"`
 }
 
-// LoadSpellDefinitions reads spell definitions from a JSON file and populates SpellRegistry.
-func LoadSpellDefinitions() {
-	data, err := os.ReadFile(AssetPath(SpellDataPath))
+var spellDataLoader = Loader[spellDataFile]{
+	Name:     "spells",
+	Path:     SpellDataPath,
+	Optional: true,
+}
+
+// LoadSpellDefinitions reads spell definitions from JSON and populates SpellRegistry.
+// Missing or unparseable spell data is non-fatal — the registry stays empty.
+func LoadSpellDefinitions() error {
+	spellFile, err := spellDataLoader.Load()
 	if err != nil {
-		fmt.Printf("WARNING: Failed to read spell data: %v\n", err)
-		return
+		return err
 	}
-
-	var spellFile spellDataFile
-	if err := json.Unmarshal(data, &spellFile); err != nil {
-		fmt.Printf("WARNING: Failed to parse spell data: %v\n", err)
-		return
-	}
-
 	for i := range spellFile.Spells {
 		spell := &spellFile.Spells[i]
 		SpellRegistry[spell.ID] = spell
 	}
-
-	fmt.Printf("Loaded %d spell definitions\n", len(spellFile.Spells))
+	log.Printf("[templates] spells loaded: %d definitions", len(spellFile.Spells))
+	return nil
 }

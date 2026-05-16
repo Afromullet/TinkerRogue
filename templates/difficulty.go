@@ -2,6 +2,7 @@ package templates
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"sync/atomic"
 )
@@ -152,12 +153,18 @@ func NewDefaultDifficultyManager() *DifficultyManager {
 	return dm
 }
 
-// ReadDifficultyConfig loads difficulty configuration from JSON and initializes GlobalDifficulty.
-func ReadDifficultyConfig() {
-	var configData DifficultyConfigData
-	readAndUnmarshal("gamedata/difficultyconfig.json", &configData)
+var difficultyConfigLoader = Loader[DifficultyConfigData]{
+	Name:     "difficulty",
+	Path:     DifficultyConfigPath,
+	Validate: validateDifficultyConfig,
+}
 
-	validateDifficultyConfig(&configData)
+// ReadDifficultyConfig loads difficulty configuration from JSON and initializes GlobalDifficulty.
+func ReadDifficultyConfig() error {
+	configData, err := difficultyConfigLoader.Load()
+	if err != nil {
+		return err
+	}
 
 	// Build preset map and derive values
 	presets := make(map[string]*DifficultyPreset, len(configData.Difficulties))
@@ -171,22 +178,21 @@ func ReadDifficultyConfig() {
 		presets: presets,
 	}
 
-	// Set default difficulty
-	defaultPreset, ok := presets[configData.DefaultDifficulty]
-	if !ok {
-		panic("default difficulty not found: " + configData.DefaultDifficulty)
-	}
+	// Set default difficulty (presence already enforced by validator)
+	defaultPreset := presets[configData.DefaultDifficulty]
 	dm.current.Store(defaultPreset)
 
 	GlobalDifficulty = dm
 
-	println("Difficulty config loaded:", len(presets), "presets, default:", configData.DefaultDifficulty)
+	log.Printf("[templates] difficulty loaded: %d presets, default: %s",
+		len(presets), configData.DefaultDifficulty)
+	return nil
 }
 
 // validateDifficultyConfig checks that the difficulty config is well-formed.
-func validateDifficultyConfig(config *DifficultyConfigData) {
+func validateDifficultyConfig(config *DifficultyConfigData) error {
 	if len(config.Difficulties) == 0 {
-		panic("difficulty config must have at least one preset")
+		return fmt.Errorf("must have at least one preset")
 	}
 
 	// Required presets
@@ -199,10 +205,10 @@ func validateDifficultyConfig(config *DifficultyConfigData) {
 	seenNames := make(map[string]bool)
 	for _, preset := range config.Difficulties {
 		if preset.Name == "" {
-			panic("difficulty preset missing name")
+			return fmt.Errorf("preset missing name")
 		}
 		if seenNames[preset.Name] {
-			panic("duplicate difficulty preset name: " + preset.Name)
+			return fmt.Errorf("duplicate preset name: %q", preset.Name)
 		}
 		seenNames[preset.Name] = true
 
@@ -210,22 +216,25 @@ func validateDifficultyConfig(config *DifficultyConfigData) {
 
 		// Validate master knobs
 		if preset.CombatIntensity <= 0 {
-			panic("difficulty " + preset.Name + ": combatIntensity must be positive")
+			return fmt.Errorf("preset %q: combatIntensity must be positive", preset.Name)
 		}
 		if preset.OverworldPressure <= 0 {
-			panic("difficulty " + preset.Name + ": overworldPressure must be positive")
+			return fmt.Errorf("preset %q: overworldPressure must be positive", preset.Name)
 		}
 		if preset.AICompetence <= 0 {
-			panic("difficulty " + preset.Name + ": aiCompetence must be positive")
+			return fmt.Errorf("preset %q: aiCompetence must be positive", preset.Name)
 		}
 	}
 
-	checkRequired("difficulty preset", required)
+	if err := checkRequired("difficulty preset", required); err != nil {
+		return err
+	}
 
 	if config.DefaultDifficulty == "" {
-		panic("defaultDifficulty must be set")
+		return fmt.Errorf("defaultDifficulty must be set")
 	}
 	if !seenNames[config.DefaultDifficulty] {
-		panic("defaultDifficulty references unknown preset: " + config.DefaultDifficulty)
+		return fmt.Errorf("defaultDifficulty references unknown preset: %q", config.DefaultDifficulty)
 	}
+	return nil
 }

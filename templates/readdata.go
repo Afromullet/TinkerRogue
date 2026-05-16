@@ -2,24 +2,15 @@ package templates
 
 import (
 	"encoding/json"
+	"fmt"
 	"game_main/core/config"
+	"log"
 	"os"
 )
 
 // AssetPath delegates to config.AssetPath for working-directory-independent asset resolution.
 func AssetPath(relative string) string {
 	return config.AssetPath(relative)
-}
-
-// readAndUnmarshal reads a JSON file and unmarshals it into target. Panics on error.
-func readAndUnmarshal[T any](path string, target *T) {
-	data, err := os.ReadFile(AssetPath(path))
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(data, target); err != nil {
-		panic(err)
-	}
 }
 
 type MonstersData struct {
@@ -34,35 +25,101 @@ type EncounterDataWithNew struct {
 	EncounterDefinitions []JSONEncounterDefinition         `json:"encounterDefinitions"`
 }
 
-func ReadMonsterData() {
-	var monsters MonstersData
-	readAndUnmarshal("gamedata/monsterdata.json", &monsters)
-	MonsterTemplates = append(MonsterTemplates, monsters.Monsters...)
+// Loader declarations. Each names its config, points at a *Path constant, and
+// (where applicable) wires in a validator. Optional=true loaders log a warning
+// when the file is missing rather than failing.
+
+var monsterDataLoader = Loader[MonstersData]{
+	Name: "monsters",
+	Path: MonsterDataPath,
 }
 
-func ReadNodeDefinitions() {
-	var nodeData NodeDefinitionsData
-	readAndUnmarshal("gamedata/nodeDefinitions.json", &nodeData)
+var nodeDefinitionsLoader = Loader[NodeDefinitionsData]{
+	Name:     "nodes",
+	Path:     NodeDefinitionsPath,
+	Validate: validateNodeDefinitions,
+}
 
-	validateNodeDefinitions(&nodeData)
+var encounterDataLoader = Loader[EncounterDataWithNew]{
+	Name: "encounters",
+	Path: EncounterDataPath,
+	// Validation runs in ReadEncounterData because it needs both the loaded
+	// data and a derived validSquadTypes map.
+}
+
+var nameDataLoader = Loader[JSONNameConfig]{
+	Name:     "names",
+	Path:     NameDataPath,
+	Validate: validateNameConfig,
+}
+
+var aiConfigLoader = Loader[JSONAIConfig]{
+	Name:     "ai",
+	Path:     AIConfigPath,
+	Validate: validateAIConfig,
+}
+
+var powerConfigLoader = Loader[JSONPowerConfig]{
+	Name:     "power",
+	Path:     PowerConfigPath,
+	Validate: validatePowerConfig,
+}
+
+var influenceConfigLoader = Loader[JSONInfluenceConfig]{
+	Name:     "influence",
+	Path:     InfluenceConfigPath,
+	Validate: validateInfluenceConfig,
+}
+
+var overworldConfigLoader = Loader[JSONOverworldConfig]{
+	Name:     "overworld",
+	Path:     OverworldConfigPath,
+	Validate: validateOverworldConfig,
+}
+
+var initialSetupLoader = Loader[JSONInitialSetup]{
+	Name:     "initialsetup",
+	Path:     InitialSetupPath,
+	Validate: validateInitialSetup,
+}
+
+func ReadMonsterData() error {
+	data, err := monsterDataLoader.Load()
+	if err != nil {
+		return err
+	}
+	MonsterTemplates = append(MonsterTemplates, data.Monsters...)
+	log.Printf("[templates] monsters loaded: %d entries", len(data.Monsters))
+	return nil
+}
+
+func ReadNodeDefinitions() error {
+	nodeData, err := nodeDefinitionsLoader.Load()
+	if err != nil {
+		return err
+	}
 
 	NodeDefinitionTemplates = nodeData.Nodes
 	DefaultNodeTemplate = nodeData.DefaultNode
 	NodeCategories = nodeData.NodeCategories
 
-	println("Node definitions loaded:", len(NodeDefinitionTemplates), "nodes,",
-		len(NodeCategories), "categories")
+	log.Printf("[templates] nodes loaded: %d nodes, %d categories",
+		len(NodeDefinitionTemplates), len(NodeCategories))
+	return nil
 }
 
-func ReadEncounterData() {
-	var encounterData EncounterDataWithNew
-	readAndUnmarshal("gamedata/encounterdata.json", &encounterData)
+func ReadEncounterData() error {
+	encounterData, err := encounterDataLoader.Load()
+	if err != nil {
+		return err
+	}
 
 	// Validate difficulty levels are sequential (1-5)
 	for i, diff := range encounterData.DifficultyLevels {
 		expectedLevel := i + 1
 		if diff.Level != expectedLevel {
-			panic("Invalid difficulty level sequence: expected " + string(rune(expectedLevel+'0')) + ", got " + string(rune(diff.Level+'0')))
+			return fmt.Errorf("templates: encounters: invalid difficulty level sequence: expected %d, got %d",
+				expectedLevel, diff.Level)
 		}
 	}
 
@@ -73,7 +130,9 @@ func ReadEncounterData() {
 	}
 
 	if len(encounterData.EncounterDefinitions) > 0 {
-		validateEncounterDefinitions(&encounterData, validSquadTypes)
+		if err := validateEncounterDefinitions(&encounterData, validSquadTypes); err != nil {
+			return fmt.Errorf("templates: validate encounters: %w", err)
+		}
 	}
 
 	EncounterDifficultyTemplates = encounterData.DifficultyLevels
@@ -81,69 +140,100 @@ func ReadEncounterData() {
 	EncounterDefinitionTemplates = encounterData.EncounterDefinitions
 
 	if len(NodeDefinitionTemplates) > 0 && len(EncounterDefinitionTemplates) > 0 {
-		validateNodeEncounterLinks()
+		if err := validateNodeEncounterLinks(); err != nil {
+			return fmt.Errorf("templates: validate node-encounter links: %w", err)
+		}
 	}
 
-	println("Encounter data loaded:", len(EncounterDifficultyTemplates), "difficulty levels,",
-		len(EncounterDefinitionTemplates), "encounter definitions,",
-		len(FactionArchetypeTemplates), "factions")
+	log.Printf("[templates] encounters loaded: %d difficulty levels, %d definitions, %d factions",
+		len(EncounterDifficultyTemplates), len(EncounterDefinitionTemplates), len(FactionArchetypeTemplates))
+	return nil
 }
 
-func ReadNameData() {
-	readAndUnmarshal("gamedata/namedata.json", &NameConfigTemplate)
-	validateNameConfig(&NameConfigTemplate)
-	println("Name config loaded:", len(NameConfigTemplate.Pools), "pools")
+func ReadNameData() error {
+	cfg, err := nameDataLoader.Load()
+	if err != nil {
+		return err
+	}
+	NameConfigTemplate = cfg
+	log.Printf("[templates] names loaded: %d pools", len(NameConfigTemplate.Pools))
+	return nil
 }
 
-func ReadAIConfig() {
-	readAndUnmarshal("gamedata/aiconfig.json", &AIConfigTemplate)
-	validateAIConfig(&AIConfigTemplate)
-	println("AI config loaded:", len(AIConfigTemplate.RoleBehaviors), "role behaviors")
+func ReadAIConfig() error {
+	cfg, err := aiConfigLoader.Load()
+	if err != nil {
+		return err
+	}
+	AIConfigTemplate = cfg
+	log.Printf("[templates] ai loaded: %d role behaviors", len(AIConfigTemplate.RoleBehaviors))
+	return nil
 }
 
-func ReadPowerConfig() {
-	readAndUnmarshal("gamedata/powerconfig.json", &PowerConfigTemplate)
-	validatePowerConfig(&PowerConfigTemplate)
-	println("Power config loaded:", len(PowerConfigTemplate.Profiles), "profiles,",
-		len(PowerConfigTemplate.RoleMultipliers), "role multipliers")
+func ReadPowerConfig() error {
+	cfg, err := powerConfigLoader.Load()
+	if err != nil {
+		return err
+	}
+	PowerConfigTemplate = cfg
+	log.Printf("[templates] power loaded: %d profiles, %d role multipliers",
+		len(PowerConfigTemplate.Profiles), len(PowerConfigTemplate.RoleMultipliers))
+	return nil
 }
 
-func ReadInfluenceConfig() {
-	readAndUnmarshal("gamedata/influenceconfig.json", &InfluenceConfigTemplate)
-	validateInfluenceConfig(&InfluenceConfigTemplate)
-	println("Influence config loaded")
+func ReadInfluenceConfig() error {
+	cfg, err := influenceConfigLoader.Load()
+	if err != nil {
+		return err
+	}
+	InfluenceConfigTemplate = cfg
+	log.Printf("[templates] influence loaded")
+	return nil
 }
 
 // ReadMapGenConfig loads map generation configuration from JSON.
-// This file is optional — if missing, generators use their code defaults.
-func ReadMapGenConfig() {
-	data, err := os.ReadFile(AssetPath("gamedata/mapgenconfig.json"))
+// This file is optional: if missing, MapGenConfigTemplate stays nil and
+// generators fall back to their code defaults. Inlined (not Loader-backed)
+// because the nil-pointer sentinel needs to distinguish "file missing" from
+// "file present but empty" — Loader[T]'s Optional path can't express that.
+func ReadMapGenConfig() error {
+	data, err := os.ReadFile(AssetPath(MapGenConfigPath))
 	if err != nil {
-		println("Map gen config not found, using code defaults")
-		return
+		if os.IsNotExist(err) {
+			log.Printf("[templates] mapgen: file not found at %s, using code defaults", MapGenConfigPath)
+			return nil
+		}
+		return fmt.Errorf("templates: read mapgen (%s): %w", MapGenConfigPath, err)
 	}
-
-	var config JSONMapGenConfig
-	if err := json.Unmarshal(data, &config); err != nil {
-		panic("Failed to parse mapgenconfig.json: " + err.Error())
+	var cfg JSONMapGenConfig
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("templates: parse mapgen (%s): %w", MapGenConfigPath, err)
 	}
-
-	validateMapGenConfig(&config)
-
-	MapGenConfigTemplate = &config
-	println("Map gen config loaded")
+	if err := validateMapGenConfig(&cfg); err != nil {
+		return fmt.Errorf("templates: validate mapgen: %w", err)
+	}
+	MapGenConfigTemplate = &cfg
+	log.Printf("[templates] mapgen loaded")
+	return nil
 }
 
-func ReadOverworldConfig() {
-	readAndUnmarshal("gamedata/overworldconfig.json", &OverworldConfigTemplate)
-	validateOverworldConfig(&OverworldConfigTemplate)
-	println("Overworld config loaded")
+func ReadOverworldConfig() error {
+	cfg, err := overworldConfigLoader.Load()
+	if err != nil {
+		return err
+	}
+	OverworldConfigTemplate = cfg
+	log.Printf("[templates] overworld loaded")
+	return nil
 }
 
-func ReadInitialSetupConfig() {
-	readAndUnmarshal("gamedata/initialsetup.json", &InitialSetupTemplate)
-	validateInitialSetup(&InitialSetupTemplate)
-	println("Initial setup config loaded:",
-		len(InitialSetupTemplate.Commanders), "commanders,",
-		len(InitialSetupTemplate.Factions.Entries), "factions")
+func ReadInitialSetupConfig() error {
+	cfg, err := initialSetupLoader.Load()
+	if err != nil {
+		return err
+	}
+	InitialSetupTemplate = cfg
+	log.Printf("[templates] initialsetup loaded: %d commanders, %d factions",
+		len(InitialSetupTemplate.Commanders), len(InitialSetupTemplate.Factions.Entries))
+	return nil
 }
