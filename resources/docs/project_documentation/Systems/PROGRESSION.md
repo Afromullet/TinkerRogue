@@ -1,8 +1,8 @@
 # Progression Package
 
-**Last Updated:** 2026-04-19
+**Last Updated:** 2026-05-16
 **Package:** `tactical/powers/progression`
-**Related:** `tactical/powers/perks`, `templates` (SpellRegistry), `mind/combatlifecycle`, `setup/gamesetup`, `setup/savesystem/chunks`, `gui/guiprogression`, `gui/guisquads`
+**Related:** `tactical/powers/perks`, `templates` (SpellRegistry), `tactical/commander`, `mind/combatlifecycle`, `setup/savesystem/chunks`, `gui/guiprogression`, `gui/guisquads`
 
 ---
 
@@ -24,9 +24,9 @@
 
 ## 1. Executive Summary
 
-The `progression` package manages the player's permanent progression state: two independent point currencies (Arcana Points and Skill Points) and two growing libraries (unlocked spells and unlocked perks). It answers one question at every call site: "has this player unlocked this spell or perk, and do they have enough points to unlock more?"
+The `progression` package manages **per-commander** permanent progression state: two independent point currencies (Arcana Points and Skill Points) and two growing libraries (unlocked spells and unlocked perks). It answers one question at every call site: "has this commander unlocked this spell or perk, and do they have enough points to unlock more?"
 
-The component (`ProgressionData`) lives on the single Player entity, not on individual commanders or squads. Points flow in from combat rewards (overworld encounters and raid rooms), and spending them is a deliberate choice in the Progression Mode UI. The resulting libraries gate what squads can equip and what spellcasting squads can learn — but the libraries themselves are permanent and never shrink.
+The component (`ProgressionData`) is attached to each Commander entity by `commander.CreateCommander` (`tactical/commander/system.go:46`). The player can own multiple commanders (capped by `templates.GameConfig.Commander.MaxCommanders`); each maintains its own currencies and unlock library. Points flow in from combat rewards (overworld encounters and raid rooms), routed to the commanders whose squads participated. Spending is a deliberate choice in the Progression Mode UI. The resulting libraries gate what *that commander's* squads can equip and what *that commander's* spellcasting squads can learn — libraries are permanent and never shrink.
 
 ---
 
@@ -42,16 +42,16 @@ tactical/powers/
 ├── spells/         Mana-gated active abilities (cast during combat)
 ├── effects/        Duration-based stat modifiers applied by spells/artifacts
 ├── artifacts/      Per-player inventory items with charge mechanics
-└── progression/    Player-owned permanent library: currency + unlock state
+└── progression/    Per-commander permanent library: currency + unlock state
 ```
 
-The `progression` package is the meta-layer above perks and spells. It does not run any hooks or execute combat logic itself. It stores the record of what has been earned and what has been paid for.
+The `progression` package is the meta-layer above perks and spells. It does not run any hooks or execute combat logic itself. It stores the record of what each commander has earned and paid for.
 
 ### The Problem It Solves
 
-Squads and their units are intentionally expendable. Units die, commanders can be bought and lost (up to 3 at cost 5,000 gold each). If progression lived on individual units or commanders, players would be incentivized to protect those units at all costs, creating a "don't risk your valuable commander" dynamic that conflicts with TinkerRogue's expendable-unit philosophy.
+Squads and their units are intentionally expendable, but the player's *commanders* are not — they are scarce, paid for at a high gold cost, and bounded by `MaxCommanders` (configured in `templates.GameConfig.Commander`). Anchoring progression on commanders aligns the player's strategic identity with the units they actually invest in: one commander can be specialized into a perk-heavy bruiser line while another grows an arcana-focused spellcasting line, without either's unlock pool draining the other's. The 3-commander cap is what bounds the "protect-your-commander" pressure — losing one is painful but recoverable.
 
-Anchoring progression on the Player entity — a singleton that persists across the entire run — means that winning a fight always advances the player, regardless of what units survived it.
+Squads and units remain expendable; perks attached to a squad are no longer relevant once that squad is destroyed, but the *library* they came from persists on the commander.
 
 ### Split Currency Design
 
@@ -67,7 +67,7 @@ The package follows the project's standard ECS conventions:
 
 1. **Pure data component.** `ProgressionData` is a plain struct with no methods and no ECS imports. All logic lives in system functions in `library.go`.
 
-2. **EntityID-based access.** Every exported function takes `playerID ecs.EntityID` rather than a pointer to the entity. The `GetProgression` helper wraps `common.GetComponentTypeByID` for this.
+2. **EntityID-based access.** Every exported function takes `ownerID ecs.EntityID` (the entity carrying `ProgressionComponent`, which today is a Commander) rather than a pointer to the entity. The `GetProgression` helper wraps `common.GetComponentTypeByID` for this. The package is deliberately entity-agnostic — see `library.go:46`.
 
 3. **Self-registration.** `init.go` registers the component and tag allocation with `common.RegisterSubsystem`, following the same pattern as `perks/init.go`, `spells/init.go`, and others. No manual wiring in `main.go` is required.
 
@@ -103,15 +103,13 @@ Defines the single component data struct, the ECS component variable, and the EC
 
 Callers looking up progression state by entity ID use `ProgressionComponent` directly via `common.GetComponentTypeByID`. The tag exists for bulk iteration (e.g., in the save system) but is not used by most callers.
 
-### `defaults.go` — Constructor and Starter Sets
+### Starter sets — NOT in this package
 
-Provides the initial state for a new Player entity and the two canonical starter lists.
+`ProgressionData` has no constructor. New commanders are given a zero-valued component by `commander.CreateCommander` (`tactical/commander/system.go:46`); the optional starter library is layered on by `commander.SeedStarters` (`tactical/commander/init.go:42`), which reads from `templates.GameConfig.Commander.StartingPerks` and `.StartingSpells`. The JSON source is `resources/gamedata/gameconfig.json` under `commander.starting{Perks,Spells}`.
 
-- `StartingUnlockedPerks() []string` — returns the four perk IDs every player begins with: `brace_for_impact`, `reckless_assault`, `shieldwall_discipline`, `field_medic`. These cover Tank, DPS, and Support roles so any starter squad has something equippable from turn one.
-- `StartingUnlockedSpells() []string` — returns the three spell IDs: `spark`, `singe`, `frost_snap`. These are low-cost damage spells so a starter mage-leader squad is functional immediately.
-- `NewProgressionData() *ProgressionData` — allocates a fresh `ProgressionData` with zero points and the starter lists. Called by `playerinit.go` during game start and by `progression_chunk.go` during save load.
+Skipping `SeedStarters` is intentional and supported: commanders created for tests or for an "empty library" play style simply do not call it.
 
-The starter lists are returned by value (new slices each call) so that `NewProgressionData` can safely use `append([]string(nil), ...)` to copy them without aliasing.
+There is no `defaults.go` in this package. There never was a `NewProgressionData()` constructor in the current (Commander-scoped) implementation — the prior Player-scoped version had one, but the migration removed it in favor of the explicit zero-value + SeedStarters split.
 
 ### `init.go` — ECS Registration
 
@@ -121,7 +119,7 @@ This file contains no game logic and is only four lines of substance.
 
 ### `library.go` — All Logic
 
-Contains the `library` struct definition, the two library instances (`perkLib`, `spellLib`), the three shared receiver methods (`isUnlocked`, `unlock`, `addPoints`), and all eight exported public functions. Also defines the four sentinel error values.
+Contains the `library` struct definition, the two library instances (`perkLib`, `spellLib`), the three shared receiver methods (`isUnlocked`, `unlock`, `addPoints`), and the seven exported public functions (`GetProgression`, `IsPerkUnlocked`, `IsSpellUnlocked`, `UnlockPerk`, `UnlockSpell`, `AddArcanaPoints`, `AddSkillPoints`). Also defines the four sentinel error values.
 
 ---
 
@@ -145,7 +143,7 @@ type ProgressionData struct {
 | `UnlockedSpellIDs` | `[]string` | Permanently unlocked spells. Grows monotonically — IDs are never removed. Used to filter squad spellbooks. |
 | `UnlockedPerkIDs` | `[]string` | Permanently unlocked perks. Grows monotonically. Used to gate the "available" list in the squad editor perk panel. |
 
-**Attachment point.** Exactly one `ProgressionData` exists per game session. It is attached to the Player entity during `InitializePlayerData` (`setup/gamesetup/playerinit.go:64`) and re-attached during save load by `ProgressionChunk.RemapIDs`.
+**Attachment point.** One `ProgressionData` exists per commander. It is attached as a zero value by `commander.CreateCommander` (`tactical/commander/system.go:46`); starter perks/spells are then added by `commander.SeedStarters` (`tactical/commander/init.go:42`). On save load it is re-attached by `ProgressionChunk.RemapIDs` after `CommanderChunk` has recreated the commander entities.
 
 **String IDs, not typed IDs.** The slices hold plain strings rather than `perks.PerkID` or `templates.SpellID`. This is documented in the component's godoc comment at `components.go:7`:
 
@@ -168,58 +166,46 @@ Both are nil until `common.InitializeSubsystems` runs. Any code that calls progr
 
 ## 6. Public API
 
-### Constructors
+### Constructors — none
 
-#### `NewProgressionData() *ProgressionData` (`defaults.go:25`)
-
-Creates a fresh `ProgressionData` with zero points and the canonical starter sets. Defensive copy of both slices prevents aliasing with the return values of `StartingUnlockedPerks` and `StartingUnlockedSpells`.
-
-**Usage:** called once per new game in `playerinit.go`; also referenced in test setup.
-
-#### `StartingUnlockedPerks() []string` (`defaults.go:5`)
-
-Returns the four perk IDs every player starts with. Callers that need to compare the starter set (e.g., `library_test.go`) use this rather than hardcoding the list. Returns a new slice each call.
-
-#### `StartingUnlockedSpells() []string` (`defaults.go:14`)
-
-Returns the three starter spell IDs. Same freshness guarantee as above.
+There is no constructor in this package. `commander.CreateCommander` attaches a zero-valued `ProgressionData`; `commander.SeedStarters(commanderID, manager)` populates the starter unlock set from `templates.GameConfig.Commander`. See **§4 Starter sets — NOT in this package** above.
 
 ---
 
 ### Queries
 
-#### `GetProgression(playerID ecs.EntityID, manager *common.EntityManager) *ProgressionData` (`library.go:44`)
+#### `GetProgression(ownerID ecs.EntityID, manager *common.EntityManager) *ProgressionData` (`library.go:46`)
 
-Returns the `*ProgressionData` for the given player entity, or nil if the component is absent. This is the single entry point for reading progression state — all other public query functions call through this internally.
+Returns the `*ProgressionData` for the entity carrying `ProgressionComponent` (typically a Commander), or nil if the component is absent. This is the single entry point for reading progression state — all other public query functions call through this internally.
 
 Callers outside the package (e.g., `guiprogression/progression_refresh.go:15`, `guiprogression/progression_controller.go:69`) use this to read current point totals for display.
 
-#### `IsPerkUnlocked(playerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) bool` (`library.go:99`)
+#### `IsPerkUnlocked(ownerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) bool` (`library.go:99`)
 
-Reports whether `perkID` is in the player's `UnlockedPerkIDs` list. Returns false if the player has no `ProgressionData`. Performs a linear scan of the slice (expected to remain small — the current registry has 21 perks).
+Reports whether `perkID` is in the owner's `UnlockedPerkIDs` list. Returns false if the entity has no `ProgressionData`. Performs a linear scan of the slice (expected to remain small — the current registry has 21 perks).
 
 **Callers:**
-- `gui/guisquads/squadeditor_perks.go:92` — filters the "available" perk list to exclude locked perks
-- `gui/guiprogression/progression_controller.go:139` — divides perks into unlocked/locked panels
+- `gui/guisquads/squadeditor_perks.go:90` — filters the "available" perk list to exclude perks locked in the squad's owning commander's library
+- `gui/guiprogression/progression_controller.go` — divides perks into unlocked/locked panels for the active commander
 
-#### `IsSpellUnlocked(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool` (`library.go:104`)
+#### `IsSpellUnlocked(ownerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) bool` (`library.go:106`)
 
 Same semantics as `IsPerkUnlocked` but for the spell library. Returns false on missing data.
 
 **Callers:**
-- `tactical/powers/spells/system.go:74` (`filterSpellsByPlayerLibrary`) — filters a leader's spell list before it is loaded into the squad's spellbook
-- `gui/guiprogression/progression_controller.go:153` — divides spells into unlocked/locked panels
+- `tactical/powers/spells/system.go:67` (`filterSpellsByCommanderLibrary`) — filters a leader's spell list against the squad's owning commander before attaching to `SpellBookData`
+- `gui/guiprogression/progression_controller.go` — divides spells into unlocked/locked panels for the active commander
 
 ---
 
 ### Systems (Mutations)
 
-#### `UnlockPerk(playerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) error` (`library.go:109`)
+#### `UnlockPerk(ownerID ecs.EntityID, perkID perks.PerkID, manager *common.EntityManager) error` (`library.go:109`)
 
 Spends `SkillPoints` equal to `perks.GetPerkDefinition(perkID).UnlockCost` and appends `perkID` (as string) to `UnlockedPerkIDs`. Returns:
 
 - `ErrUnknownPerk` (wrapped) if the perk ID is not in `perks.PerkRegistry`
-- `ErrNoProgressionData` if the player entity has no `ProgressionData`
+- `ErrNoProgressionData` if the owner entity has no `ProgressionData`
 - `ErrNotEnoughPoints` (wrapped with amount detail) if `SkillPoints < unlockCost`
 - `nil` if already unlocked (idempotent — no double-spend)
 
@@ -228,26 +214,26 @@ The idempotency guarantee means UI code can call this on repeated button presses
 **Callers:**
 - `gui/guiprogression/progression_controller.go:79` (`onUnlockClicked`, perk path)
 
-#### `UnlockSpell(playerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) error` (`library.go:118`)
+#### `UnlockSpell(ownerID ecs.EntityID, spellID templates.SpellID, manager *common.EntityManager) error` (`library.go:118`)
 
 Same semantics as `UnlockPerk` but for spells, spending `ArcanaPoints` equal to `templates.GetSpellDefinition(spellID).UnlockCost`. Returns the same error set (with `ErrUnknownSpell` in place of `ErrUnknownPerk`).
 
 **Callers:**
 - `gui/guiprogression/progression_controller.go:79` (`onUnlockClicked`, spell path)
 
-#### `AddArcanaPoints(playerID ecs.EntityID, amount int, manager *common.EntityManager)` (`library.go:127`)
+#### `AddArcanaPoints(ownerID ecs.EntityID, amount int, manager *common.EntityManager)` (`library.go:127`)
 
-Adds `amount` to `ProgressionData.ArcanaPoints`. No-op if `amount <= 0` or if the player has no `ProgressionData`. The non-positive guard prevents callers from needing to check before calling.
+Adds `amount` to `ProgressionData.ArcanaPoints`. No-op if `amount <= 0` or if the owner has no `ProgressionData`. The non-positive guard prevents callers from needing to check before calling.
 
 **Callers:**
-- `mind/combatlifecycle/reward.go:69` — called indirectly through `grantProgressionPoints` with this function as a parameter
+- `mind/combatlifecycle/reward.go` — called indirectly through `grantProgressionPoints` with this function as a parameter, once per commander in `GrantTarget.CommanderIDs`
 
-#### `AddSkillPoints(playerID ecs.EntityID, amount int, manager *common.EntityManager)` (`library.go:133`)
+#### `AddSkillPoints(ownerID ecs.EntityID, amount int, manager *common.EntityManager)` (`library.go:134`)
 
 Same semantics as `AddArcanaPoints` but for `SkillPoints`.
 
 **Callers:**
-- `mind/combatlifecycle/reward.go:75` — same indirect path
+- `mind/combatlifecycle/reward.go` — same indirect path
 
 ---
 
@@ -268,15 +254,17 @@ All four are package-level variables suitable for `errors.Is` checks. `ErrNotEno
 
 ## 7. Integration Points
 
-### 7.1 Player Entity Initialization (`setup/gamesetup/playerinit.go:64`)
+### 7.1 Commander Entity Initialization (`tactical/commander/system.go:46`)
 
-`InitializePlayerData` constructs the Player entity and attaches `progression.NewProgressionData()` as a component alongside the player's other starting components (attributes, resources, roster, artifacts). This is the only place the component is initially created from scratch:
+`commander.CreateCommander` constructs a Commander entity and attaches an empty `ProgressionData` (zero points, empty unlock slices) alongside its other components:
 
 ```go
-AddComponent(progression.ProgressionComponent, progression.NewProgressionData())
+.AddComponent(progression.ProgressionComponent, &progression.ProgressionData{})
 ```
 
-After this call, the Player entity carries a `ProgressionData` with four starter perks, three starter spells, and zero points.
+Callers that want a starter library then call `commander.SeedStarters(commanderID, manager)` (`commander/init.go:42`), which appends `templates.GameConfig.Commander.StartingPerks` and `.StartingSpells` to the unlock slices. Callers that want an empty library (some tests, certain debug flows) simply skip the seed step.
+
+There is no single "Player entity has progression" attachment point — each commander created during play (initial + any purchased through the roster) carries its own `ProgressionData`.
 
 ### 7.2 Combat Reward Granting (`mind/combatlifecycle/reward.go`)
 
@@ -292,49 +280,61 @@ type Reward struct {
 }
 ```
 
-When either field is non-zero, `Grant` calls the private `grantProgressionPoints` helper, which delegates to `progression.AddArcanaPoints` or `progression.AddSkillPoints` by passing them as function parameters. This keeps the reward pipeline decoupled from the specific currency names.
+When either field is non-zero, `Grant` iterates `target.CommanderIDs` (deduplicated) and calls the private `grantProgressionPoints` helper for each commander, which delegates to `progression.AddArcanaPoints` or `progression.AddSkillPoints` by passing them as function parameters. This keeps the reward pipeline decoupled from the specific currency names and supports multi-commander encounters without re-deriving squad ownership at award time.
+
+```go
+type GrantTarget struct {
+    PlayerEntityID ecs.EntityID   // For gold (ResourceStockpile owner)
+    SquadIDs       []ecs.EntityID // For XP and mana distribution
+    CommanderIDs   []ecs.EntityID // Receives Arcana/Skill progression points
+}
+```
+
+Each caller is responsible for populating `CommanderIDs` at construction time. The existing helper `commander.FindCommanderForSquad(squadID, manager)` (`commander/queries.go:55`) maps a squad to its owning commander; both `mind/encounter/resolvers.go` and `campaign/raid/rewards.go` define a local `commandersForSquads` helper that walks the squad list through this helper.
 
 **Where `Reward` values come from:**
 
-- **Overworld encounters** (`mind/encounter/rewards.go:7`). `CalculateIntensityReward(intensity int)` computes both `ArcanaPts` and `SkillPts` as `int(float64(1 + intensity) * (1.0 + float64(intensity) * 0.1))`. An intensity-5 encounter yields `int(6 * 1.5) = 9` points of each currency. Both currencies always scale identically in this formula.
+- **Overworld encounters** (`mind/encounter/rewards.go`). `CalculateIntensityReward(intensity int)` computes both `ArcanaPts` and `SkillPts` as `int(float64(1 + intensity) * (1.0 + float64(intensity) * 0.1))`. An intensity-5 encounter yields `int(6 * 1.5) = 9` points of each currency. Both currencies always scale identically in this formula.
 
-- **Raid rooms** (`mind/raid/rewards.go:11`). `calculateRoomReward` reads from `RaidConfig.Rewards.BaseArcanaPerRoom` and `RaidConfig.Rewards.BaseSkillPerRoom`, then scales by floor: `1.0 + (floor - 1) * FloorScalePercent / 100`. Falls back to 1 point per currency if the config fields are zero. Command post rooms additionally restore mana.
+- **Raid rooms** (`campaign/raid/rewards.go`). `calculateRoomReward` reads from `RaidConfig.Rewards.BaseArcanaPerRoom` and `RaidConfig.Rewards.BaseSkillPerRoom`, then scales by floor: `1.0 + (floor - 1) * FloorScalePercent / 100`. Falls back to 1 point per currency if the config fields are zero. Command post rooms additionally restore mana.
 
-The full chain is: combat resolves → `CombatResolver.Resolve()` returns a `ResolutionPlan` → `ExecuteResolution` calls `Grant` → `Grant` calls `AddArcanaPoints`/`AddSkillPoints`.
+The full chain is: combat resolves → `CombatResolver.Resolve()` returns a `ResolutionPlan` → `ExecuteResolution` calls `Grant` → `Grant` calls `AddArcanaPoints`/`AddSkillPoints` once per commander in `target.CommanderIDs`.
 
-### 7.3 Spell System Filtering (`tactical/powers/spells/system.go:63`)
+### 7.3 Spell System Filtering (`tactical/powers/spells/system.go:67`)
 
-`InitSquadSpellsFromLeader` is called after a squad is created. It looks up the leader unit's spell list from `templates.UnitSpellRegistry`, then calls `filterSpellsByPlayerLibrary` before attaching those spells to the squad's `SpellBookData`.
+`InitSquadSpellsFromLeader` is called after a squad is created. It looks up the leader unit's spell list from `templates.UnitSpellRegistry`, then calls `filterSpellsByCommanderLibrary` before attaching those spells to the squad's `SpellBookData`.
 
-`filterSpellsByPlayerLibrary` (`system.go:63`) finds the Player entity via the `"players"` world tag, calls `progression.GetProgression`, and then calls `progression.IsSpellUnlocked` for each candidate spell. Spells not in the library are silently filtered out. If no player entity is found (enemy squads, test fixtures without a player), the full spell list passes through unchanged.
+`filterSpellsByCommanderLibrary` (`system.go:67`) resolves the squad's owning commander via `commander.FindCommanderForSquad(squadID, manager)`, calls `progression.GetProgression`, and then calls `progression.IsSpellUnlocked` for each candidate spell. Spells not in the library are silently filtered out. If no owning commander is found (enemy squads, test fixtures without a commander) or the commander has no progression data, the full spell list passes through unchanged.
 
-This is the key enforcement point for the spell library: a squad can only cast spells whose IDs are in `UnlockedSpellIDs` at the moment the squad is created. Adding a spell to the library after squad creation does not retroactively update that squad's spellbook.
+This is the key enforcement point for the spell library: a squad can only cast spells whose IDs are in the *owning commander's* `UnlockedSpellIDs` at the moment the squad is created. Unlocking a spell after squad creation does not retroactively update that squad's spellbook.
 
-### 7.4 Perk Equip Gate (`gui/guisquads/squadeditor_perks.go:92`)
+### 7.4 Perk Equip Gate (`gui/guisquads/squadeditor_perks.go:83-92`)
 
-The squad editor's perk panel (`refreshPerkPanel`) builds the "available" list by iterating all perk IDs from `perks.GetAllPerkIDs()` and calling `progression.IsPerkUnlocked` for each. Perks not in the player's library are excluded from the list entirely — the player cannot see or equip them. This is a UI-side gate, not an ECS-side gate; `perks.EquipPerk` itself has no knowledge of the progression library.
+The squad editor's perk panel (`refreshPerkPanel`) resolves the squad's owning commander via `commander.FindCommanderForSquad`, then iterates all perk IDs from `perks.GetAllPerkIDs()` and calls `progression.IsPerkUnlocked(ownerCommanderID, id, manager)` for each. Perks not in the commander's library are excluded from the "available" list entirely — the player cannot see or equip them. This is a UI-side gate, not an ECS-side gate; `perks.EquipPerk` itself has no knowledge of the progression library.
+
+If the squad has no resolvable commander (an orphaned or detached squad), no library gating is applied — all perks pass through. This is an intentional permissive fallback for edge cases; in normal play every squad has a commander.
 
 ### 7.5 Progression UI Mode (`gui/guiprogression/`)
 
 `ProgressionMode` is a dedicated UI mode accessible from the squad editor. It has three panels:
 
-- **Header** (`ProgressionPanelHeader`) — shows current Arcana and Skill point totals.
+- **Header** (`ProgressionPanelHeader`) — shows the active commander's current Arcana and Skill point totals.
 - **Perks panel** (`ProgressionPanelPerks`) — two lists (unlocked, locked) for perks, with an unlock button.
 - **Spells panel** (`ProgressionPanelSpells`) — same layout for spells.
 
-The controller reads `ProgressionData` directly via `GetProgression` for display and calls `UnlockPerk`/`UnlockSpell` on user action. The "Unlock" button is disabled when the player cannot afford the selected item (checked at `progression_controller.go:71` by comparing `currentPoints(data) >= entry.item.unlockCost`).
+The controller reads `ProgressionData` for the active commander (`pm.activeCommanderID()`) via `GetProgression` for display and calls `UnlockPerk`/`UnlockSpell` on user action. The "Unlock" button is disabled when the commander cannot afford the selected item (checked at `progression_controller.go:70-71` by comparing `currentPoints(data) >= entry.item.unlockCost`).
 
 Both panels are driven by the same `libraryPanelController` type with a `librarySource` configuration struct. The perk and spell sources are package-level variables (`perkLibrarySource`, `spellLibrarySource`) defined at `progression_controller.go:132`. This mirrors the `library` struct in the `progression` package — both use the same two-instance pattern to avoid duplicating code across the two currency axes.
 
 ### 7.6 Save System (`setup/savesystem/chunks/progression_chunk.go`)
 
-`ProgressionChunk` serializes and deserializes the entire `ProgressionData` to JSON. It follows the project's standard chunk pattern (save, load, remap):
+`ProgressionChunk` serializes and deserializes `ProgressionData` for every commander to JSON. It follows the project's standard chunk pattern (save, load, remap):
 
-- **Save** (`progression_chunk.go:36`): queries the `"players"` tag, reads the component, marshals all four fields to `savedProgressionChunk`.
-- **Load** (`progression_chunk.go:64`): unmarshals into `savedProgressionChunk` and stores it in `idMap.LoadContext` under a private key. No ECS mutations happen here because the Player entity may not yet exist at load time.
-- **RemapIDs** (`progression_chunk.go:78`): after entity IDs are remapped, looks up the stored data, finds the Player entity by its new ID, and calls `entity.AddComponent(progression.ProgressionComponent, data)`. This is the restore path for progression state.
+- **Save**: queries `commander.CommanderTag`, reads the `ProgressionData` component from each commander, and marshals one `savedCommanderProgression` entry per commander into `savedProgressionChunk.Commanders`.
+- **Load**: unmarshals into `savedProgressionChunk` and stores it in `idMap.LoadContext` under a private key. No ECS mutations happen here because the commander entities may not yet exist at load time — `CommanderChunk` recreates them in a separate pass.
+- **RemapIDs**: after entity IDs are remapped, looks up the stored data, finds each commander entity by its new ID, and calls `entity.AddComponent(progression.ProgressionComponent, data)` to restore that commander's progression state.
 
-The chunk version is 1. No migration logic exists for older versions.
+**The chunk version is 2.** Format was bumped when progression moved from Player-scoped (v1, single entry) to Commander-scoped (v2, one entry per commander) on 2026-04-21. Old v1 saves are no longer readable.
 
 ---
 
@@ -343,25 +343,25 @@ The chunk version is 1. No migration logic exists for older versions.
 ### Flow 1: Awarding Points After Combat
 
 1. Combat ends; the appropriate `CombatResolver` calls `resolver.Resolve(manager)` and returns a `ResolutionPlan` with non-zero `ArcanaPts` and `SkillPts` in its `Reward`.
-2. `ExecuteResolution` (`pipeline.go:30`) calls `Grant(manager, plan.Rewards, plan.Target)`.
-3. `Grant` checks `r.ArcanaPts > 0 && target.PlayerEntityID != 0`, then calls `grantProgressionPoints(manager, playerID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints)`.
-4. `grantProgressionPoints` calls `progression.GetProgression(playerID, manager)` as a nil-guard, then calls `progression.AddArcanaPoints(playerID, amount, manager)`.
-5. `AddArcanaPoints` delegates to `spellLib.addPoints`, which calls `lib.currency(data)` to get `&data.ArcanaPoints` and increments it by `amount`.
-6. Steps 3–5 repeat for `SkillPts` via `AddSkillPoints` / `perkLib.addPoints`.
-7. `Grant` returns a reward description string such as `"150 gold, 75 XP, 4 Arcana, 4 Skill"` for display.
+2. The resolver builds `GrantTarget`, populating `CommanderIDs` from the participating squads via its local `commandersForSquads` helper. The helper walks each squad through `commander.FindCommanderForSquad`, skipping zero results and deduplicating so each commander appears at most once — important because one commander typically leads multiple squads in an encounter and would otherwise receive N× rewards.
+3. `ExecuteResolution` calls `Grant(manager, plan.Rewards, plan.Target)`.
+4. `Grant` trusts `target.CommanderIDs` as already deduplicated. For each commander, when `r.ArcanaPts > 0` it calls `grantProgressionPoints(manager, commanderID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints)`; same shape for `SkillPts` via `AddSkillPoints`.
+5. `grantProgressionPoints` calls `progression.GetProgression(commanderID, manager)` as a nil-guard, then calls the supplied `add` function.
+6. `AddArcanaPoints` delegates to `spellLib.addPoints`, which calls `lib.currency(data)` to get `&data.ArcanaPoints` and increments it by `amount`.
+7. `Grant` returns a reward description string such as `"150 gold, 75 XP, 4 Arcana, 4 Skill"` for display (or with the per-commander grant repeated when multiple commanders share the encounter).
 
-### Flow 2: Player Unlocks a Perk
+### Flow 2: Commander Unlocks a Perk
 
-1. Player opens `ProgressionMode` from the squad editor.
-2. `progressionController.refresh()` calls `GetProgression` and sets the skill label to `"Skill: N"`.
-3. `libraryPanelController.refresh()` (perk panel) iterates `allPerkItems()`, calls `perkLibrarySource.isUnlocked` for each, and puts items into the locked or unlocked list accordingly. Locked items display `"Perk Name (cost)"`.
+1. Player opens `ProgressionMode` from the squad editor; the mode's active commander has already been selected.
+2. `progressionController.refresh()` calls `GetProgression(activeCommanderID, …)` and sets the skill label to `"Skill: N"`.
+3. `libraryPanelController.refresh()` (perk panel) iterates `allPerkItems()`, calls `perkLibrarySource.isUnlocked(activeCommanderID, …)` for each, and puts items into the locked or unlocked list accordingly. Locked items display `"Perk Name (cost)"`.
 4. Player selects a locked perk. `onLockedSelected` is called; the unlock button becomes enabled if `data.SkillPoints >= entry.item.unlockCost`.
-5. Player clicks "Unlock Perk". `onUnlockClicked` calls `perkLibrarySource.unlock`, which calls `progression.UnlockPerk(playerID, perks.PerkID(itemID), manager)`.
+5. Player clicks "Unlock Perk". `onUnlockClicked` calls `perkLibrarySource.unlock(activeCommanderID, …)`, which calls `progression.UnlockPerk(commanderID, perks.PerkID(itemID), manager)`.
 6. `UnlockPerk` looks up `perks.GetPerkDefinition(perkID)` for the cost, then calls `perkLib.unlock`.
 7. `perkLib.unlock` checks the ID is not already in `UnlockedPerkIDs`, checks `SkillPoints >= unlockCost`, deducts the cost, and appends the string ID to the slice.
 8. `onUnlockClicked` calls `pc.mode.controller.refresh()`, which re-reads `ProgressionData` and rebuilds both lists. The newly unlocked perk moves from the locked list to the unlocked list.
 
-### Flow 3: Player Unlocks a Spell
+### Flow 3: Commander Unlocks a Spell
 
 Identical to Flow 2 with `spellLibrarySource` and `ArcanaPoints`. The cost comes from `templates.GetSpellDefinition(spellID).UnlockCost` rather than `perks.GetPerkDefinition`.
 
@@ -369,8 +369,8 @@ Identical to Flow 2 with `spellLibrarySource` and `ArcanaPoints`. The cost comes
 
 This flow does not involve the `progression` package directly, but progression gates it:
 
-1. Player opens the squad editor perk panel.
-2. `refreshPerkPanel` (`squadeditor_perks.go:59`) calls `progression.IsPerkUnlocked(ownerPlayerID, id, manager)` for each perk ID in `perks.GetAllPerkIDs()`. Only unlocked perks appear in the "available" list.
+1. Player opens the squad editor perk panel for a given squad.
+2. `refreshPerkPanel` (`squadeditor_perks.go`) resolves the squad's owning commander via `commander.FindCommanderForSquad(squadID, manager)`, then calls `progression.IsPerkUnlocked(ownerCommanderID, id, manager)` for each perk ID in `perks.GetAllPerkIDs()`. Only perks unlocked in that commander's library appear in the "available" list.
 3. Player selects an available perk and clicks "Equip".
 4. `onEquipClicked` calls `perks.EquipPerk(squadID, def.ID, perks.MaxPerkSlots, manager)`. This function has no knowledge of the progression library — the gatekeeping was done at step 2. The equip call checks slot capacity and mutual exclusivity, then appends the perk to `PerkSlotData.PerkIDs`.
 
@@ -379,7 +379,7 @@ This flow does not involve the `progression` package directly, but progression g
 1. A new squad is created (e.g., when the player purchases units or a raid deploys squads).
 2. `spells.InitSquadSpellsFromLeader(squadID, manager)` is called.
 3. The leader unit type is found; `templates.GetSpellsForUnitType(leaderUnitType)` returns the candidate spell list.
-4. `filterSpellsByPlayerLibrary` finds the Player entity via `manager.WorldTags["players"]`. If found, it calls `progression.GetProgression` and then `progression.IsSpellUnlocked` for each candidate. Unlocked spells are kept; locked spells are dropped silently.
+4. `filterSpellsByCommanderLibrary` resolves the squad's owning commander via `commander.FindCommanderForSquad`. If found, it calls `progression.GetProgression` and then `progression.IsSpellUnlocked` for each candidate. Unlocked spells are kept; locked spells are dropped silently. If no owning commander is resolved, the full list passes through.
 5. The filtered list is passed to `AddSpellCapabilityToSquad`, which attaches `ManaData` and `SpellBookData` to the squad entity.
 
 **Implication:** a spell unlocked after this squad was created will not appear in that squad's spellbook until the squad is re-created or a refresh mechanism is added. No such mechanism currently exists.
@@ -387,11 +387,11 @@ This flow does not involve the `progression` package directly, but progression g
 ### Flow 6: Saving and Loading Progression State
 
 **Save:**
-1. `ProgressionChunk.Save` queries the `"players"` tag, reads `ProgressionData` from the entity, and marshals all four fields to JSON.
+1. `ProgressionChunk.Save` queries `commander.CommanderTag`, reads `ProgressionData` from each commander, and marshals one `savedCommanderProgression` entry per commander into `savedProgressionChunk.Commanders`.
 
 **Load:**
 1. `ProgressionChunk.Load` parses the JSON into `savedProgressionChunk` and stores it in `idMap.LoadContext`.
-2. After all chunks load, `ProgressionChunk.RemapIDs` runs. It maps the saved entity ID to the new entity ID (the Player entity was re-created by `PlayerChunk`), then calls `entity.AddComponent(progression.ProgressionComponent, data)` with a freshly allocated `ProgressionData` reconstructed from the saved values.
+2. After all chunks load, `ProgressionChunk.RemapIDs` runs. For each saved commander entry it maps the saved entity ID to the new entity ID (commander entities were re-created by `CommanderChunk`), then calls `entity.AddComponent(progression.ProgressionComponent, data)` with a freshly allocated `ProgressionData` reconstructed from the saved values.
 
 ---
 
@@ -419,13 +419,19 @@ Once points are spent and a perk or spell is unlocked, there is no refund mechan
 
 ### Spell Library Does Not Retroactively Update Squads
 
-`filterSpellsByPlayerLibrary` in `spells/system.go:63` runs only at squad creation time (`InitSquadSpellsFromLeader`). Unlocking a spell after that squad was created does not update the squad's `SpellBookData`. Squads formed before a spell unlock will never have that spell unless they are destroyed and re-created.
+`filterSpellsByCommanderLibrary` in `spells/system.go:67` runs only at squad creation time (`InitSquadSpellsFromLeader`). Unlocking a spell after that squad was created does not update the squad's `SpellBookData`. Squads formed before a spell unlock will never have that spell unless they are destroyed and re-created.
 
 This is a known design characteristic, not a bug. The design note says "Spell library supplements leader spells" — the filtering at creation time is the integration point.
 
-### Currency Is Player-Scoped, Not Commander-Scoped
+### Currency Is Commander-Scoped
 
-`ProgressionData` attaches to the Player entity (tagged `common.PlayerComponent`). Commanders are separate entities; they do not carry `ProgressionData`. `AddArcanaPoints` and `AddSkillPoints` take a `playerID`, not a commander ID. Passing a commander's entity ID would silently do nothing (the component would not be found).
+`ProgressionData` attaches to each Commander entity (`commander.CreateCommander` at `commander/system.go:46`); the Player entity does **not** carry it. `AddArcanaPoints`, `AddSkillPoints`, `IsPerkUnlocked`, `UnlockPerk`, and their spell counterparts all take a commander entity ID. Passing the player's entity ID would silently do nothing (the component would not be found).
+
+This means:
+
+- Two commanders earn separate point pools; one cannot spend the other's Arcana.
+- Their unlock libraries are independent — a perk unlocked by commander A is not visible to a squad owned by commander B.
+- Combat rewards are routed by `combatlifecycle.Grant` to every commander listed in `GrantTarget.CommanderIDs` (deduplicated). Callers (`mind/encounter/resolvers.go`, `campaign/raid/rewards.go`) populate this list at construction time by mapping participating squads through `commander.FindCommanderForSquad`. The earlier "first squad's commander wins" derivation was removed because it silently dropped rewards in multi-commander encounters.
 
 ### ECS Dependency-Cycle Avoidance
 
@@ -435,42 +441,43 @@ Storing IDs as `string` rather than `perks.PerkID` or `templates.SpellID` in `Pr
 
 Mana is a per-squad resource managed by `spells.ManaData`, not by the progression system. `Reward.Mana` exists in `combatlifecycle` but is distributed directly to squad components, not to `ProgressionData`. The progression package has no mana field or mana-related API.
 
-### `ProgressionTag` Is Only Used by the Save System
+### `ProgressionTag` Is Stored but Unused for Iteration
 
-The tag (`em.WorldTags["progression"]`) is stored but the only internal user is the save chunk, which queries by `"players"` tag instead. Code that needs to iterate all Player entities with progression should use `"players"`, not `"progression"`.
+The tag (`em.WorldTags["progression"]`) is registered, but the save chunk now iterates `commander.CommanderTag` and then reads `ProgressionComponent` per commander — there is no consumer that queries `ProgressionTag` directly. Code that needs to iterate all entities carrying progression state should iterate `CommanderTag` and check / read the component.
 
 ---
 
 ## 10. Test Coverage
 
-### `progression/library_test.go` — 7 test functions
+### `progression/library_test.go`
 
-All tests live in `package progression` (white-box; access to exported symbols only) and use `testfx.NewTestEntityManager()` from the `testing` package.
+Tests live in `package progression` (white-box; access to exported symbols only) and use `testfx.NewTestEntityManager()` from the `testing` package.
 
-The test helper `newTestManagerWithPerkData` manually seeds `perks.PerkRegistry` and `templates.SpellRegistry` with two perks and two spells each. This avoids loading JSON data files in tests while still exercising the registry lookups in `UnlockPerk` and `UnlockSpell`.
+The test helper `newTestManagerWithPerkData` (`library_test.go:12`) manually seeds `perks.PerkRegistry` and `templates.SpellRegistry` with a small fixture set and attaches a fresh `ProgressionData` to a test entity. This avoids loading JSON data files in tests while still exercising the registry lookups in `UnlockPerk` and `UnlockSpell`.
 
 | Test | What It Verifies |
 |---|---|
-| `TestNewProgressionDataSeedsDefaults` | Zero points and correct starter list lengths |
-| `TestIsPerkUnlockedReflectsStarter` | Starter perk returns true; non-starter returns false |
 | `TestUnlockPerkDeductsAndIsIdempotent` | Cost deducted correctly; second call is no-op with no extra deduction |
 | `TestUnlockPerkInsufficientPoints` | `ErrNotEnoughPoints` returned; points unchanged; perk remains locked |
 | `TestUnlockSpellDeductsAndIsIdempotent` | Mirror of perk test for arcana / spell path |
 | `TestAddPoints` | Both currencies accumulate correctly; zero and negative amounts are ignored |
 
-**Gaps in `progression/library_test.go`:**
+**Gaps:**
 
-- `ErrNoProgressionData` path is not tested (no test calls any function against an entity without the component).
+- `ErrNoProgressionData` path is not exercised against the entity-with-no-component case.
 - `ErrUnknownPerk` / `ErrUnknownSpell` paths (ID not in registry) are not tested.
-- `AddArcanaPoints` / `AddSkillPoints` called on a player entity with no `ProgressionData` (the nil-guard branch in `addPoints`) are not tested.
+- `AddArcanaPoints` / `AddSkillPoints` called on an entity with no `ProgressionData` (the nil-guard branch in `addPoints`) is not tested.
+- No integration test for the reward path (`combatlifecycle.Grant` → `commander.FindCommanderForSquad` → `progression.AddArcanaPoints`).
+- No integration test for the save round-trip (`ProgressionChunk` save / load / remap preserving per-commander data).
+- No integration test for `commander.SeedStarters` populating from `GameConfig`.
 
 ### `perks/perks_test.go` — Related but Separate
 
-The perks package test file exercises `EquipPerk`/`UnequipPerk`, perk round state lifecycle, behavior implementations, and the multi-perk interaction tests. It does not test the `progression` package. The progression-perk integration (the UI gate in `squadeditor_perks.go`) has no dedicated test.
+The perks package test file exercises `EquipPerk`/`UnequipPerk`, perk round state lifecycle, behavior implementations, and multi-perk interaction tests. It does not test the `progression` package. The progression-perk integration (the UI gate in `squadeditor_perks.go`) has no dedicated test.
 
 ### Save System Tests
 
-The save system chunk for progression (`setup/savesystem/chunks/progression_chunk.go`) has no dedicated test file. Save system integration tests, if they exist, would be in the broader `setup/savesystem/` directory.
+The save system chunk for progression (`setup/savesystem/chunks/progression_chunk.go`) has no dedicated test file. Save-system integration tests, if they exist, would live in `setup/savesystem/`.
 
 ---
 
@@ -482,13 +489,11 @@ The design notes in `project_progression_system.md` (memory file) describe decis
 |---|---|
 | Max 3 perk slots, no 4th slot from high ranks | Implemented. `perks.MaxPerkSlots = 3` is a constant, not computed from any rank. |
 | Split currency immediately (SkillPoints for perks, ArcanaPoints for spells) | Implemented as two separate fields on `ProgressionData`. |
-| Veterancy on Player entity, not per-commander | Implemented. `ProgressionData` attaches to the Player entity in `playerinit.go`. |
-| Perk library follows artifact inventory pattern | Implemented. Player entity owns `UnlockedPerkIDs`; squads equip from it. |
-| Spell library filters spellbook at squad creation | Implemented in `spells/system.go:filterSpellsByPlayerLibrary`. |
+| Progression is per-commander (revised) | Implemented. `ProgressionData` attaches to each commander in `commander.CreateCommander` (`commander/system.go:46`); starters seeded via `commander.SeedStarters`. The original design referenced a player-scoped library; that was migrated to commander-scoped on 2026-04-21 (save format bumped to v2). |
+| Perk library follows artifact inventory pattern | Implemented. Each commander owns `UnlockedPerkIDs`; squads under that commander equip from it. |
+| Spell library filters spellbook at squad creation | Implemented in `spells/system.go:filterSpellsByCommanderLibrary`. |
 | No respec | Implemented by omission — no refund function exists. |
-| Both currencies earned from combat, scaled by intensity | Implemented. Encounter rewards (`encounter/rewards.go`) use intensity scaling; raid rewards (`raid/rewards.go`) use floor scaling. |
-| Raids grant points too | Implemented in `raid/rewards.go`. |
+| Both currencies earned from combat, scaled by intensity | Implemented. Encounter rewards (`mind/encounter/rewards.go`) use intensity scaling; raid rewards (`campaign/raid/rewards.go`) use floor scaling. |
+| Raids grant points too | Implemented in `campaign/raid/rewards.go`. |
 
 **Discrepancy — "Commander Veterancy Ranks":** The design document's title and framing reference "Veterancy Ranks" as an intermediate layer that grants points. The implementation has no rank system. There is no `VeterancyRank` field, no rank thresholds, and no function that computes or increments a rank. Points are awarded directly by combat rewards without any rank intermediary. The design may have intended ranks as a future layer on top of the point system, or the rank concept was simplified away during implementation.
-
-**Note on deleted design doc:** The git status at the start of this session shows `D docs/To_Review/Features_To_Add/perk_system_approach.md` (deleted) and `?? docs/To_Review/Features_To_Add/progression_system_approach.md` (untracked). The progression doc exists in the working tree but was never committed. The perk design doc was deleted. Neither file was present for this documentation effort; the memory note `project_progression_system.md` was used as the design reference instead.

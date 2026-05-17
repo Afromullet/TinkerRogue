@@ -173,7 +173,7 @@ func allPerkItems() []libraryItem {
 			id:         string(id),
 			name:       def.Name,
 			unlockCost: def.UnlockCost,
-			detail:     formatPerkBody(def),
+			detail:     perks.FormatPerkDetail(def, false),
 		})
 	}
 	return items
@@ -192,7 +192,7 @@ func allSpellItems() []libraryItem {
 			id:         string(id),
 			name:       def.Name,
 			unlockCost: def.UnlockCost,
-			detail:     formatSpellBody(def),
+			detail:     templates.FormatSpellDetail(def, false),
 		})
 	}
 	return items
@@ -212,32 +212,3 @@ func formatDetail(item libraryItem, currency string, showCost bool) string {
 	return b.String()
 }
 
-func formatPerkBody(def *perks.PerkDefinition) string {
-	var b strings.Builder
-	b.WriteString("Tier: ")
-	b.WriteString(def.Tier.String())
-	b.WriteString("\nCategory: ")
-	b.WriteString(def.Category.String())
-	if len(def.Roles) > 0 {
-		b.WriteString("\nRoles: ")
-		b.WriteString(strings.Join(def.Roles, ", "))
-	}
-	b.WriteString("\n\n")
-	b.WriteString(def.Description)
-	return b.String()
-}
-
-func formatSpellBody(def *templates.SpellDefinition) string {
-	var b strings.Builder
-	b.WriteString(fmt.Sprintf("Mana: %d", def.ManaCost))
-	if def.Damage > 0 {
-		b.WriteString(fmt.Sprintf("\nDamage: %d", def.Damage))
-	}
-	b.WriteString("\nTarget: ")
-	b.WriteString(string(def.TargetType))
-	b.WriteString("\nEffect: ")
-	b.WriteString(string(def.EffectType))
-	b.WriteString("\n\n")
-	b.WriteString(def.Description)
-	return b.String()
-}

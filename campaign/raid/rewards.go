@@ -3,7 +3,10 @@ package raid
 import (
 	"game_main/core/common"
 	"game_main/mind/combatlifecycle"
+	"game_main/tactical/commander"
 	"game_main/world/garrisongen"
+
+	"github.com/bytearena/ecs"
 )
 
 // calculateRoomReward returns the reward and target for a cleared room.
@@ -17,6 +20,7 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 	target := combatlifecycle.GrantTarget{
 		PlayerEntityID: raidState.PlayerEntityID,
 		SquadIDs:       raidState.PlayerSquadIDs,
+		CommanderIDs:   commandersForSquads(manager, raidState.PlayerSquadIDs),
 	}
 
 	// Floor scaling: 1.0 + (floor-1) * scalePercent/100
@@ -39,6 +43,30 @@ func calculateRoomReward(manager *common.EntityManager, raidState *RaidStateData
 	}
 
 	return reward, target
+}
+
+// commandersForSquads returns the unique commander IDs that own the given
+// squads, suitable for combatlifecycle.GrantTarget.CommanderIDs. Squads
+// without a resolvable owner are skipped, and a single commander leading
+// multiple squads appears only once — both are required by Grant's contract.
+func commandersForSquads(manager *common.EntityManager, squadIDs []ecs.EntityID) []ecs.EntityID {
+	if len(squadIDs) == 0 {
+		return nil
+	}
+	commanderIDs := make([]ecs.EntityID, 0, len(squadIDs))
+	seen := make(map[ecs.EntityID]struct{}, len(squadIDs))
+	for _, squadID := range squadIDs {
+		cid := commander.FindCommanderForSquad(squadID, manager)
+		if cid == 0 {
+			continue
+		}
+		if _, dup := seen[cid]; dup {
+			continue
+		}
+		seen[cid] = struct{}{}
+		commanderIDs = append(commanderIDs, cid)
+	}
+	return commanderIDs
 }
 
 // raidArcanaBase returns the configured base Arcana per room, defaulting to 1.

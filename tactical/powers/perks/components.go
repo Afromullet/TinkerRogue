@@ -5,9 +5,10 @@ import (
 )
 
 // PerkSlotData stores equipped perks on a squad entity.
-// Number of available slots scales with squad progression.
+// The cap is the package-level constant MaxPerkSlots (currently 3);
+// it does not scale with squad progression or veterancy by design.
 type PerkSlotData struct {
-	PerkIDs []PerkID // Equipped perk IDs (max based on squad level)
+	PerkIDs []PerkID // Equipped perk IDs (cap = MaxPerkSlots)
 }
 
 // PerkRoundState tracks combat state needed by perks.

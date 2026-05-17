@@ -3,11 +3,12 @@ package encounter
 import (
 	"fmt"
 
-	"game_main/core/common"
-	"game_main/mind/combatlifecycle"
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/garrison"
 	"game_main/campaign/overworld/threat"
+	"game_main/core/common"
+	"game_main/mind/combatlifecycle"
+	"game_main/tactical/commander"
 
 	"github.com/bytearena/ecs"
 )
@@ -78,6 +79,7 @@ func (r *OverworldCombatResolver) resolveVictory(
 	target := combatlifecycle.GrantTarget{
 		PlayerEntityID: ctx.PlayerEntityID,
 		SquadIDs:       ctx.PlayerSquadIDs,
+		CommanderIDs:   commandersForSquads(manager, ctx.PlayerSquadIDs),
 	}
 
 	if nodeData.Intensity <= 0 {
@@ -158,6 +160,30 @@ func (r *OverworldCombatResolver) resolveDefeat(
 	return &combatlifecycle.ResolutionResult{
 		Description: fmt.Sprintf("Defeated by threat %d", r.ThreatNodeID),
 	}
+}
+
+// commandersForSquads returns the unique commander IDs that own the given
+// squads, suitable for combatlifecycle.GrantTarget.CommanderIDs. Squads
+// without a resolvable owner are skipped, and a single commander leading
+// multiple squads appears only once — both are required by Grant's contract.
+func commandersForSquads(manager *common.EntityManager, squadIDs []ecs.EntityID) []ecs.EntityID {
+	if len(squadIDs) == 0 {
+		return nil
+	}
+	commanderIDs := make([]ecs.EntityID, 0, len(squadIDs))
+	seen := make(map[ecs.EntityID]struct{}, len(squadIDs))
+	for _, squadID := range squadIDs {
+		cid := commander.FindCommanderForSquad(squadID, manager)
+		if cid == 0 {
+			continue
+		}
+		if _, dup := seen[cid]; dup {
+			continue
+		}
+		seen[cid] = struct{}{}
+		commanderIDs = append(commanderIDs, cid)
+	}
+	return commanderIDs
 }
 
 // GarrisonDefenseResolver resolves garrison defense encounters.

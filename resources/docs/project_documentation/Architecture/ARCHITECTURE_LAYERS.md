@@ -125,7 +125,7 @@ The tactical packages implement everything that happens on the battle map. The d
 | `tactical/powers/spells` | Spell definitions and resolution. Bridges effects, combat, and squads. `ManaComponent` and `SpellBookComponent` are attached to **squad** entities (scoped to the squad leader's unit type) and filtered against the player's unlocked-spell library. |
 | `tactical/powers/artifacts` | The artifact item system: inventory management, charge tracking, passive and activated behaviors, pending-effects queue, and the behavior dispatcher. Owns the artifact balance config. |
 | `tactical/powers/perks` | Squad-level perk system. Perks are equipped into `PerkSlotComponent` on the squad entity; `PerkRoundStateComponent` is added for the duration of a combat. Includes the perk registry, balance config, dispatcher, and the hook tables that plug into combat events. |
-| `tactical/powers/progression` | Player-level progression state: arcana/skill points and unlocked perk/spell libraries. `ProgressionComponent` is attached to the Player entity and consulted when generating spell lists and offering perks. |
+| `tactical/powers/progression` | Per-commander progression state: arcana/skill points and unlocked perk/spell libraries. `ProgressionComponent` is attached to each commander entity (`commander/system.go`) and consulted when generating spell lists for that commander's squads and when offering perks in the squad editor. |
 
 #### Commander
 

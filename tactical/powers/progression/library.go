@@ -21,6 +21,12 @@ var (
 // ProgressionData stores its unlocked IDs and which currency field funds
 // unlocks. Declaring one value per axis removes the parallel code paths that
 // would otherwise diverge between spells and perks.
+//
+// The closure return types are pointers (*[]string, *int) because lib.unlock
+// must append to the slice and decrement the counter in place. A by-value
+// return would force re-assignment back through the closure, which Go's
+// function-typed struct fields cannot express without putting generics on
+// the struct itself.
 type library struct {
 	unlocked     func(*ProgressionData) *[]string
 	currency     func(*ProgressionData) *int

@@ -2,7 +2,6 @@ package guisquads
 
 import (
 	"fmt"
-	"strings"
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
@@ -144,7 +143,7 @@ func (pc *perkPanelController) onEquippedSelected(def *perks.PerkDefinition) {
 	pc.selectedAvailable = nil
 	pc.unequipBtn.GetWidget().Disabled = false
 	pc.equipBtn.GetWidget().Disabled = true
-	pc.detailArea.SetText(formatPerkDetail(def))
+	pc.detailArea.SetText(perks.FormatPerkDetail(def, true))
 }
 
 // onAvailableSelected handles selection in the available perks list.
@@ -153,7 +152,7 @@ func (pc *perkPanelController) onAvailableSelected(def *perks.PerkDefinition) {
 	pc.selectedEquipped = nil
 	pc.equipBtn.GetWidget().Disabled = false
 	pc.unequipBtn.GetWidget().Disabled = true
-	pc.detailArea.SetText(formatPerkDetail(def))
+	pc.detailArea.SetText(perks.FormatPerkDetail(def, true))
 }
 
 // onEquipClicked equips the selected available perk on the current squad.
@@ -190,39 +189,3 @@ func (pc *perkPanelController) onUnequipClicked() {
 	pc.refreshPerkPanel()
 }
 
-// formatPerkDetail builds the detail text for a perk definition.
-func formatPerkDetail(def *perks.PerkDefinition) string {
-	var b strings.Builder
-
-	b.WriteString(def.Name)
-	b.WriteString("\n\n")
-
-	b.WriteString("Tier: ")
-	b.WriteString(def.Tier.String())
-	b.WriteString("\nCategory: ")
-	b.WriteString(def.Category.String())
-
-	if len(def.Roles) > 0 {
-		b.WriteString("\nRoles: ")
-		b.WriteString(strings.Join(def.Roles, ", "))
-	}
-
-	b.WriteString("\n\n")
-	b.WriteString(def.Description)
-
-	if len(def.ExclusiveWith) > 0 {
-		b.WriteString("\n\nExclusive with: ")
-		names := make([]string, 0, len(def.ExclusiveWith))
-		for _, exID := range def.ExclusiveWith {
-			exDef := perks.GetPerkDefinition(exID)
-			if exDef != nil {
-				names = append(names, exDef.Name)
-			} else {
-				names = append(names, string(exID))
-			}
-		}
-		b.WriteString(strings.Join(names, ", "))
-	}
-
-	return b.String()
-}

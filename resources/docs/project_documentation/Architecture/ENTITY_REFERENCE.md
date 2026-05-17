@@ -200,8 +200,9 @@ The single player-controlled top-level entity. Tracks resources, roster limits, 
 | `roster.UnitRosterComponent` | — | `*roster.UnitRoster` | `Units map[string]*UnitRosterEntry`, `MaxUnits int` | Tracks all unit entities owned by the player; `MaxUnits` from `gameconfig.json` `player.limits.maxUnits` |
 | `commander.CommanderRosterComponent` | — | `*commander.CommanderRosterData` | `CommanderIDs []ecs.EntityID`, `MaxCommanders int` | Tracks all commander entity IDs; `MaxCommanders` from config |
 | `artifacts.ArtifactInventoryComponent` | — | `*artifacts.ArtifactInventoryData` | `OwnedArtifacts map[string][]*ArtifactInstance`, `MaxArtifacts int` | Artifact collection; `MaxArtifacts` from config |
-| `progression.ProgressionComponent` | `progression.ProgressionTag` | `*progression.ProgressionData` | `ArcanaPoints`, `SkillPoints`, `UnlockedSpellIDs []string`, `UnlockedPerkIDs []string` | Permanent player progression: currencies and unlocked-library state. Seeded via `progression.NewProgressionData()` with a starter perk/spell set. |
 | `common.PositionComponent` | `players` WorldTag | `*coords.LogicalPosition` | `X`, `Y` | Added via `RegisterEntityPosition` using `gm.StartingPosition()`; also stored in `PlayerData.Pos` for direct access |
+
+> **Note:** `progression.ProgressionComponent` was migrated to the **Commander Entity** in 2026-04-21. The Player entity no longer carries progression state; see the Commander Entity table below.
 
 **`roster.UnitRoster` detail:**
 ```go
@@ -261,6 +262,7 @@ A field commander that moves on the overworld map and leads squads. Multiple com
 | `common.RenderableComponent` | `common.RenderablesTag` | `*common.Renderable` | `Image`, `Visible: true` | Sprite passed as parameter to `CreateCommander` |
 | `common.AttributeComponent` | — | `*common.Attributes` | `MovementSpeed` | Only `MovementSpeed` is set at creation; other stats default to zero |
 | `roster.SquadRosterComponent` | — | `*roster.SquadRoster` | `OwnedSquads []ecs.EntityID`, `MaxSquads int` | Squads commanded by this commander; `maxSquads` parameter |
+| `progression.ProgressionComponent` | `progression.ProgressionTag` | `*progression.ProgressionData` | `ArcanaPoints`, `SkillPoints`, `UnlockedSpellIDs []string`, `UnlockedPerkIDs []string` | Per-commander progression: currencies and unlocked-library state. Attached as zero-value by `CreateCommander`; starter unlocks are added explicitly by `commander.SeedStarters` from `templates.GameConfig.Commander.StartingPerks` / `.StartingSpells`. |
 | `common.PositionComponent` | — | `*coords.LogicalPosition` | `X`, `Y` | Added via `RegisterEntityPosition` using the `startPos` parameter |
 
 **Note:** Spell casting state (`spells.ManaComponent`, `spells.SpellBookComponent`) is **no longer** attached to the commander entity. It is attached to the **squad** that the commander leads, by `spells.InitSquadSpellsFromLeader()` — the spell list is derived from the squad leader's unit type and filtered against the player's unlocked-spell library. See [Squad Entity](#squad-entity).
@@ -905,7 +907,7 @@ Alphabetical listing of every component variable with the entity types that use 
 | `core.VictoryStateComponent` | `campaign/overworld/core` | Victory State Entity |
 | `perks.PerkRoundStateComponent` | `tactical/powers/perks` | Squad Entity (dynamic, combat only) |
 | `perks.PerkSlotComponent` | `tactical/powers/perks` | Squad Entity (when perks are equipped) |
-| `progression.ProgressionComponent` | `tactical/powers/progression` | Player Entity |
+| `progression.ProgressionComponent` | `tactical/powers/progression` | Commander Entity |
 | `raid.AlertDataComponent` | `campaign/raid` | Alert Data Entity |
 | `raid.DeploymentComponent` | `campaign/raid` | Deployment Entity |
 | `raid.FloorStateComponent` | `campaign/raid` | Floor State Entity |

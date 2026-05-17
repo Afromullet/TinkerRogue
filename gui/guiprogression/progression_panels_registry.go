@@ -3,6 +3,7 @@ package guiprogression
 import (
 	"image/color"
 
+	"game_main/core/config"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
@@ -87,14 +88,16 @@ func buildHeaderPanel(result *framework.PanelResult, mode framework.UIMode) erro
 	result.Container.AddChild(skillLabel)
 
 	// Debug: add-point buttons (mirrors unitviewmode.go "Add 100 XP" pattern).
-	result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-		Text:    "+1 Skill",
-		OnClick: func() { pm.onAddSkillPoint() },
-	}))
-	result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
-		Text:    "+1 Arcana",
-		OnClick: func() { pm.onAddArcanaPoint() },
-	}))
+	if config.DEBUG_MODE {
+		result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			Text:    "+1 Skill",
+			OnClick: func() { pm.onAddSkillPoint() },
+		}))
+		result.Container.AddChild(builders.CreateButtonWithConfig(builders.ButtonConfig{
+			Text:    "+1 Arcana",
+			OnClick: func() { pm.onAddArcanaPoint() },
+		}))
+	}
 
 	result.Custom["arcanaLabel"] = arcanaLabel
 	result.Custom["skillLabel"] = skillLabel

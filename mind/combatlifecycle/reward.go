@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"game_main/core/common"
 	"game_main/core/config"
-	"game_main/tactical/commander"
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/powers/spells"
 	"game_main/tactical/squads/unitprogression"
@@ -47,13 +46,25 @@ func (r Reward) Scale(factor float64) Reward {
 
 // GrantTarget identifies who receives the reward.
 // Callers construct this from their own context (combatOutcome, raidState, etc).
+//
+// CommanderIDs is the authoritative, deduplicated list of commanders that
+// receive ArcanaPts/SkillPts. It is independent of SquadIDs so multi-commander
+// encounters can route points correctly without Grant having to reverse-resolve
+// squad ownership. Callers must dedupe before constructing (the typical case
+// is one commander deploying several squads to a single encounter, which would
+// otherwise grant N× rewards). Zero IDs must be omitted.
 type GrantTarget struct {
 	PlayerEntityID ecs.EntityID   // For gold (ResourceStockpile owner)
 	SquadIDs       []ecs.EntityID // For XP and mana distribution
+	CommanderIDs   []ecs.EntityID // Receives Arcana/Skill progression points (deduped by caller)
 }
 
 // Grant distributes a Reward to the target. Returns a description string.
 // Skips any reward field that is zero.
+//
+// Progression points (ArcanaPts/SkillPts) are distributed to every commander
+// in target.CommanderIDs. The list is trusted as deduplicated and free of
+// zero IDs; see GrantTarget for the construction contract.
 func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 	var parts []string
 
@@ -75,23 +86,19 @@ func Grant(manager *common.EntityManager, r Reward, target GrantTarget) string {
 		}
 	}
 
-	// Progression points go to the commander of the first squad in the target.
-	// An encounter is owned by one commander, so all squads in SquadIDs share
-	// a commander; resolving from the first is sufficient.
-	commanderID := ecs.EntityID(0)
-	if len(target.SquadIDs) > 0 {
-		commanderID = commander.FindCommanderForSquad(target.SquadIDs[0], manager)
-	}
-
-	if r.ArcanaPts > 0 && commanderID != 0 {
-		if desc := grantProgressionPoints(manager, commanderID, r.ArcanaPts, "Arcana", progression.AddArcanaPoints); desc != "" {
-			parts = append(parts, desc)
+	if r.ArcanaPts > 0 {
+		for _, cid := range target.CommanderIDs {
+			if desc := grantProgressionPoints(manager, cid, r.ArcanaPts, "Arcana", progression.AddArcanaPoints); desc != "" {
+				parts = append(parts, desc)
+			}
 		}
 	}
 
-	if r.SkillPts > 0 && commanderID != 0 {
-		if desc := grantProgressionPoints(manager, commanderID, r.SkillPts, "Skill", progression.AddSkillPoints); desc != "" {
-			parts = append(parts, desc)
+	if r.SkillPts > 0 {
+		for _, cid := range target.CommanderIDs {
+			if desc := grantProgressionPoints(manager, cid, r.SkillPts, "Skill", progression.AddSkillPoints); desc != "" {
+				parts = append(parts, desc)
+			}
 		}
 	}
 
