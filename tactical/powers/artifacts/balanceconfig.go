@@ -2,8 +2,8 @@ package artifacts
 
 import (
 	"encoding/json"
-	"fmt"
 	"game_main/core/config"
+	"log"
 	"os"
 )
 
@@ -25,21 +25,21 @@ const artifactBalancePath = "gamedata/artifactbalanceconfig.json"
 func LoadArtifactBalanceConfig() {
 	data, err := os.ReadFile(config.AssetPath(artifactBalancePath))
 	if err != nil {
-		fmt.Printf("WARNING: Failed to read artifact balance config: %v\n", err)
+		log.Printf("WARNING: Failed to read artifact balance config: %v", err)
 		return
 	}
 
 	if err := json.Unmarshal(data, &ArtifactBalance); err != nil {
-		fmt.Printf("WARNING: Failed to parse artifact balance config: %v\n", err)
+		log.Printf("WARNING: Failed to parse artifact balance config: %v", err)
 		return
 	}
 
 	validateArtifactBalance(&ArtifactBalance)
-	fmt.Println("Artifact balance config loaded")
+	log.Println("Artifact balance config loaded")
 }
 
 func validateArtifactBalance(cfg *ArtifactBalanceConfig) {
 	if cfg.SaboteursHourglass.MovementReduction <= 0 {
-		fmt.Println("WARNING: saboteursHourglass.movementReduction should be positive")
+		log.Println("WARNING: saboteursHourglass.movementReduction should be positive")
 	}
 }

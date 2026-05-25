@@ -16,8 +16,8 @@ import (
 //
 // Source-tag → prefix routing:
 //
-//	known artifact behavior → "[GEAR]"
 //	"service"               → "[COMBAT]"
+//	known artifact behavior → "[GEAR]"
 //	otherwise               → "[PERK]"
 func setupPowerDispatch(cs *CombatService) {
 	logger := powercore.LoggerFunc(func(source string, squadID ecs.EntityID, message string) {
@@ -37,11 +37,11 @@ func setupPowerDispatch(cs *CombatService) {
 // is centralized here so the combat logger format stays consistent across
 // subsystems.
 func classifyLogPrefix(source string) string {
-	if artifacts.IsRegisteredBehavior(source) {
-		return "[GEAR]"
-	}
 	if source == "service" {
 		return "[COMBAT]"
+	}
+	if artifacts.IsRegisteredBehavior(source) {
+		return "[GEAR]"
 	}
 	return "[PERK]"
 }

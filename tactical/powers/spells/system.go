@@ -10,6 +10,7 @@ import (
 	"game_main/tactical/powers/progression"
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
+	"log"
 
 	"github.com/bytearena/ecs"
 )
@@ -193,12 +194,12 @@ func applyDamageSpell(
 		if squadcore.IsSquadDestroyed(squadID, manager) {
 			result.SquadsDestroyed = append(result.SquadsDestroyed, squadID)
 			if err := combatdisposal.RemoveSquadFromMap(squadID, manager); err != nil {
-				fmt.Printf("Warning: failed to remove destroyed squad %d from map: %v\n", squadID, err)
+				log.Printf("[SPELL] failed to remove destroyed squad %d from map: %v", squadID, err)
 			}
 		}
 	}
 
-	fmt.Printf("Spell cast: %s dealt %d total damage to %d squads (%d destroyed)\n",
+	log.Printf("[SPELL] %s dealt %d total damage to %d squads (%d destroyed)",
 		spell.Name, result.TotalDamageDealt, len(result.AffectedSquadIDs), len(result.SquadsDestroyed))
 }
 
@@ -209,25 +210,17 @@ func applyBuffDebuffSpell(
 	result *SpellCastResult,
 	manager *common.EntityManager,
 ) {
+	mods := make([]effects.StatModifier, len(spell.StatModifiers))
+	for i, m := range spell.StatModifiers {
+		mods[i] = effects.StatModifier{Stat: m.Stat, Modifier: m.Modifier}
+	}
+
 	effectsApplied := 0
 	for _, squadID := range targetSquadIDs {
 		unitIDs := squadcore.GetUnitIDsInSquad(squadID, manager)
-		for _, mod := range spell.StatModifiers {
-			statType, err := effects.ParseStatType(mod.Stat)
-			if err != nil {
-				fmt.Printf("WARNING: spell %q has invalid stat modifier: %v\n", spell.Name, err)
-				continue
-			}
-			effect := effects.ActiveEffect{
-				Name:           spell.Name,
-				Source:         effects.SourceSpell,
-				Stat:           statType,
-				Modifier:       mod.Modifier,
-				RemainingTurns: spell.Duration,
-			}
-			effects.ApplyEffectToUnits(unitIDs, effect, manager)
-			effectsApplied++
-		}
+		effectsApplied += effects.ApplyStatModifiers(
+			unitIDs, spell.Name, mods, effects.SourceSpell, spell.Duration, manager,
+		)
 		result.AffectedSquadIDs = append(result.AffectedSquadIDs, squadID)
 	}
 
@@ -235,6 +228,6 @@ func applyBuffDebuffSpell(
 	if spell.EffectType != templates.EffectBuff {
 		effectType = "debuff"
 	}
-	fmt.Printf("Spell cast: %s applied %d %s effects to %d squads\n",
+	log.Printf("[SPELL] %s applied %d %s effects to %d squads",
 		spell.Name, effectsApplied, effectType, len(result.AffectedSquadIDs))
 }

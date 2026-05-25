@@ -25,9 +25,9 @@ const (
 type EffectSource int
 
 const (
-	SourceSpell EffectSource = iota
-	SourceAbility
-	SourcePerk
+	SourceSpell   EffectSource = iota
+	SourceAbility              // reserved for future ability system; no production writer yet
+	SourcePerk                 // reserved for future perk-applied effects; no production writer yet
 	SourceItem
 )
 
@@ -43,6 +43,16 @@ type ActiveEffect struct {
 // ActiveEffectsData is the ECS component attached to entities with active effects.
 type ActiveEffectsData struct {
 	Effects []ActiveEffect
+}
+
+// StatModifier is the common shape of a stat tweak from spells, artifacts,
+// and any future power layer. Callers convert their own typed modifier slices
+// (templates.SpellStatModifier, templates.ArtifactStatModifier, …) to this
+// type before calling ApplyStatModifiers so the effects package stays
+// independent of templates.
+type StatModifier struct {
+	Stat     string
+	Modifier int
 }
 
 // ParseStatType converts a JSON stat name string to a StatType.

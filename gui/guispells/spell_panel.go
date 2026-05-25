@@ -18,29 +18,31 @@ type SpellPanelDeps struct {
 }
 
 // SpellPanelController manages spell selection panel state and interactions.
-// It owns the widget references and selected spell, delegating spell logic to SpellCastingHandler.
+// Common widget refs and selection plumbing live on the embedded
+// SelectionPanelCore; spell-specific behavior (mana check, EnterSpellMode
+// gating) lives here.
 type SpellPanelController struct {
-	deps          *SpellPanelDeps
-	spellList     *widgets.CachedListWrapper
-	detailArea    *widgets.CachedTextAreaWrapper
-	manaLabel     *widget.Text
-	castButton    *widget.Button
-	selectedSpell *templates.SpellDefinition
+	widgets.SelectionPanelCore
+	deps *SpellPanelDeps
 }
 
 // NewSpellPanelController creates a new spell panel controller.
 func NewSpellPanelController(deps *SpellPanelDeps) *SpellPanelController {
 	return &SpellPanelController{
 		deps: deps,
+		SelectionPanelCore: widgets.SelectionPanelCore{
+			ShowSubmenu:  deps.ShowSubmenu,
+			CloseSubmenu: deps.CloseSubmenu,
+		},
 	}
 }
 
-// SetWidgets sets widget references after panel construction.
+// SetWidgets stores widget references after panel construction.
 func (sp *SpellPanelController) SetWidgets(list *widgets.CachedListWrapper, detail *widgets.CachedTextAreaWrapper, mana *widget.Text, cast *widget.Button) {
-	sp.spellList = list
-	sp.detailArea = detail
-	sp.manaLabel = mana
-	sp.castButton = cast
+	sp.List = list
+	sp.Detail = detail
+	sp.StatusLabel = mana
+	sp.ActionButton = cast
 }
 
 // Handler returns the underlying SpellCastingHandler.
@@ -48,16 +50,24 @@ func (sp *SpellPanelController) Handler() *SpellCastingHandler {
 	return sp.deps.Handler
 }
 
+// selectedSpell returns the currently selected spell, or nil if none.
+func (sp *SpellPanelController) selectedSpell() *templates.SpellDefinition {
+	if sp.Selected == nil {
+		return nil
+	}
+	return sp.Selected.(*templates.SpellDefinition)
+}
+
 // OnSpellSelected is the list click callback — updates detail area and cast button.
 func (sp *SpellPanelController) OnSpellSelected(spell *templates.SpellDefinition) {
-	sp.selectedSpell = spell
+	sp.Selected = spell
 	sp.UpdateDetailPanel()
 }
 
 // UpdateDetailPanel shows spell details and checks mana affordability.
 func (sp *SpellPanelController) UpdateDetailPanel() {
-	spell := sp.selectedSpell
-	if spell == nil || sp.detailArea == nil {
+	spell := sp.selectedSpell()
+	if spell == nil {
 		return
 	}
 
@@ -76,11 +86,7 @@ func (sp *SpellPanelController) UpdateDetailPanel() {
 		detail += "\n\n[color=ff4444]Not enough mana![/color]"
 	}
 
-	sp.detailArea.SetText(detail)
-
-	if sp.castButton != nil {
-		sp.castButton.GetWidget().Disabled = !canAfford
-	}
+	sp.SetDetail(detail, canAfford)
 }
 
 // Refresh populates the list from the spell handler, updates mana label, clears selection.
@@ -88,26 +94,15 @@ func (sp *SpellPanelController) Refresh() {
 	allSpells := sp.deps.Handler.GetAllSpells()
 	currentMana, maxMana := sp.deps.Handler.GetSquadMana()
 
-	if sp.manaLabel != nil {
-		sp.manaLabel.Label = fmt.Sprintf("Mana: %d/%d", currentMana, maxMana)
-	}
+	sp.SetStatusText(fmt.Sprintf("Mana: %d/%d", currentMana, maxMana))
 
-	if sp.spellList != nil {
-		entries := make([]interface{}, len(allSpells))
-		for i, spell := range allSpells {
-			entries[i] = spell
-		}
-		sp.spellList.GetList().SetEntries(entries)
-		sp.spellList.MarkDirty()
+	entries := make([]interface{}, len(allSpells))
+	for i, spell := range allSpells {
+		entries[i] = spell
 	}
+	sp.SetEntries(entries)
 
-	sp.selectedSpell = nil
-	if sp.detailArea != nil {
-		sp.detailArea.SetText("Select a spell to view details")
-	}
-	if sp.castButton != nil {
-		sp.castButton.GetWidget().Disabled = true
-	}
+	sp.ClearSelection("Select a spell to view details")
 }
 
 // Show validates preconditions, refreshes data, and shows the panel.
@@ -127,21 +122,16 @@ func (sp *SpellPanelController) Show() {
 
 	sp.deps.Handler.EnterSpellMode()
 	sp.Refresh()
-	sp.deps.ShowSubmenu()
-}
-
-// Hide hides the panel and clears selection.
-func (sp *SpellPanelController) Hide() {
-	sp.selectedSpell = nil
-	sp.deps.CloseSubmenu()
+	sp.ShowSubmenu()
 }
 
 // OnCastClicked selects the spell for targeting and hides the panel.
 func (sp *SpellPanelController) OnCastClicked() {
-	if sp.selectedSpell == nil {
+	spell := sp.selectedSpell()
+	if spell == nil {
 		return
 	}
-	sp.deps.Handler.SelectSpell(sp.selectedSpell.ID)
+	sp.deps.Handler.SelectSpell(spell.ID)
 	sp.Hide()
 }
 

@@ -344,5 +344,6 @@ Keep these in sync with the code in the same change. Also update the **Key Syste
 ## Resources
 
 - **Detailed ECS Guide:** `docs/project_documentation/ECS_BEST_PRACTICES.md`
+- **Power Layers Cross-Reference:** `docs/project_documentation/Systems/POWER_LAYERS.md` — quick map across artifacts/perks/spells/effects vocabulary
 - **Tests:** Run `go test ./...` frequently
 - **Reference Code:** Study `squads/`, `gear/Inventory.go`, `systems/positionsystem.go`

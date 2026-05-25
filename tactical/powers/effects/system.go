@@ -1,8 +1,8 @@
 package effects
 
 import (
-	"fmt"
 	"game_main/core/common"
+	"log"
 
 	"github.com/bytearena/ecs"
 )
@@ -39,7 +39,7 @@ func ApplyEffect(entityID ecs.EntityID, effect ActiveEffect, manager *common.Ent
 
 	effectsData.Effects = append(effectsData.Effects, effect)
 
-	fmt.Printf("[EFFECT] Applied %s to entity %d: %+d to stat %d (%d turns)\n",
+	log.Printf("[EFFECT] applied %s to entity %d: %+d to stat %d (%d turns)",
 		effect.Name, entityID, effect.Modifier, effect.Stat, effect.RemainingTurns)
 }
 
@@ -49,6 +49,42 @@ func ApplyEffectToUnits(unitIDs []ecs.EntityID, effect ActiveEffect, manager *co
 	for _, unitID := range unitIDs {
 		ApplyEffect(unitID, effect, manager)
 	}
+}
+
+// ApplyStatModifiers parses each modifier, constructs an ActiveEffect, and
+// applies it to every unit in unitIDs. Modifiers with an unrecognised stat
+// name are logged to stdlib log and skipped. Returns the number of effects
+// successfully applied.
+//
+// name     — display name copied into ActiveEffect.Name (e.g. spell or artifact name)
+// source   — EffectSource tag for filtering/removal
+// duration — RemainingTurns; -1 = permanent (used by equipment/artifact effects)
+func ApplyStatModifiers(
+	unitIDs []ecs.EntityID,
+	name string,
+	mods []StatModifier,
+	source EffectSource,
+	duration int,
+	manager *common.EntityManager,
+) int {
+	applied := 0
+	for _, mod := range mods {
+		statType, err := ParseStatType(mod.Stat)
+		if err != nil {
+			log.Printf("[EFFECT] WARNING: %q has invalid stat modifier: %v", name, err)
+			continue
+		}
+		effect := ActiveEffect{
+			Name:           name,
+			Source:         source,
+			Stat:           statType,
+			Modifier:       mod.Modifier,
+			RemainingTurns: duration,
+		}
+		ApplyEffectToUnits(unitIDs, effect, manager)
+		applied++
+	}
+	return applied
 }
 
 // TickEffects decrements duration on all effects for an entity.
@@ -89,7 +125,7 @@ func TickEffects(entityID ecs.EntityID, manager *common.EntityManager) {
 		if e.RemainingTurns <= 0 {
 			// Effect expired — reverse the modifier
 			reverseModifierFromStat(attr, e.Stat, e.Modifier)
-			fmt.Printf("[EFFECT] Expired %s on entity %d\n", e.Name, entityID)
+			log.Printf("[EFFECT] expired %s on entity %d", e.Name, entityID)
 		} else {
 			kept = append(kept, *e)
 		}

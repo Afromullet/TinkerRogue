@@ -2,16 +2,14 @@ package guicombat
 
 import (
 	"fmt"
-	"image/color"
 
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/guiartifacts"
-	"game_main/gui/guiinspect"
 	combatpanels "game_main/gui/guicombat/combatbase"
+	"game_main/gui/guiinspect"
 	"game_main/gui/specs"
 	"game_main/gui/widgetresources"
-	"game_main/gui/widgets"
 	"game_main/templates"
 
 	"github.com/ebitenui/ebitenui/widget"
@@ -208,38 +206,16 @@ func init() {
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)
-			layout := cm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatSpellPanelWidth)
-			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellPanelHeight)
-
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
-				MinWidth:   panelWidth,
-				MinHeight:  panelHeight,
-				Background: widgetresources.PanelRes.Image,
-				Layout: widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
-				),
-			})
-
-			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			result.Container.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
-
-			// Mana label
-			manaLabel := builders.CreateSmallLabel("Mana: 0/0")
-			result.Container.AddChild(manaLabel)
-			result.Custom["manaLabel"] = manaLabel
-
-			// Spell list
-			listWidth := panelWidth - 20
-			listHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellListHeight)
-
-			spellList := builders.CreateListWithConfig(builders.ListConfig{
-				Entries:  []interface{}{},
-				MinWidth: listWidth,
-				MinHeight: listHeight,
+			panel := builders.BuildSelectionPanel(cm.Layout, builders.SelectionPanelConfig{
+				PanelWidthFrac:    specs.CombatSpellPanelWidth,
+				PanelHeightFrac:   specs.CombatSpellPanelHeight,
+				ListHeightFrac:    specs.CombatSpellListHeight,
+				DetailHeightFrac:  specs.CombatSpellDetailHeight,
+				StatusLabelText:   "Mana: 0/0",
+				DetailPlaceholder: "Select a spell to view details",
+				ActionButtonText:  "Cast",
+				CancelButtonText:  "Cancel (ESC)",
 				EntryLabelFunc: func(e interface{}) string {
 					if spell, ok := e.(*templates.SpellDefinition); ok {
 						return fmt.Sprintf("%s (%d MP)", spell.Name, spell.ManaCost)
@@ -251,49 +227,17 @@ func init() {
 						cm.spellPanel.OnSpellSelected(spell)
 					}
 				},
+				OnActionClicked: func() { cm.spellPanel.OnCastClicked() },
+				OnCancelClicked: func() { cm.spellPanel.OnCancelClicked() },
 			})
-			cachedList := widgets.NewCachedListWrapper(spellList)
-			result.Container.AddChild(spellList)
-			result.Custom["spellList"] = cachedList
 
-			// Detail text area
-			detailWidth := panelWidth - 20
-			detailHeight := int(float64(layout.ScreenHeight) * specs.CombatSpellDetailHeight)
-			detailArea := builders.CreateCachedTextArea(builders.TextAreaConfig{
-				MinWidth:  detailWidth,
-				MinHeight: detailHeight,
-				FontColor: color.White,
-			})
-			detailArea.SetText("Select a spell to view details")
-			result.Container.AddChild(detailArea)
-			result.Custom["detailArea"] = detailArea
+			result.Container = panel.Container
+			result.Custom["manaLabel"] = panel.StatusLabel
+			result.Custom["spellList"] = panel.List
+			result.Custom["detailArea"] = panel.Detail
+			result.Custom["castButton"] = panel.ActionButton
 
-			// Cast button
-			castButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Cast",
-				OnClick: func() {
-					cm.spellPanel.OnCastClicked()
-				},
-			})
-			castButton.GetWidget().Disabled = true
-			result.Container.AddChild(castButton)
-			result.Custom["castButton"] = castButton
-
-			// Cancel button
-			cancelButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Cancel (ESC)",
-				OnClick: func() {
-					cm.spellPanel.OnCancelClicked()
-				},
-			})
-			result.Container.AddChild(cancelButton)
-
-			// Hidden by default
-			result.Container.GetWidget().Visibility = widget.Visibility_Hide
-
-			// Register with sub-menu controller
 			cm.subMenus.Register("spell", result.Container)
-
 			return nil
 		},
 	})
@@ -303,33 +247,15 @@ func init() {
 		Content: framework.ContentCustom,
 		OnCreate: func(result *framework.PanelResult, mode framework.UIMode) error {
 			cm := mode.(*CombatMode)
-			layout := cm.Layout
 
-			panelWidth := int(float64(layout.ScreenWidth) * specs.CombatArtifactPanelWidth)
-			panelHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactPanelHeight)
-
-			result.Container = builders.CreatePanelWithConfig(builders.ContainerConfig{
-				MinWidth:   panelWidth,
-				MinHeight:  panelHeight,
-				Background: widgetresources.PanelRes.Image,
-				Layout: widget.NewRowLayout(
-					widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-					widget.RowLayoutOpts.Spacing(5),
-					widget.RowLayoutOpts.Padding(builders.NewResponsiveRowPadding(layout, specs.PaddingExtraSmall)),
-				),
-			})
-
-			rightPad := int(float64(layout.ScreenWidth) * specs.PaddingTight)
-			result.Container.GetWidget().LayoutData = builders.AnchorEndCenter(rightPad)
-
-			// Artifact list
-			listWidth := panelWidth - 20
-			listHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactListHeight)
-
-			artifactList := builders.CreateListWithConfig(builders.ListConfig{
-				Entries:   []interface{}{},
-				MinWidth:  listWidth,
-				MinHeight: listHeight,
+			panel := builders.BuildSelectionPanel(cm.Layout, builders.SelectionPanelConfig{
+				PanelWidthFrac:    specs.CombatArtifactPanelWidth,
+				PanelHeightFrac:   specs.CombatArtifactPanelHeight,
+				ListHeightFrac:    specs.CombatArtifactListHeight,
+				DetailHeightFrac:  specs.CombatArtifactDetailHeight,
+				DetailPlaceholder: "Select an artifact to view details",
+				ActionButtonText:  "Activate",
+				CancelButtonText:  "Cancel (ESC)",
 				EntryLabelFunc: func(e interface{}) string {
 					if opt, ok := e.(*guiartifacts.ArtifactOption); ok {
 						chargeStr := "Ready"
@@ -345,50 +271,16 @@ func init() {
 						cm.artifactPanel.OnArtifactSelected(opt)
 					}
 				},
+				OnActionClicked: func() { cm.artifactPanel.OnActivateClicked() },
+				OnCancelClicked: func() { cm.artifactPanel.OnCancelClicked() },
 			})
-			cachedList := widgets.NewCachedListWrapper(artifactList)
-			result.Container.AddChild(artifactList)
-			result.Custom["artifactList"] = cachedList
 
-			// Detail text area — use raw TextArea in container for proper rendering,
-			// wrap it for the controller's SetText convenience.
-			detailWidth := panelWidth - 20
-			detailHeight := int(float64(layout.ScreenHeight) * specs.CombatArtifactDetailHeight)
-			rawDetailArea := builders.CreateTextAreaWithConfig(builders.TextAreaConfig{
-				MinWidth:  detailWidth,
-				MinHeight: detailHeight,
-				FontColor: color.White,
-			})
-			rawDetailArea.SetText("Select an artifact to view details")
-			result.Container.AddChild(rawDetailArea)
-			result.Custom["detailArea"] = widgets.NewCachedTextAreaWrapper(rawDetailArea)
+			result.Container = panel.Container
+			result.Custom["artifactList"] = panel.List
+			result.Custom["detailArea"] = panel.Detail
+			result.Custom["activateButton"] = panel.ActionButton
 
-			// Activate button
-			activateButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Activate",
-				OnClick: func() {
-					cm.artifactPanel.OnActivateClicked()
-				},
-			})
-			activateButton.GetWidget().Disabled = true
-			result.Container.AddChild(activateButton)
-			result.Custom["activateButton"] = activateButton
-
-			// Cancel button
-			cancelButton := builders.CreateButtonWithConfig(builders.ButtonConfig{
-				Text: "Cancel (ESC)",
-				OnClick: func() {
-					cm.artifactPanel.OnCancelClicked()
-				},
-			})
-			result.Container.AddChild(cancelButton)
-
-			// Hidden by default
-			result.Container.GetWidget().Visibility = widget.Visibility_Hide
-
-			// Register with sub-menu controller
 			cm.subMenus.Register("artifact", result.Container)
-
 			return nil
 		},
 	})

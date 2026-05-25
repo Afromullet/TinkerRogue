@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"game_main/core/config"
 	"game_main/tactical/squads/unitdefs"
+	"log"
 	"os"
 )
 
@@ -122,13 +123,13 @@ type perkDataFile struct {
 func LoadPerkDefinitions() {
 	data, err := os.ReadFile(config.AssetPath(PerkDataPath))
 	if err != nil {
-		fmt.Printf("WARNING: Failed to read perk data: %v\n", err)
+		log.Printf("WARNING: Failed to read perk data: %v", err)
 		return
 	}
 
 	var perkFile perkDataFile
 	if err := json.Unmarshal(data, &perkFile); err != nil {
-		fmt.Printf("WARNING: Failed to parse perk data: %v\n", err)
+		log.Printf("WARNING: Failed to parse perk data: %v", err)
 		return
 	}
 
@@ -138,14 +139,14 @@ func LoadPerkDefinitions() {
 
 		// Check for duplicate IDs
 		if _, exists := PerkRegistry[perk.ID]; exists {
-			fmt.Printf("WARNING: Duplicate perk ID %q, skipping\n", perk.ID)
+			log.Printf("WARNING: Duplicate perk ID %q, skipping", perk.ID)
 			continue
 		}
 
 		// Validate roles
 		for _, role := range perk.Roles {
 			if _, err := unitdefs.GetRole(role); err != nil {
-				fmt.Printf("WARNING: Perk %q has invalid role %q: %v\n", perk.ID, role, err)
+				log.Printf("WARNING: Perk %q has invalid role %q: %v", perk.ID, role, err)
 			}
 		}
 
@@ -157,7 +158,7 @@ func LoadPerkDefinitions() {
 		for _, exID := range perk.ExclusiveWith {
 			other := PerkRegistry[exID]
 			if other == nil {
-				fmt.Printf("WARNING: Perk %q has exclusiveWith %q which doesn't exist\n", perk.ID, exID)
+				log.Printf("WARNING: Perk %q has exclusiveWith %q which doesn't exist", perk.ID, exID)
 				continue
 			}
 			found := false
@@ -168,12 +169,12 @@ func LoadPerkDefinitions() {
 				}
 			}
 			if !found {
-				fmt.Printf("WARNING: Perk %q is exclusive with %q but not vice versa\n", perk.ID, exID)
+				log.Printf("WARNING: Perk %q is exclusive with %q but not vice versa", perk.ID, exID)
 			}
 		}
 	}
 
-	fmt.Printf("Loaded %d perk definitions\n", len(PerkRegistry))
+	log.Printf("Loaded %d perk definitions", len(PerkRegistry))
 }
 
 // ValidateHookCoverage checks that JSON definitions and behavior registrations

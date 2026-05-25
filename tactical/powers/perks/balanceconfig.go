@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/config"
+	"log"
 	"os"
 )
 
@@ -114,24 +115,24 @@ const perkBalancePath = "gamedata/perkbalanceconfig.json"
 func LoadPerkBalanceConfig() {
 	data, err := os.ReadFile(config.AssetPath(perkBalancePath))
 	if err != nil {
-		fmt.Printf("WARNING: Failed to read perk balance config: %v\n", err)
+		log.Printf("WARNING: Failed to read perk balance config: %v", err)
 		return
 	}
 
 	if err := json.Unmarshal(data, &PerkBalance); err != nil {
-		fmt.Printf("WARNING: Failed to parse perk balance config: %v\n", err)
+		log.Printf("WARNING: Failed to parse perk balance config: %v", err)
 		return
 	}
 
 	if errs := validatePerkBalance(&PerkBalance); len(errs) > 0 {
 		for _, e := range errs {
-			fmt.Printf("WARNING: perk balance config: %v\n", e)
+			log.Printf("WARNING: perk balance config: %v", e)
 		}
 		if config.DEBUG_MODE {
 			panic("perk balance config invalid — fix gamedata/perkbalanceconfig.json before running")
 		}
 	}
-	fmt.Println("Perk balance config loaded")
+	log.Println("Perk balance config loaded")
 }
 
 func validatePerkBalance(cfg *PerkBalanceConfig) []error {

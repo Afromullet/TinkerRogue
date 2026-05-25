@@ -17,6 +17,11 @@ import (
 // and every perk hook needs. It is constructed once per dispatch and passed
 // by pointer so helper mutations (logging, cache reads) are visible to all
 // hooks in the chain.
+//
+// Design note: spells do not flow through this context's hook chain — they
+// operate in a separate mana-gated layer. See ExecuteSpellCast in
+// tactical/powers/spells/system.go for the rationale. If you find yourself
+// adding an OnSpellCast hook here, read that comment first.
 type PowerContext struct {
 	Manager     *common.EntityManager
 	Cache       *combatstate.CombatQueryCache

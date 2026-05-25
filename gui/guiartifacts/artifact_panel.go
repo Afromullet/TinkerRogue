@@ -17,27 +17,32 @@ type ArtifactPanelDeps struct {
 	CloseSubmenu func() // injected from CombatMode's subMenus.CloseAll()
 }
 
-// ArtifactPanelController manages artifact selection panel state and interactions.
+// ArtifactPanelController manages artifact selection panel state and
+// interactions. Common widget refs and selection plumbing live on the
+// embedded SelectionPanelCore; artifact-specific behavior
+// (charge-availability detail formatting, InArtifactMode mode flag) lives
+// here.
 type ArtifactPanelController struct {
-	deps             *ArtifactPanelDeps
-	artifactList     *widgets.CachedListWrapper
-	detailArea       *widgets.CachedTextAreaWrapper
-	activateButton   *widget.Button
-	selectedArtifact *ArtifactOption
+	widgets.SelectionPanelCore
+	deps *ArtifactPanelDeps
 }
 
 // NewArtifactPanelController creates a new artifact panel controller.
 func NewArtifactPanelController(deps *ArtifactPanelDeps) *ArtifactPanelController {
 	return &ArtifactPanelController{
 		deps: deps,
+		SelectionPanelCore: widgets.SelectionPanelCore{
+			ShowSubmenu:  deps.ShowSubmenu,
+			CloseSubmenu: deps.CloseSubmenu,
+		},
 	}
 }
 
-// SetWidgets sets widget references after panel construction.
+// SetWidgets stores widget references after panel construction.
 func (ap *ArtifactPanelController) SetWidgets(list *widgets.CachedListWrapper, detail *widgets.CachedTextAreaWrapper, activate *widget.Button) {
-	ap.artifactList = list
-	ap.detailArea = detail
-	ap.activateButton = activate
+	ap.List = list
+	ap.Detail = detail
+	ap.ActionButton = activate
 }
 
 // Handler returns the underlying ArtifactActivationHandler.
@@ -45,16 +50,24 @@ func (ap *ArtifactPanelController) Handler() *ArtifactActivationHandler {
 	return ap.deps.Handler
 }
 
+// selectedArtifact returns the currently selected artifact option, or nil.
+func (ap *ArtifactPanelController) selectedArtifact() *ArtifactOption {
+	if ap.Selected == nil {
+		return nil
+	}
+	return ap.Selected.(*ArtifactOption)
+}
+
 // OnArtifactSelected is the list click callback - updates detail area and activate button.
 func (ap *ArtifactPanelController) OnArtifactSelected(option *ArtifactOption) {
-	ap.selectedArtifact = option
+	ap.Selected = option
 	ap.UpdateDetailPanel()
 }
 
 // UpdateDetailPanel shows artifact details and checks charge availability.
 func (ap *ArtifactPanelController) UpdateDetailPanel() {
-	option := ap.selectedArtifact
-	if option == nil || ap.detailArea == nil {
+	option := ap.selectedArtifact()
+	if option == nil {
 		return
 	}
 
@@ -72,34 +85,21 @@ func (ap *ArtifactPanelController) UpdateDetailPanel() {
 		}
 	}
 
-	ap.detailArea.SetText(detail)
-
-	if ap.activateButton != nil {
-		ap.activateButton.GetWidget().Disabled = !option.Available
-	}
+	ap.SetDetail(detail, option.Available)
 }
 
 // Refresh populates the list from the handler and clears selection.
 func (ap *ArtifactPanelController) Refresh() {
 	allArtifacts := ap.deps.Handler.GetAvailableArtifacts()
 
-	if ap.artifactList != nil {
-		entries := make([]interface{}, len(allArtifacts))
-		for i := range allArtifacts {
-			opt := allArtifacts[i] // copy to avoid closure issue
-			entries[i] = &opt
-		}
-		ap.artifactList.GetList().SetEntries(entries)
-		ap.artifactList.MarkDirty()
+	entries := make([]interface{}, len(allArtifacts))
+	for i := range allArtifacts {
+		opt := allArtifacts[i] // copy to avoid closure issue
+		entries[i] = &opt
 	}
+	ap.SetEntries(entries)
 
-	ap.selectedArtifact = nil
-	if ap.detailArea != nil {
-		ap.detailArea.SetText("Select an artifact to view details")
-	}
-	if ap.activateButton != nil {
-		ap.activateButton.GetWidget().Disabled = true
-	}
+	ap.ClearSelection("Select an artifact to view details")
 }
 
 // Show validates preconditions, refreshes data, and shows the panel.
@@ -111,21 +111,16 @@ func (ap *ArtifactPanelController) Show() {
 
 	ap.deps.BattleState.InArtifactMode = true
 	ap.Refresh()
-	ap.deps.ShowSubmenu()
-}
-
-// Hide hides the panel and clears selection.
-func (ap *ArtifactPanelController) Hide() {
-	ap.selectedArtifact = nil
-	ap.deps.CloseSubmenu()
+	ap.ShowSubmenu()
 }
 
 // OnActivateClicked selects the artifact for targeting (or activates immediately) and hides the panel.
 func (ap *ArtifactPanelController) OnActivateClicked() {
-	if ap.selectedArtifact == nil {
+	option := ap.selectedArtifact()
+	if option == nil {
 		return
 	}
-	ap.deps.Handler.SelectArtifact(ap.selectedArtifact.BehaviorKey)
+	ap.deps.Handler.SelectArtifact(option.BehaviorKey)
 	ap.Hide()
 }
 

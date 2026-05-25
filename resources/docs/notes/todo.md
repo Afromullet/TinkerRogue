@@ -54,6 +54,7 @@
 # Cleanup
 
 
+- Check for empty interfaces such as entries := make([]interface{}, len(allSpells))
 
 - Make sure entities are cleaned up upon destruction. Need to determine what entities have a "lifecycle" by determining what addcomponent is called on. 
 
