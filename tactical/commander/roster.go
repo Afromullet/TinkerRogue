@@ -44,3 +44,14 @@ func (r *CommanderRosterData) GetCommanderCount() (int, int) {
 func GetPlayerCommanderRoster(playerID ecs.EntityID, manager *common.EntityManager) *CommanderRosterData {
 	return common.GetComponentTypeByID[*CommanderRosterData](manager, playerID, CommanderRosterComponent)
 }
+
+// AddCommanderToPlayerRoster appends a commander ID to the given player's roster.
+// Mirrors the package-function shape of GetAllCommanders so callers do not need to
+// resolve the roster component themselves.
+func AddCommanderToPlayerRoster(playerID, commanderID ecs.EntityID, manager *common.EntityManager) error {
+	roster := GetPlayerCommanderRoster(playerID, manager)
+	if roster == nil {
+		return fmt.Errorf("player %d has no commander roster", playerID)
+	}
+	return roster.AddCommander(commanderID)
+}

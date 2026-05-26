@@ -1,12 +1,15 @@
 package commander
 
 import (
-	"fmt"
-	"game_main/campaign/overworld/tick"
 	"game_main/core/common"
 
 	"github.com/bytearena/ecs"
 )
+
+// cachedOverworldTurnStateID memoizes the singleton entity ID after first lookup
+// so GetOverworldTurnState becomes an O(1) component fetch instead of an O(N) tag query.
+// Refreshed lazily if the cached ID becomes stale (e.g., after save/load).
+var cachedOverworldTurnStateID ecs.EntityID
 
 // CreateOverworldTurnState creates the singleton overworld turn state entity
 func CreateOverworldTurnState(manager *common.EntityManager) ecs.EntityID {
@@ -15,15 +18,23 @@ func CreateOverworldTurnState(manager *common.EntityManager) ecs.EntityID {
 		CurrentTurn: 1,
 		TurnActive:  true,
 	})
-	return entity.GetID()
+	cachedOverworldTurnStateID = entity.GetID()
+	return cachedOverworldTurnStateID
 }
 
 // GetOverworldTurnState retrieves the singleton turn state
 func GetOverworldTurnState(manager *common.EntityManager) *OverworldTurnStateData {
+	if cachedOverworldTurnStateID != 0 {
+		if data := common.GetComponentTypeByID[*OverworldTurnStateData](manager, cachedOverworldTurnStateID, OverworldTurnStateComponent); data != nil {
+			return data
+		}
+		// Cached ID is stale (e.g., after save/load). Fall through to refresh.
+	}
 	results := manager.World.Query(OverworldTurnTag)
 	if len(results) == 0 {
 		return nil
 	}
+	cachedOverworldTurnStateID = results[0].Entity.GetID()
 	return common.GetComponentType[*OverworldTurnStateData](results[0].Entity, OverworldTurnStateComponent)
 }
 
@@ -51,33 +62,11 @@ func StartNewTurn(manager *common.EntityManager, playerID ecs.EntityID) {
 			continue
 		}
 		attr := common.GetComponentType[*common.Attributes](cmdEntity, common.AttributeComponent)
-		if attr != nil {
-			actionState.MovementRemaining = attr.GetMovementSpeed()
-		} else {
-			actionState.MovementRemaining = 3 // Default
+		if attr == nil {
+			continue // Invariant: every commander has AttributeComponent. Skip if violated.
 		}
+		actionState.MovementRemaining = attr.GetMovementSpeed()
 	}
-}
-
-// EndTurn advances the overworld tick and starts a new turn.
-// Returns the tick result for raid/event handling.
-func EndTurn(manager *common.EntityManager, playerData *common.PlayerData) (tick.TickResult, error) {
-	// Advance the overworld simulation
-	tickResult, err := tick.AdvanceTick(manager, playerData)
-	if err != nil {
-		return tickResult, fmt.Errorf("failed to advance tick: %w", err)
-	}
-
-	// Increment turn counter
-	turnState := GetOverworldTurnState(manager)
-	if turnState != nil {
-		turnState.CurrentTurn++
-	}
-
-	// Reset all commanders for next turn
-	StartNewTurn(manager, playerData.PlayerEntityID)
-
-	return tickResult, nil
 }
 
 // GetCommanderActionState returns the action state for a specific commander (O(1) lookup).

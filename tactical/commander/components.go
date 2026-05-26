@@ -21,14 +21,12 @@ var CommanderView *ecs.View
 
 // CommanderData - core data on each commander entity
 type CommanderData struct {
-	CommanderID ecs.EntityID
-	Name        string
-	IsActive    bool
+	Name     string
+	IsActive bool
 }
 
 // CommanderActionStateData - per-commander turn tracking (modeled after combat.ActionStateData)
 type CommanderActionStateData struct {
-	CommanderID       ecs.EntityID
 	HasMoved          bool
 	HasActed          bool
 	MovementRemaining int

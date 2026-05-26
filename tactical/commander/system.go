@@ -12,6 +12,8 @@ import (
 
 // CreateCommander creates a new commander entity with all required components.
 // Returns the new commander's entity ID.
+// Attributes.MovementSpeed is the canonical source of truth for movement;
+// MovementRemaining is seeded from it here and reset to it each turn by StartNewTurn.
 func CreateCommander(
 	manager *common.EntityManager,
 	name string,
@@ -21,32 +23,29 @@ func CreateCommander(
 	commanderImage *ebiten.Image,
 ) ecs.EntityID {
 	entity := manager.World.NewEntity()
-	commanderID := entity.GetID()
+
+	attrs := &common.Attributes{MovementSpeed: movementSpeed}
 
 	entity.
 		AddComponent(CommanderComponent, &CommanderData{
-			CommanderID: commanderID,
-			Name:        name,
-			IsActive:    true,
+			Name:     name,
+			IsActive: true,
 		}).
 		AddComponent(CommanderActionStateComponent, &CommanderActionStateData{
-			CommanderID:       commanderID,
 			HasMoved:          false,
 			HasActed:          false,
-			MovementRemaining: movementSpeed,
+			MovementRemaining: attrs.GetMovementSpeed(),
 		}).
 		AddComponent(common.RenderableComponent, &common.Renderable{
 			Image:   commanderImage,
 			Visible: true,
 		}).
-		AddComponent(common.AttributeComponent, &common.Attributes{
-			MovementSpeed: movementSpeed,
-		}).
+		AddComponent(common.AttributeComponent, attrs).
 		AddComponent(roster.SquadRosterComponent, roster.NewSquadRoster(maxSquads)).
 		AddComponent(progression.ProgressionComponent, &progression.ProgressionData{})
 
 	// Atomically add position component and register with position system
 	manager.RegisterEntityPosition(entity, startPos)
 
-	return commanderID
+	return entity.GetID()
 }

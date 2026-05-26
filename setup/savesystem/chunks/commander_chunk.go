@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/core/coords"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 func init() {
@@ -106,6 +109,17 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 		return fmt.Errorf("failed to unmarshal commander data: %w", err)
 	}
 
+	// Mirror CreateCommander: attach Renderable so commanders are visible after load.
+	// The image asset is shared across all commanders, so load it once.
+	var img *ebiten.Image
+	if len(chunkData.Commanders) > 0 {
+		loaded, _, imgErr := ebitenutil.NewImageFromFile(config.PlayerImagePath)
+		if imgErr != nil {
+			return fmt.Errorf("failed to load commander image: %w", imgErr)
+		}
+		img = loaded
+	}
+
 	for _, sc := range chunkData.Commanders {
 		pos := savedToPosition(sc.Position)
 		attr := savedToAttributes(sc.Attrs)
@@ -115,18 +129,20 @@ func (c *CommanderChunk) Load(em *common.EntityManager, data json.RawMessage, id
 
 		entity.
 			AddComponent(commander.CommanderComponent, &commander.CommanderData{
-				CommanderID: newID,
-				Name:        sc.Name,
-				IsActive:    sc.IsActive,
+				Name:     sc.Name,
+				IsActive: sc.IsActive,
 			}).
-			AddComponent(common.AttributeComponent, &attr)
+			AddComponent(common.AttributeComponent, &attr).
+			AddComponent(common.RenderableComponent, &common.Renderable{
+				Image:   img,
+				Visible: true,
+			})
 
 		// Atomically add position component and register with position system
 		em.RegisterEntityPosition(entity, pos)
 
 		if sc.ActionState != nil {
 			entity.AddComponent(commander.CommanderActionStateComponent, &commander.CommanderActionStateData{
-				CommanderID:       newID,
 				HasMoved:          sc.ActionState.HasMoved,
 				HasActed:          sc.ActionState.HasActed,
 				MovementRemaining: sc.ActionState.MovementRemaining,

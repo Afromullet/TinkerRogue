@@ -88,7 +88,8 @@ func (cms *CommanderMovementSystem) CanMoveTo(commanderID ecs.EntityID, targetPo
 }
 
 // GetValidMovementTiles returns all tiles a commander can move to.
-// Uses flood-fill within Chebyshev distance (same algorithm as combatmovementsystem.go).
+// Uses the shared common.GridMovement flood-fill, delegating the commander-specific
+// walkability + occupancy rule via CanEnter.
 func (cms *CommanderMovementSystem) GetValidMovementTiles(commanderID ecs.EntityID) []coords.LogicalPosition {
 	commanderEntity := cms.manager.FindEntityByID(commanderID)
 	if commanderEntity == nil {
@@ -105,28 +106,10 @@ func (cms *CommanderMovementSystem) GetValidMovementTiles(commanderID ecs.Entity
 		return nil
 	}
 
-	movementRange := actionState.MovementRemaining
-	if movementRange <= 0 {
-		return nil
+	grid := common.GridMovement{
+		CanEnter: func(p coords.LogicalPosition) bool {
+			return cms.CanMoveTo(commanderID, p)
+		},
 	}
-
-	validTiles := []coords.LogicalPosition{}
-
-	for x := currentPos.X - movementRange; x <= currentPos.X+movementRange; x++ {
-		for y := currentPos.Y - movementRange; y <= currentPos.Y+movementRange; y++ {
-			testPos := coords.LogicalPosition{X: x, Y: y}
-
-			// Check Chebyshev distance
-			distance := currentPos.ChebyshevDistance(&testPos)
-			if distance > movementRange || distance == 0 {
-				continue
-			}
-
-			if cms.CanMoveTo(commanderID, testPos) {
-				validTiles = append(validTiles, testPos)
-			}
-		}
-	}
-
-	return validTiles
+	return grid.ValidTilesInRange(*currentPos, actionState.MovementRemaining)
 }

@@ -6,6 +6,7 @@ import (
 	"game_main/campaign/overworld/core"
 	"game_main/campaign/overworld/garrison"
 	"game_main/campaign/overworld/ids"
+	"game_main/campaign/overworld/tick"
 	"game_main/core/common"
 	"game_main/core/config"
 	"game_main/core/coords"
@@ -30,7 +31,7 @@ func NewOverworldActionHandler(deps *OverworldModeDeps) *OverworldActionHandler 
 
 // EndTurn ends the overworld turn: advances tick simulation and resets all commanders.
 func (ah *OverworldActionHandler) EndTurn() {
-	tickResult, err := commander.EndTurn(ah.deps.Manager, ah.deps.PlayerData)
+	tickResult, err := tick.EndOverworldTurn(ah.deps.Manager, ah.deps.PlayerData)
 	if err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return

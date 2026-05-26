@@ -20,23 +20,9 @@ func GetCommanderAt(pos coords.LogicalPosition, manager *common.EntityManager) e
 	return 0
 }
 
-// GetCommanderEntity finds commander entity by ID. Returns nil if not found or not a commander.
-func GetCommanderEntity(commanderID ecs.EntityID, manager *common.EntityManager) *ecs.Entity {
-	entity := manager.FindEntityByID(commanderID)
-	if entity != nil && entity.HasComponent(CommanderComponent) {
-		return entity
-	}
-	return nil
-}
-
 // GetCommanderData retrieves CommanderData for a commander entity
 func GetCommanderData(commanderID ecs.EntityID, manager *common.EntityManager) *CommanderData {
 	return common.GetComponentTypeByID[*CommanderData](manager, commanderID, CommanderComponent)
-}
-
-// IsCommander checks if an entity is a commander
-func IsCommander(entityID ecs.EntityID, manager *common.EntityManager) bool {
-	return manager.HasComponent(entityID, CommanderComponent)
 }
 
 // GetAllCommanders returns all commander IDs from the player's roster

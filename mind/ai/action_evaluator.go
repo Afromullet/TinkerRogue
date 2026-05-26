@@ -159,31 +159,16 @@ func (ae *ActionEvaluator) evaluateMovement() []ScoredAction {
 // getValidMovementTiles returns all tiles the squad can actually move to.
 // Uses remaining movement (not base speed) and respects Zone of Control.
 func (ae *ActionEvaluator) getValidMovementTiles() []coords.LogicalPosition {
-	var tiles []coords.LogicalPosition
-
 	// Use remaining movement, not base speed (fixes bug where AI ignored partial movement/artifacts)
-	moveRange := ae.ctx.ActionState.MovementRemaining
-
 	// Zone of Control: cap movement to 1 if adjacent to an enemy squad
-	moveRange = combatstate.GetEffectiveMovementRange(ae.ctx.SquadID, moveRange, ae.ctx.Manager)
+	moveRange := combatstate.GetEffectiveMovementRange(ae.ctx.SquadID, ae.ctx.ActionState.MovementRemaining, ae.ctx.Manager)
 
-	for dx := -moveRange; dx <= moveRange; dx++ {
-		for dy := -moveRange; dy <= moveRange; dy++ {
-			pos := coords.LogicalPosition{
-				X: ae.ctx.CurrentPos.X + dx,
-				Y: ae.ctx.CurrentPos.Y + dy,
-			}
-
-			distance := ae.ctx.CurrentPos.ChebyshevDistance(&pos)
-			if distance > 0 && distance <= moveRange {
-				if ae.ctx.MovementSystem.CanMoveTo(ae.ctx.SquadID, pos) {
-					tiles = append(tiles, pos)
-				}
-			}
-		}
+	grid := common.GridMovement{
+		CanEnter: func(p coords.LogicalPosition) bool {
+			return ae.ctx.MovementSystem.CanMoveTo(ae.ctx.SquadID, p)
+		},
 	}
-
-	return tiles
+	return grid.ValidTilesInRange(ae.ctx.CurrentPos, moveRange)
 }
 
 // scoreMovementPosition scores a movement position based on role and threat

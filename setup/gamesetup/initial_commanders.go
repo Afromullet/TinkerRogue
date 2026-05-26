@@ -7,6 +7,7 @@ import (
 	"game_main/core/coords"
 	"game_main/tactical/commander"
 	"game_main/templates"
+	"log"
 
 	"github.com/bytearena/ecs"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -18,8 +19,7 @@ import (
 // must have offset (0,0); its ID is returned for callers that need to identify
 // the player's primary commander.
 func CreateInitialCommanders(em *common.EntityManager, pd *common.PlayerData, startPos coords.LogicalPosition) (ecs.EntityID, error) {
-	roster := commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em)
-	if roster == nil {
+	if commander.GetPlayerCommanderRoster(pd.PlayerEntityID, em) == nil {
 		return 0, fmt.Errorf("player has no commander roster component")
 	}
 
@@ -51,7 +51,7 @@ func CreateInitialCommanders(em *common.EntityManager, pd *common.PlayerData, st
 		// squads are created; InitSquadSpellsFromLeader filters against this list.
 		commander.SeedStarters(cmdID, em)
 
-		if err := roster.AddCommander(cmdID); err != nil {
+		if err := commander.AddCommanderToPlayerRoster(pd.PlayerEntityID, cmdID, em); err != nil {
 			return 0, fmt.Errorf("failed to add commander %s to roster: %w", c.Name, err)
 		}
 
@@ -59,7 +59,7 @@ func CreateInitialCommanders(em *common.EntityManager, pd *common.PlayerData, st
 			return 0, fmt.Errorf("failed to create squads for commander %s: %w", c.Name, err)
 		}
 
-		fmt.Printf("Created commander '%s' (ID: %d) at (%d,%d)\n", c.Name, cmdID, pos.X, pos.Y)
+		log.Printf("Created commander '%s' (ID: %d) at (%d,%d)", c.Name, cmdID, pos.X, pos.Y)
 
 		if c.IsPrimary {
 			primaryID = cmdID

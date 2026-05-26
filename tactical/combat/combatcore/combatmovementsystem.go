@@ -122,34 +122,17 @@ func (ms *CombatMovementSystem) GetValidMovementTiles(squadID ecs.EntityID) []co
 	}
 
 	actionState := common.GetComponentType[*combatstate.ActionStateData](actionStateEntity, combatstate.ActionStateComponent)
-	movementRange := actionState.MovementRemaining
-
 	// Zone of Control: cap movement to 1 if adjacent to an enemy squad
-	movementRange = combatstate.GetEffectiveMovementRange(squadID, movementRange, ms.manager)
+	movementRange := combatstate.GetEffectiveMovementRange(squadID, actionState.MovementRemaining, ms.manager)
 
-	if movementRange <= 0 {
+	grid := common.GridMovement{
+		CanEnter: func(p coords.LogicalPosition) bool {
+			return ms.CanMoveTo(squadID, p)
+		},
+	}
+	tiles := grid.ValidTilesInRange(currentPos, movementRange)
+	if tiles == nil {
 		return []coords.LogicalPosition{}
 	}
-
-	// Simple flood-fill for valid tiles movement with Chebyshev distance
-	validTiles := []coords.LogicalPosition{}
-
-	for x := currentPos.X - movementRange; x <= currentPos.X+movementRange; x++ {
-		for y := currentPos.Y - movementRange; y <= currentPos.Y+movementRange; y++ {
-			testPos := coords.LogicalPosition{X: x, Y: y}
-
-			// Check if within Chebyshev distance
-			distance := currentPos.ChebyshevDistance(&testPos)
-			if distance > movementRange {
-				continue
-			}
-
-			// Check if can move to this tile
-			if ms.CanMoveTo(squadID, testPos) {
-				validTiles = append(validTiles, testPos)
-			}
-		}
-	}
-
-	return validTiles
+	return tiles
 }
