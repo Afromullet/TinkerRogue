@@ -6,10 +6,10 @@ import (
 	"game_main/tactical/powers/artifacts"
 	"game_main/templates"
 
+	"game_main/core/coords"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/roster"
 	_ "game_main/tactical/squads/squadcommands" // Blank import to trigger init() for command queue components
-	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"log"

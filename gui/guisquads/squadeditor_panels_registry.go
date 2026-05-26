@@ -19,8 +19,8 @@ const (
 	SquadEditorPanelUnitList      framework.PanelType = "squadeditor_unit_list"
 	SquadEditorPanelRoster        framework.PanelType = "squadeditor_roster"
 	SquadEditorPanelPerks         framework.PanelType = "squadeditor_perks"
-	SquadEditorPanelSquadInfoMenu    framework.PanelType = "squadeditor_squad_info_menu"
-	SquadEditorPanelPatternsMenu    framework.PanelType = "squadeditor_patterns_menu"
+	SquadEditorPanelSquadInfoMenu framework.PanelType = "squadeditor_squad_info_menu"
+	SquadEditorPanelPatternsMenu  framework.PanelType = "squadeditor_patterns_menu"
 )
 
 // createSquadEditorSubMenu creates a vertical sub-menu panel positioned above the action bar.

@@ -86,7 +86,17 @@ func (d *ArtifactDispatcher) DispatchOnAttackComplete(attackerID, defenderID ecs
 	}
 }
 
-// DispatchOnTurnEnd fires OnTurnEnd for equipped behaviors and refreshes round charges.
+// DispatchOnTurnEnd fires OnTurnEnd for all registered behaviors and refreshes
+// round charges.
+//
+// Unlike DispatchPostReset, this iterates AllBehaviors() rather than scoping
+// to equipped+pending. OnTurnEnd's signature (round int) carries no faction
+// or squad context, so the equipped-behavior set cannot be derived cheaply
+// without a second pass over the world. Today all behaviors inherit the
+// BaseBehavior no-op OnTurnEnd, so the cost is a single map iteration per
+// turn. If a future behavior overrides OnTurnEnd with non-trivial work,
+// revisit by either threading squad context through the pipeline or
+// precomputing the equipped set at turn end.
 func (d *ArtifactDispatcher) DispatchOnTurnEnd(round int) {
 	d.chargeTracker.RefreshRoundCharges()
 	ctx := d.makeBehaviorContext(round)

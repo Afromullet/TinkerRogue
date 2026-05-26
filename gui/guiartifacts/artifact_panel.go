@@ -71,7 +71,7 @@ func (ap *ArtifactPanelController) UpdateDetailPanel() {
 		return
 	}
 
-	targetLabel := GetTargetType(option.BehaviorKey).String()
+	targetLabel := artifacts.GetTargetType(option.BehaviorKey).String()
 
 	detail := fmt.Sprintf("=== %s ===\nTarget: %s\n\n%s",
 		option.Name, targetLabel, option.Description)

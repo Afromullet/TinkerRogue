@@ -46,6 +46,7 @@ type savedArtifactInstance struct {
 type savedEquipment struct {
 	SquadEntityID     ecs.EntityID `json:"squadEntityID"`
 	EquippedArtifacts []string     `json:"equippedArtifacts"`
+	MaxSlots          int          `json:"maxSlots"`
 }
 
 // --- Save ---
@@ -84,6 +85,7 @@ func (c *GearChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 			se := savedEquipment{
 				SquadEntityID:     entity.GetID(),
 				EquippedArtifacts: make([]string, len(equipData.EquippedArtifacts)),
+				MaxSlots:          equipData.MaxSlots,
 			}
 			copy(se.EquippedArtifacts, equipData.EquippedArtifacts)
 			chunkData.Equipment = append(chunkData.Equipment, se)
@@ -154,6 +156,7 @@ func (c *GearChunk) RemapIDs(em *common.EntityManager, idMap *savesystem.EntityI
 		copy(equippedArtifacts, se.EquippedArtifacts)
 		squadEntity.AddComponent(artifacts.EquipmentComponent, &artifacts.EquipmentData{
 			EquippedArtifacts: equippedArtifacts,
+			MaxSlots:          se.MaxSlots,
 		})
 	}
 

@@ -8,7 +8,16 @@
 //     target faction's next reset (DeadlockShackles, SaboteursHourglass).
 //
 // The deferred pattern is factored into requireCharge + activateWithPending +
-// applyPendingEffects below.
+// activateBroadcastPending + applyPendingEffects below.
+//
+// Charge ordering: behaviors that consume a charge MUST do so AFTER all
+// validation has passed and BEFORE mutating any combat state. The check
+// (requireCharge) happens first as a cheap precondition; the commit
+// (UseCharge) happens last in the validation sequence, just before mutation.
+// A panic between mutation and charge would leave the player with mutated
+// state and no charge consumed; a precondition failing after the charge is
+// consumed would leave the inverse — a spent charge with no observable
+// effect — which is less destructive and easier to detect.
 package artifacts
 
 import (
@@ -42,26 +51,37 @@ func requireCharge(ctx *BehaviorContext, behaviorKey string) error {
 	return nil
 }
 
-// activateWithPending is the common pattern for behaviors that queue a pending
-// effect and consume a charge on activation (Deadlock, Saboteur).
+// activateWithPending is the common pattern for behaviors that queue a
+// targeted pending effect and consume a charge on activation (Deadlock).
 func activateWithPending(ctx *BehaviorContext, behaviorKey string, chargeType ChargeType, targetSquadID ecs.EntityID) error {
 	if err := requireCharge(ctx, behaviorKey); err != nil {
 		return err
 	}
-	ctx.ChargeTracker.Pending.Add(behaviorKey, targetSquadID)
 	ctx.ChargeTracker.UseCharge(behaviorKey, chargeType)
+	ctx.ChargeTracker.Pending.Add(behaviorKey, targetSquadID)
+	return nil
+}
+
+// activateBroadcastPending is the common pattern for behaviors whose pending
+// effect should fire against every squad in the consuming faction (Saboteur).
+func activateBroadcastPending(ctx *BehaviorContext, behaviorKey string, chargeType ChargeType) error {
+	if err := requireCharge(ctx, behaviorKey); err != nil {
+		return err
+	}
+	ctx.ChargeTracker.UseCharge(behaviorKey, chargeType)
+	ctx.ChargeTracker.Pending.AddBroadcast(behaviorKey)
 	return nil
 }
 
 // applyPendingEffects consumes queued effects for behaviorKey and invokes
-// applyFn for each affected squad in squadIDs. When broadcast is true, every
-// squad is affected (AOE). When false, only squads whose IDs appear as a
-// queued TargetSquadID are affected.
+// applyFn for each affected squad in squadIDs. Mode (broadcast vs targeted)
+// is read from the pending effects themselves — each behavior is consistent
+// across all its queued effects, so the first entry's BroadcastEffect flag
+// determines how the rest are applied.
 func applyPendingEffects(
 	ctx *BehaviorContext,
 	behaviorKey string,
 	squadIDs []ecs.EntityID,
-	broadcast bool,
 	applyFn func(actionState *combatstate.ActionStateData, squadID ecs.EntityID),
 ) {
 	if ctx.ChargeTracker == nil {
@@ -72,6 +92,7 @@ func applyPendingEffects(
 		return
 	}
 
+	broadcast := pendingEffects[0].BroadcastEffect
 	var targetSet map[ecs.EntityID]bool
 	if !broadcast {
 		targetSet = make(map[ecs.EntityID]bool, len(pendingEffects))
@@ -120,27 +141,28 @@ func (EngagementChainsBehavior) OnAttackComplete(ctx *BehaviorContext, attackerI
 
 type SaboteursHourglassBehavior struct{ BaseBehavior }
 
-func (SaboteursHourglassBehavior) BehaviorKey() string     { return BehaviorSaboteurWsHourglass }
+func (SaboteursHourglassBehavior) BehaviorKey() string     { return BehaviorSaboteursHourglass }
 func (SaboteursHourglassBehavior) IsPlayerActivated() bool { return true }
 
-// OnPostReset applies -2 movement to ALL enemy squads (area-of-effect).
-// Unlike targeted behaviors, this intentionally ignores pending effect targets.
+// OnPostReset applies -MovementReduction to every enemy squad (AOE).
+// Queued by Activate as a broadcast pending effect, so applyPendingEffects
+// fires for all squads in squadIDs regardless of TargetSquadID.
 func (SaboteursHourglassBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingEffects(ctx, BehaviorSaboteurWsHourglass, squadIDs, true,
+	applyPendingEffects(ctx, BehaviorSaboteursHourglass, squadIDs,
 		func(actionState *combatstate.ActionStateData, sid ecs.EntityID) {
 			actionState.MovementRemaining -= ArtifactBalance.SaboteursHourglass.MovementReduction
 			if actionState.MovementRemaining < 0 {
 				actionState.MovementRemaining = 0
 			}
-			ctx.Log(BehaviorSaboteurWsHourglass, sid, fmt.Sprintf("movement reduced to %d", actionState.MovementRemaining))
+			ctx.Log(BehaviorSaboteursHourglass, sid, fmt.Sprintf("movement reduced to %d", actionState.MovementRemaining))
 		})
 }
 
 func (SaboteursHourglassBehavior) Activate(ctx *BehaviorContext, _ ecs.EntityID) error {
-	if err := activateWithPending(ctx, BehaviorSaboteurWsHourglass, ChargeOncePerBattle, 0); err != nil {
+	if err := activateBroadcastPending(ctx, BehaviorSaboteursHourglass, ChargeOncePerBattle); err != nil {
 		return err
 	}
-	ctx.Log(BehaviorSaboteurWsHourglass, 0, "activated")
+	ctx.Log(BehaviorSaboteursHourglass, 0, "activated")
 	return nil
 }
 
@@ -165,8 +187,8 @@ func (TwinStrikeBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entit
 	if !actionState.HasActed {
 		return fmt.Errorf("squad %d has not attacked yet this turn", targetSquadID)
 	}
-	actionState.HasActed = false
 	ctx.ChargeTracker.UseCharge(BehaviorTwinStrike, ChargeOncePerBattle)
+	actionState.HasActed = false
 	ctx.Log(BehaviorTwinStrike, targetSquadID, "activated")
 	return nil
 }
@@ -190,7 +212,7 @@ func (DeadlockShacklesBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs
 }
 
 func (DeadlockShacklesBehavior) OnPostReset(ctx *BehaviorContext, factionID ecs.EntityID, squadIDs []ecs.EntityID) {
-	applyPendingEffects(ctx, BehaviorDeadlockShackles, squadIDs, false,
+	applyPendingEffects(ctx, BehaviorDeadlockShackles, squadIDs,
 		func(_ *combatstate.ActionStateData, sid ecs.EntityID) {
 			ctx.SetSquadLocked(sid)
 			ctx.Log(BehaviorDeadlockShackles, sid, "squad fully locked this turn")
@@ -248,14 +270,15 @@ func (ChainOfCommandBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.E
 		return fmt.Errorf("target squad %d has not acted yet", targetSquadID)
 	}
 
+	squadSpeed := squadcore.GetSquadMovementSpeedOrDefault(targetSquadID, ctx.Manager)
+	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
+
 	// Fully spend the source
 	ctx.SetSquadLocked(sourceSquadID)
 
 	// Fully reset the target
-	squadSpeed := squadcore.GetSquadMovementSpeedOrDefault(targetSquadID, ctx.Manager)
 	ctx.ResetSquadActions(targetSquadID, squadSpeed)
 
-	ctx.ChargeTracker.UseCharge(BehaviorChainOfCommand, ChargeOncePerRound)
 	ctx.Log(BehaviorChainOfCommand, sourceSquadID, fmt.Sprintf("passes full action to squad %d", targetSquadID))
 	return nil
 }
@@ -283,9 +306,9 @@ func (EchoDrumsBehavior) Activate(ctx *BehaviorContext, targetSquadID ecs.Entity
 		return fmt.Errorf("squad %d must have moved and attacked first", targetSquadID)
 	}
 	squadSpeed := squadcore.GetSquadMovementSpeedOrDefault(targetSquadID, ctx.Manager)
+	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
 	actionState.HasMoved = false
 	actionState.MovementRemaining = squadSpeed
-	ctx.ChargeTracker.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
 	ctx.Log(BehaviorEchoDrums, targetSquadID, fmt.Sprintf("gets bonus movement phase (speed %d)", squadSpeed))
 	return nil
 }

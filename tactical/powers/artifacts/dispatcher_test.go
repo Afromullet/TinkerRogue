@@ -19,7 +19,7 @@ func setupDispatcherArtifacts() {
 		ID:       "saboteurs_hourglass",
 		Name:     "Saboteur's Hourglass",
 		Tier:     "major",
-		Behavior: BehaviorSaboteurWsHourglass,
+		Behavior: BehaviorSaboteursHourglass,
 	}
 	templates.ArtifactRegistry["deadlock_shackles"] = &templates.ArtifactDefinition{
 		ID:       "deadlock_shackles",
@@ -63,7 +63,7 @@ func TestDispatchPostReset_SameBehaviorTwoSquads(t *testing.T) {
 
 	charges := NewArtifactChargeTracker()
 	// Add pending entry as if the player activated the artifact this turn.
-	charges.Pending.Add(BehaviorSaboteurWsHourglass, 0)
+	charges.Pending.AddBroadcast(BehaviorSaboteursHourglass)
 
 	dispatcher := NewArtifactDispatcher(manager, cache, charges)
 

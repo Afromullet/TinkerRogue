@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/powers/effects"
@@ -9,7 +10,6 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/templates"
 	testfx "game_main/testing"
-	"game_main/core/coords"
 	"testing"
 
 	"github.com/bytearena/ecs"
@@ -312,7 +312,7 @@ func TestApplyArtifactStatEffects_EmptySquadList(t *testing.T) {
 // FACTION QUERY TESTS
 // ========================================
 
-func TesthasSpecificArtifactInFaction(t *testing.T) {
+func TestHasSpecificArtifactInFaction(t *testing.T) {
 	manager := setupTestManager()
 	setupTestArtifacts()
 	playerID := createTestPlayer(manager)
@@ -474,20 +474,20 @@ func TestActivateSaboteursHourglass(t *testing.T) {
 	charges := NewArtifactChargeTracker()
 	ctx := NewBehaviorContext(powercore.NewPowerContext(nil, nil, 0, nil), charges)
 
-	err := ActivateArtifact(BehaviorSaboteurWsHourglass, 0, ctx)
+	err := ActivateArtifact(BehaviorSaboteursHourglass, 0, ctx)
 	if err != nil {
 		t.Fatalf("Failed to activate Saboteur's Hourglass: %v", err)
 	}
 
-	consumed := charges.Pending.Consume(BehaviorSaboteurWsHourglass)
+	consumed := charges.Pending.Consume(BehaviorSaboteursHourglass)
 	if len(consumed) != 1 {
 		t.Errorf("Expected 1 pending effect, got %d", len(consumed))
 	}
-	if charges.IsAvailable(BehaviorSaboteurWsHourglass) {
+	if charges.IsAvailable(BehaviorSaboteursHourglass) {
 		t.Error("Expected saboteurs_hourglass charge to be consumed")
 	}
 
-	err = ActivateArtifact(BehaviorSaboteurWsHourglass, 0, ctx)
+	err = ActivateArtifact(BehaviorSaboteursHourglass, 0, ctx)
 	if err == nil {
 		t.Error("Expected error on second activation")
 	}

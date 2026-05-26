@@ -10,8 +10,8 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/squadservices"
 
-	"game_main/visual/combatrender"
 	"game_main/core/coords"
+	"game_main/visual/combatrender"
 
 	"github.com/bytearena/ecs"
 	"github.com/ebitenui/ebitenui/widget"

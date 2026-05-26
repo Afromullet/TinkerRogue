@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/common"
-	"game_main/setup/savesystem"
 	"game_main/core/coords"
+	"game_main/setup/savesystem"
 	"game_main/world/worldmapcore"
 )
 

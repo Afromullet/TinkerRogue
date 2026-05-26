@@ -10,6 +10,14 @@ import (
 	"github.com/bytearena/ecs"
 )
 
+// defaultMaxArtifactSlots returns the configured default slot count for a
+// commander's equipment. Used when an EquipmentData is created without an
+// explicit MaxSlots value, and as a fall-back for older save files that lack
+// the field.
+func defaultMaxArtifactSlots() int {
+	return templates.GameConfig.Player.Limits.MaxArtifactsPerCommander
+}
+
 // --- ArtifactInventoryData mutation functions ---
 
 // AddArtifactToInventory adds an artifact instance to the inventory as available (not equipped).
@@ -100,13 +108,17 @@ func EquipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager *c
 	if entity.HasComponent(EquipmentComponent) {
 		data = common.GetComponentType[*EquipmentData](entity, EquipmentComponent)
 	} else {
-		data = &EquipmentData{}
+		data = &EquipmentData{MaxSlots: defaultMaxArtifactSlots()}
 		entity.AddComponent(EquipmentComponent, data)
 	}
 
-	// Check slot availability
-	if len(data.EquippedArtifacts) >= templates.GameConfig.Player.Limits.MaxArtifactsPerCommander {
-		return fmt.Errorf("all %d artifact slots are occupied", templates.GameConfig.Player.Limits.MaxArtifactsPerCommander)
+	// Check slot availability. MaxSlots == 0 means an older component (or save)
+	// that pre-dates the field; backfill from config so the limit is enforced.
+	if data.MaxSlots == 0 {
+		data.MaxSlots = defaultMaxArtifactSlots()
+	}
+	if len(data.EquippedArtifacts) >= data.MaxSlots {
+		return fmt.Errorf("all %d artifact slots are occupied", data.MaxSlots)
 	}
 
 	// Check not already equipped on this squad
@@ -164,9 +176,15 @@ func UnequipArtifact(playerID, squadID ecs.EntityID, artifactID string, manager 
 	return nil
 }
 
-// ApplyArtifactStatEffects applies permanent stat effects from all equipped artifacts
-// (of any tier) to all units in the given squads.
-// Should be called at battle start before turn initialization.
+// ApplyArtifactStatEffects applies permanent stat effects from all equipped
+// artifacts (of any tier) to all units in the given squads. Called at battle
+// start by CombatService.InitializeCombat, before turn initialization.
+//
+// Inverse: there is no artifact-specific remove. Cleanup happens at battle
+// exit via CombatService.cleanupEffects, which calls effects.RemoveAllEffects
+// per surviving player unit (combat_service.go:267). That removes ALL active
+// effects (artifacts + spells) uniformly — both layers attach as ActiveEffect
+// entries on the unit, so a single bulk-remove is the correct inverse.
 func ApplyArtifactStatEffects(squadIDs []ecs.EntityID, manager *common.EntityManager) {
 	for _, squadID := range squadIDs {
 		defs := GetArtifactDefinitions(squadID, manager)

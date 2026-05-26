@@ -18,6 +18,19 @@ import (
 //
 // All fraction fields are screen-relative; pass values straight from specs/*.go
 // (e.g. specs.CombatSpellPanelWidth).
+//
+// Scope — only adopt this for a new panel if ALL of the following hold:
+//  1. Right-anchored, vertical list + detail + action + cancel layout.
+//  2. Toggleable submenu (hidden by default, shown via a sub-menu controller).
+//  3. Exactly one selection list.
+//  4. Exactly one action button, enabled purely by "valid selection".
+//  5. Exactly one cancel button.
+//  6. Plain text detail area (no rich widgets, equipment slots, formation grids).
+//
+// If any criterion fails, build the panel inline or extract a different
+// helper — do NOT widen this config with one-off flags. The guiprogression
+// library panels (dual-list, no cancel, persistent) and the guisquads panels
+// (multi-action, map-click activation, tab-coupled) are deliberate non-fits.
 type SelectionPanelConfig struct {
 	PanelWidthFrac   float64
 	PanelHeightFrac  float64

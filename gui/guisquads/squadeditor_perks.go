@@ -188,4 +188,3 @@ func (pc *perkPanelController) onUnequipClicked() {
 	pc.mode.SetStatus(fmt.Sprintf("Unequipped %s", pc.selectedEquipped.Name))
 	pc.refreshPerkPanel()
 }
-

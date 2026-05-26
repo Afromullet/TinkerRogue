@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -20,16 +20,16 @@ func init() {
 // unit roster, and commander roster. Artifact inventory is handled by GearChunk.
 type PlayerChunk struct{}
 
-func (c *PlayerChunk) ChunkID() string  { return "player" }
+func (c *PlayerChunk) ChunkID() string   { return "player" }
 func (c *PlayerChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
 
 type savedPlayer struct {
-	EntityID  ecs.EntityID    `json:"entityID"`
-	Position  savedPosition   `json:"position"`
-	Attrs     savedAttributes `json:"attributes"`
-	Resources savedResources  `json:"resources"`
+	EntityID  ecs.EntityID     `json:"entityID"`
+	Position  savedPosition    `json:"position"`
+	Attrs     savedAttributes  `json:"attributes"`
+	Resources savedResources   `json:"resources"`
 	UnitRos   *savedUnitRoster `json:"unitRoster,omitempty"`
 	CmdRos    *savedCmdRoster  `json:"commanderRoster,omitempty"`
 }

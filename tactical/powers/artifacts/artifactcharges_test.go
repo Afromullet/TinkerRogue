@@ -71,12 +71,12 @@ func TestRefreshRoundCharges(t *testing.T) {
 func TestPendingEffects(t *testing.T) {
 	ct := NewArtifactChargeTracker()
 
-	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
-	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(20))
+	ct.Pending.Add(BehaviorSaboteursHourglass, ecs.EntityID(10))
+	ct.Pending.Add(BehaviorSaboteursHourglass, ecs.EntityID(20))
 	ct.Pending.Add("other_effect", ecs.EntityID(30))
 
 	// Consume matching effects
-	matched := ct.Pending.Consume(BehaviorSaboteurWsHourglass)
+	matched := ct.Pending.Consume(BehaviorSaboteursHourglass)
 	if len(matched) != 2 {
 		t.Errorf("Expected 2 matched effects, got %d", len(matched))
 	}
@@ -88,7 +88,7 @@ func TestPendingEffects(t *testing.T) {
 	}
 
 	// Consume again returns empty
-	matched2 := ct.Pending.Consume(BehaviorSaboteurWsHourglass)
+	matched2 := ct.Pending.Consume(BehaviorSaboteursHourglass)
 	if len(matched2) != 0 {
 		t.Errorf("Expected 0 matched effects on second consume, got %d", len(matched2))
 	}
@@ -105,7 +105,7 @@ func TestReset(t *testing.T) {
 
 	ct.UseCharge(BehaviorDeadlockShackles, ChargeOncePerBattle)
 	ct.UseCharge(BehaviorEchoDrums, ChargeOncePerRound)
-	ct.Pending.Add(BehaviorSaboteurWsHourglass, ecs.EntityID(10))
+	ct.Pending.Add(BehaviorSaboteursHourglass, ecs.EntityID(10))
 
 	ct.Reset()
 

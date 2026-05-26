@@ -39,7 +39,9 @@ func (gb *GameBootstrap) LoadGameData() {
 	}
 	perks.LoadPerkDefinitions()
 	perks.LoadPerkBalanceConfig()
-	artifacts.LoadArtifactBalanceConfig()
+	if err := artifacts.LoadArtifactBalanceConfig(); err != nil {
+		log.Fatalf("LoadArtifactBalanceConfig: %v", err)
+	}
 	reportCoverage("artifact", artifacts.ValidateBehaviorCoverage())
 	reportCoverage("perk", perks.ValidateHookCoverage())
 	combatmath.LoadCombatBalanceConfig()

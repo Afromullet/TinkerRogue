@@ -10,7 +10,7 @@ func TestBehaviorRegistry_AllRegistered(t *testing.T) {
 	expectedKeys := []string{
 		BehaviorEngagementChains,
 		BehaviorEchoDrums,
-		BehaviorSaboteurWsHourglass,
+		BehaviorSaboteursHourglass,
 		BehaviorTwinStrike,
 		BehaviorDeadlockShackles,
 		BehaviorChainOfCommand,

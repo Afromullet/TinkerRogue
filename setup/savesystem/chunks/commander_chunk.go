@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -20,7 +20,7 @@ func init() {
 // position, attributes, squad roster, mana, and spellbook.
 type CommanderChunk struct{}
 
-func (c *CommanderChunk) ChunkID() string  { return "commanders" }
+func (c *CommanderChunk) ChunkID() string   { return "commanders" }
 func (c *CommanderChunk) ChunkVersion() int { return 1 }
 
 // --- Serialization structs ---
@@ -30,13 +30,13 @@ type savedCommanderChunkData struct {
 }
 
 type savedCommander struct {
-	EntityID      ecs.EntityID        `json:"entityID"`
-	Name          string              `json:"name"`
-	IsActive      bool                `json:"isActive"`
-	Position      savedPosition       `json:"position"`
-	Attrs         savedAttributes     `json:"attributes"`
-	ActionState   *savedActionState   `json:"actionState,omitempty"`
-	SquadRoster   *savedSquadRoster   `json:"squadRoster,omitempty"`
+	EntityID    ecs.EntityID      `json:"entityID"`
+	Name        string            `json:"name"`
+	IsActive    bool              `json:"isActive"`
+	Position    savedPosition     `json:"position"`
+	Attrs       savedAttributes   `json:"attributes"`
+	ActionState *savedActionState `json:"actionState,omitempty"`
+	SquadRoster *savedSquadRoster `json:"squadRoster,omitempty"`
 }
 
 type savedActionState struct {

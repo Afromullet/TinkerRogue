@@ -5,8 +5,8 @@ import (
 	"game_main/core/common"
 	"game_main/gui/framework"
 	"game_main/gui/guiinspect"
-	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/squadcommands"
+	"game_main/tactical/squads/squadcore"
 	"image"
 
 	"github.com/bytearena/ecs"

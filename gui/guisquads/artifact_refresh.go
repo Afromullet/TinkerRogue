@@ -264,7 +264,11 @@ func (am *ArtifactMode) refreshEquipment() {
 		equipped = equipData.EquippedArtifacts
 	}
 
-	am.equipmentTitle.Label = fmt.Sprintf("%s - Equipment (%d/%d)", squadName, len(equipped), templates.GameConfig.Player.Limits.MaxArtifactsPerCommander)
+	maxSlots := templates.GameConfig.Player.Limits.MaxArtifactsPerCommander
+	if equipData != nil && equipData.MaxSlots > 0 {
+		maxSlots = equipData.MaxSlots
+	}
+	am.equipmentTitle.Label = fmt.Sprintf("%s - Equipment (%d/%d)", squadName, len(equipped), maxSlots)
 
 	entries := make([]string, 0, len(equipped))
 	entryIDs := make([]string, 0, len(equipped))

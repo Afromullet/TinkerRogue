@@ -10,12 +10,12 @@ import (
 // Behavior string constants for major artifact behaviors.
 // Used as keys in charge tracking, hook registration, and artifact definitions.
 const (
-	BehaviorEngagementChains    = "engagement_chains"   // Forced Engagement Chains
-	BehaviorSaboteurWsHourglass = "saboteurs_hourglass" // Saboteur's Hourglass
-	BehaviorEchoDrums           = "echo_drums"          // Echo Drums
-	BehaviorChainOfCommand      = "chain_of_command"    // Chain of Command Scepter
-	BehaviorTwinStrike          = "twin_strike"         // Twin Strike Banner
-	BehaviorDeadlockShackles    = "deadlock_shackles"   // Deadlock Shackles
+	BehaviorEngagementChains   = "engagement_chains"   // Forced Engagement Chains
+	BehaviorSaboteursHourglass = "saboteurs_hourglass" // Saboteur's Hourglass
+	BehaviorEchoDrums          = "echo_drums"          // Echo Drums
+	BehaviorChainOfCommand     = "chain_of_command"    // Chain of Command Scepter
+	BehaviorTwinStrike         = "twin_strike"         // Twin Strike Banner
+	BehaviorDeadlockShackles   = "deadlock_shackles"   // Deadlock Shackles
 )
 
 // BehaviorTargetType describes what kind of target a behavior requires.
@@ -37,6 +37,16 @@ func (t BehaviorTargetType) String() string {
 	default:
 		return "No Target"
 	}
+}
+
+// GetTargetType returns the target type for a behavior key, or TargetNone if
+// the key is not registered.
+func GetTargetType(behaviorKey string) BehaviorTargetType {
+	b := GetBehavior(behaviorKey)
+	if b == nil {
+		return TargetNone
+	}
+	return b.TargetType()
 }
 
 // ArtifactBehavior defines the contract for major artifact behaviors.

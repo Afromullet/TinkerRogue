@@ -21,10 +21,11 @@ import "github.com/bytearena/ecs"
 //	effect. The behavior calls queue.Consume(behaviorKey) to drain its queued
 //	(behaviorKey, targetSquadID) pairs and apply the effect to those targets.
 //
-// Effects without a target (e.g. a "mark all enemy squads" activation) can
-// pass targetSquadID = 0; the queue treats the behavior key itself as the
-// activation marker, and the behavior's OnPostReset decides what to do with
-// the zero-target entry (typically apply to all squads in the faction).
+// Broadcast effects (e.g. "reduce movement on every enemy squad", Saboteur's
+// Hourglass) set BroadcastEffect = true and ignore TargetSquadID. Targeted
+// effects set BroadcastEffect = false and store the affected squad in
+// TargetSquadID. The two modes never mix within a single behavior's queued
+// effects — each behavior is either always-broadcast or always-targeted.
 //
 // This file isolates the queue mechanics from ArtifactChargeTracker so the
 // two-phase flow is named and documented in one place. ArtifactChargeTracker
@@ -36,10 +37,13 @@ type PendingEffectQueue struct {
 
 // PendingArtifactEffect is a single queued deferred effect:
 // "behavior X should apply its OnPostReset work to squad Y on the next
-// post-reset for Y's faction."
+// post-reset for Y's faction." When BroadcastEffect is true, TargetSquadID
+// is meaningless and the effect applies to every squad in the consuming
+// faction.
 type PendingArtifactEffect struct {
-	Behavior      string
-	TargetSquadID ecs.EntityID
+	Behavior        string
+	TargetSquadID   ecs.EntityID
+	BroadcastEffect bool
 }
 
 // NewPendingEffectQueue returns an empty queue.
@@ -47,11 +51,20 @@ func NewPendingEffectQueue() *PendingEffectQueue {
 	return &PendingEffectQueue{}
 }
 
-// Add queues a deferred effect for later consumption.
+// Add queues a deferred effect targeted at a specific squad.
 func (q *PendingEffectQueue) Add(behavior string, targetSquadID ecs.EntityID) {
 	q.effects = append(q.effects, PendingArtifactEffect{
 		Behavior:      behavior,
 		TargetSquadID: targetSquadID,
+	})
+}
+
+// AddBroadcast queues a deferred effect that should fire against every squad
+// in the consuming faction (AOE), not a specific target.
+func (q *PendingEffectQueue) AddBroadcast(behavior string) {
+	q.effects = append(q.effects, PendingArtifactEffect{
+		Behavior:        behavior,
+		BroadcastEffect: true,
 	})
 }
 

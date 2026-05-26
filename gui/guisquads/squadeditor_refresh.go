@@ -117,8 +117,8 @@ func (sem *SquadEditorMode) refreshRosterList() {
 
 	sem.rosterList = sem.replaceListInContainer(sem.rosterContent, sem.rosterList, func() *widget.List {
 		return builders.CreateListWithConfig(builders.ListConfig{
-			Entries:  entries,
-			MinWidth: 400,
+			Entries:   entries,
+			MinWidth:  400,
 			MinHeight: 200,
 			EntryLabelFunc: func(e interface{}) string {
 				entry := e.(rstr.RosterUnitEntry)

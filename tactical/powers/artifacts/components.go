@@ -3,9 +3,14 @@ package artifacts
 import "github.com/bytearena/ecs"
 
 // EquipmentData stores which artifacts are equipped on a squad.
-// EquippedArtifacts holds up to MaxArtifactSlots artifact definition IDs.
+// EquippedArtifacts holds up to MaxSlots artifact definition IDs. MaxSlots == 0
+// means "fall back to the configured default" — see defaultMaxArtifactSlots in
+// system.go. Persisted per-squad so future per-commander/per-squad slot
+// variants (e.g. an artifact that grants +1 slot) can be supported without
+// changing the global config read at every equip call.
 type EquipmentData struct {
 	EquippedArtifacts []string
+	MaxSlots          int
 }
 
 // ArtifactInstance represents a single copy of an artifact.

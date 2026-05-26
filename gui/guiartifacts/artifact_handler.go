@@ -44,7 +44,7 @@ func (h *ArtifactActivationHandler) SelectArtifact(behaviorKey string) {
 		return
 	}
 
-	targetType := GetTargetType(behaviorKey)
+	targetType := artifacts.GetTargetType(behaviorKey)
 
 	if targetType == artifacts.TargetNone {
 		// Execute immediately (e.g. Saboteur's Hourglass)
@@ -69,7 +69,7 @@ func (h *ArtifactActivationHandler) HandleTargetClick(mouseX, mouseY int) {
 		return
 	}
 
-	targetType := GetTargetType(behaviorKey)
+	targetType := artifacts.GetTargetType(behaviorKey)
 	encounterID := h.deps.Encounter.GetCurrentEncounterID()
 	isEnemy := h.deps.Queries.IsEnemySquadInEncounter(clickedSquadID, encounterID)
 
@@ -143,16 +143,6 @@ func (h *ArtifactActivationHandler) IsInArtifactMode() bool {
 // HasSelectedArtifact returns true if an artifact has been selected for targeting.
 func (h *ArtifactActivationHandler) HasSelectedArtifact() bool {
 	return h.deps.BattleState.SelectedArtifactBehavior != ""
-}
-
-// GetTargetType returns the targeting type for a given behavior key,
-// derived from the behavior's own TargetType() method.
-func GetTargetType(behaviorKey string) artifacts.BehaviorTargetType {
-	b := artifacts.GetBehavior(behaviorKey)
-	if b == nil {
-		return artifacts.TargetNone
-	}
-	return b.TargetType()
 }
 
 // --- Internal helpers ---

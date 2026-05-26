@@ -7,12 +7,12 @@ import (
 
 	"game_main/core/common"
 	"game_main/core/config"
+	"game_main/core/coords"
 	"game_main/setup/savesystem"
 	"game_main/setup/savesystem/chunks"
 	"game_main/tactical/commander"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/core/coords"
 	"game_main/world/worldmapcore"
 
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
