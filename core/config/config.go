@@ -116,6 +116,13 @@ func AssetPath(relative string) string {
 	return filepath.Join(getAssetRoot(), relative)
 }
 
+// SetAssetRoot overrides the cached asset root. Intended for tests that need
+// to point AssetPath at the real resources/assets directory regardless of CWD.
+// Pass "" to clear the cache and re-resolve on next call.
+func SetAssetRoot(path string) {
+	assetRoot = path
+}
+
 // Asset paths
 var (
 	PlayerImagePath = AssetPath("creatures/player1.png")

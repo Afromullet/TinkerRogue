@@ -2,6 +2,7 @@ package perks
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 
@@ -61,6 +62,28 @@ func ForEachFriendlySquad(squadID ecs.EntityID, manager *common.EntityManager, f
 			return
 		}
 	}
+}
+
+// ForEachFriendlySquadWithinRange invokes fn for each active squad in the same
+// faction as squadID (excluding squadID itself) whose ChebyshevDistance to
+// squadID is ≤ rng. Iteration stops early when fn returns false. No-op if
+// squadID has no position or no faction.
+func ForEachFriendlySquadWithinRange(squadID ecs.EntityID, rng int, manager *common.EntityManager,
+	fn func(friendlyID ecs.EntityID) bool) {
+	squadPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, squadID, common.PositionComponent)
+	if squadPos == nil {
+		return
+	}
+	ForEachFriendlySquad(squadID, manager, func(friendlyID ecs.EntityID) bool {
+		friendlyPos := common.GetComponentTypeByID[*coords.LogicalPosition](manager, friendlyID, common.PositionComponent)
+		if friendlyPos == nil {
+			return true
+		}
+		if squadPos.ChebyshevDistance(friendlyPos) > rng {
+			return true
+		}
+		return fn(friendlyID)
+	})
 }
 
 // forEachPerkBehavior iterates over active perks for ownerSquadID, calling fn

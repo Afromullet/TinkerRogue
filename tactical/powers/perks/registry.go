@@ -119,18 +119,24 @@ type perkDataFile struct {
 	Perks []PerkDefinition `json:"perks"`
 }
 
-// LoadPerkDefinitions reads perk definitions from a JSON file and populates PerkRegistry.
-func LoadPerkDefinitions() {
+// LoadPerkDefinitions reads perk definitions from a JSON file and populates
+// PerkRegistry. Returns the slice of problems found (duplicate IDs, invalid
+// roles, asymmetric exclusiveWith pairs). Perks with at least one invalid role
+// are skipped entirely so they cannot silently fail role-filtered UI. Callers
+// decide whether errors are fatal (e.g. fail startup in debug builds).
+func LoadPerkDefinitions() []error {
+	var errs []error
+
 	data, err := os.ReadFile(config.AssetPath(PerkDataPath))
 	if err != nil {
 		log.Printf("WARNING: Failed to read perk data: %v", err)
-		return
+		return []error{fmt.Errorf("read perk data: %w", err)}
 	}
 
 	var perkFile perkDataFile
 	if err := json.Unmarshal(data, &perkFile); err != nil {
 		log.Printf("WARNING: Failed to parse perk data: %v", err)
-		return
+		return []error{fmt.Errorf("parse perk data: %w", err)}
 	}
 
 	// Validate and populate registry
@@ -140,14 +146,23 @@ func LoadPerkDefinitions() {
 		// Check for duplicate IDs
 		if _, exists := PerkRegistry[perk.ID]; exists {
 			log.Printf("WARNING: Duplicate perk ID %q, skipping", perk.ID)
+			errs = append(errs, fmt.Errorf("duplicate perk ID %q", perk.ID))
 			continue
 		}
 
-		// Validate roles
+		// Validate roles. Skip the entire perk if any role is invalid — a
+		// perk with all-invalid roles silently disappears from role-filtered
+		// UI, so fail loud instead.
+		invalidRole := false
 		for _, role := range perk.Roles {
 			if _, err := unitdefs.GetRole(role); err != nil {
 				log.Printf("WARNING: Perk %q has invalid role %q: %v", perk.ID, role, err)
+				errs = append(errs, fmt.Errorf("perk %q has invalid role %q: %w", perk.ID, role, err))
+				invalidRole = true
 			}
+		}
+		if invalidRole {
+			continue
 		}
 
 		PerkRegistry[perk.ID] = perk
@@ -159,6 +174,7 @@ func LoadPerkDefinitions() {
 			other := PerkRegistry[exID]
 			if other == nil {
 				log.Printf("WARNING: Perk %q has exclusiveWith %q which doesn't exist", perk.ID, exID)
+				errs = append(errs, fmt.Errorf("perk %q has exclusiveWith %q which doesn't exist", perk.ID, exID))
 				continue
 			}
 			found := false
@@ -170,11 +186,13 @@ func LoadPerkDefinitions() {
 			}
 			if !found {
 				log.Printf("WARNING: Perk %q is exclusive with %q but not vice versa", perk.ID, exID)
+				errs = append(errs, fmt.Errorf("perk %q is exclusive with %q but not vice versa", perk.ID, exID))
 			}
 		}
 	}
 
 	log.Printf("Loaded %d perk definitions", len(PerkRegistry))
+	return errs
 }
 
 // ValidateHookCoverage checks that JSON definitions and behavior registrations

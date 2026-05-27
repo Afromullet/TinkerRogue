@@ -135,70 +135,95 @@ func LoadPerkBalanceConfig() {
 	log.Println("Perk balance config loaded")
 }
 
+// Range bounds catch typos in JSON that the previous "must be positive" checks
+// would let through (e.g. DamageMult: 0.001 silently nerfing a perk, or
+// MaxStationaryTurns: 1000 never capping). Fractions are bounded < 1.0,
+// damage multipliers to [0.1, 10.0], and counts/bonuses to ≤ 100.
+const (
+	minDamageMult = 0.1
+	maxDamageMult = 10.0
+	maxCount      = 100
+)
+
 func validatePerkBalance(cfg *PerkBalanceConfig) []error {
 	var errs []error
-	if cfg.BraceForImpact.CoverBonus <= 0 {
-		errs = append(errs, fmt.Errorf("braceForImpact.coverBonus must be positive"))
+	if cfg.BraceForImpact.CoverBonus <= 0 || cfg.BraceForImpact.CoverBonus >= 1.0 {
+		errs = append(errs, fmt.Errorf("braceForImpact.coverBonus must be in (0, 1)"))
 	}
 	if cfg.ExecutionersInstinct.HPThreshold <= 0 || cfg.ExecutionersInstinct.HPThreshold >= 1.0 {
 		errs = append(errs, fmt.Errorf("executionersInstinct.hpThreshold must be between 0 and 1"))
 	}
-	if cfg.ShieldwallDiscipline.MaxTanks <= 0 {
-		errs = append(errs, fmt.Errorf("shieldwallDiscipline.maxTanks must be positive"))
+	if cfg.ExecutionersInstinct.CritBonus < 0 || cfg.ExecutionersInstinct.CritBonus > maxCount {
+		errs = append(errs, fmt.Errorf("executionersInstinct.critBonus must be in [0, %d]", maxCount))
 	}
-	if cfg.FieldMedic.HealDivisor <= 0 {
-		errs = append(errs, fmt.Errorf("fieldMedic.healDivisor must be positive"))
+	if cfg.ShieldwallDiscipline.MaxTanks <= 0 || cfg.ShieldwallDiscipline.MaxTanks > maxCount {
+		errs = append(errs, fmt.Errorf("shieldwallDiscipline.maxTanks must be in (0, %d]", maxCount))
 	}
-	if cfg.GuardianProtocol.RedirectFraction <= 0 {
-		errs = append(errs, fmt.Errorf("guardianProtocol.redirectFraction must be positive"))
+	if cfg.ShieldwallDiscipline.PerTankReduction <= 0 || cfg.ShieldwallDiscipline.PerTankReduction >= 1.0 {
+		errs = append(errs, fmt.Errorf("shieldwallDiscipline.perTankReduction must be in (0, 1)"))
+	}
+	if cfg.FieldMedic.HealDivisor <= 0 || cfg.FieldMedic.HealDivisor > maxCount {
+		errs = append(errs, fmt.Errorf("fieldMedic.healDivisor must be in (0, %d]", maxCount))
+	}
+	if cfg.GuardianProtocol.RedirectFraction <= 0 || cfg.GuardianProtocol.RedirectFraction > maxCount {
+		errs = append(errs, fmt.Errorf("guardianProtocol.redirectFraction must be in (0, %d]", maxCount))
 	}
 	if cfg.Resolute.HPThreshold <= 0 || cfg.Resolute.HPThreshold >= 1.0 {
 		errs = append(errs, fmt.Errorf("resolute.hpThreshold must be between 0 and 1"))
 	}
-	if cfg.GrudgeBearer.MaxStacks <= 0 {
-		errs = append(errs, fmt.Errorf("grudgeBearer.maxStacks must be positive"))
+	if cfg.GrudgeBearer.MaxStacks <= 0 || cfg.GrudgeBearer.MaxStacks > maxCount {
+		errs = append(errs, fmt.Errorf("grudgeBearer.maxStacks must be in (0, %d]", maxCount))
 	}
-	if cfg.IsolatedPredator.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("isolatedPredator.damageMult must be positive"))
+	if cfg.GrudgeBearer.PerStackBonus <= 0 || cfg.GrudgeBearer.PerStackBonus >= 1.0 {
+		errs = append(errs, fmt.Errorf("grudgeBearer.perStackBonus must be in (0, 1)"))
 	}
-	if cfg.IsolatedPredator.Range <= 0 {
-		errs = append(errs, fmt.Errorf("isolatedPredator.range must be positive"))
+	if cfg.IsolatedPredator.DamageMult < minDamageMult || cfg.IsolatedPredator.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("isolatedPredator.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.LastLine.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("lastLine.damageMult must be positive"))
+	if cfg.IsolatedPredator.Range <= 0 || cfg.IsolatedPredator.Range > maxCount {
+		errs = append(errs, fmt.Errorf("isolatedPredator.range must be in (0, %d]", maxCount))
 	}
-	if cfg.Cleave.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("cleave.damageMult must be positive"))
+	if cfg.LastLine.DamageMult < minDamageMult || cfg.LastLine.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("lastLine.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.RecklessAssault.AttackerMult <= 0 {
-		errs = append(errs, fmt.Errorf("recklessAssault.attackerMult must be positive"))
+	if cfg.LastLine.HitBonus < 0 || cfg.LastLine.HitBonus > maxCount {
+		errs = append(errs, fmt.Errorf("lastLine.hitBonus must be in [0, %d]", maxCount))
 	}
-	if cfg.RecklessAssault.DefenderMult <= 0 {
-		errs = append(errs, fmt.Errorf("recklessAssault.defenderMult must be positive"))
+	if cfg.Cleave.DamageMult < minDamageMult || cfg.Cleave.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("cleave.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.Fortify.MaxStationaryTurns <= 0 {
-		errs = append(errs, fmt.Errorf("fortify.maxStationaryTurns must be positive"))
+	if cfg.RecklessAssault.AttackerMult < minDamageMult || cfg.RecklessAssault.AttackerMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("recklessAssault.attackerMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.Fortify.PerTurnCoverBonus <= 0 {
-		errs = append(errs, fmt.Errorf("fortify.perTurnCoverBonus must be positive"))
+	if cfg.RecklessAssault.DefenderMult < minDamageMult || cfg.RecklessAssault.DefenderMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("recklessAssault.defenderMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.Counterpunch.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("counterpunch.damageMult must be positive"))
+	if cfg.Fortify.MaxStationaryTurns <= 0 || cfg.Fortify.MaxStationaryTurns > maxCount {
+		errs = append(errs, fmt.Errorf("fortify.maxStationaryTurns must be in (0, %d]", maxCount))
 	}
-	if cfg.DeadshotsPatience.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("deadshotsPatience.damageMult must be positive"))
+	if cfg.Fortify.PerTurnCoverBonus <= 0 || cfg.Fortify.PerTurnCoverBonus >= 1.0 {
+		errs = append(errs, fmt.Errorf("fortify.perTurnCoverBonus must be in (0, 1)"))
 	}
-	if cfg.AdaptiveArmor.MaxHits <= 0 {
-		errs = append(errs, fmt.Errorf("adaptiveArmor.maxHits must be positive"))
+	if cfg.Counterpunch.DamageMult < minDamageMult || cfg.Counterpunch.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("counterpunch.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.AdaptiveArmor.PerHitReduction <= 0 {
-		errs = append(errs, fmt.Errorf("adaptiveArmor.perHitReduction must be positive"))
+	if cfg.DeadshotsPatience.DamageMult < minDamageMult || cfg.DeadshotsPatience.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("deadshotsPatience.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
-	if cfg.Bloodlust.PerKillBonus <= 0 {
-		errs = append(errs, fmt.Errorf("bloodlust.perKillBonus must be positive"))
+	if cfg.DeadshotsPatience.AccuracyBonus < 0 || cfg.DeadshotsPatience.AccuracyBonus > maxCount {
+		errs = append(errs, fmt.Errorf("deadshotsPatience.accuracyBonus must be in [0, %d]", maxCount))
 	}
-	if cfg.OpeningSalvo.DamageMult <= 0 {
-		errs = append(errs, fmt.Errorf("openingSalvo.damageMult must be positive"))
+	if cfg.AdaptiveArmor.MaxHits <= 0 || cfg.AdaptiveArmor.MaxHits > maxCount {
+		errs = append(errs, fmt.Errorf("adaptiveArmor.maxHits must be in (0, %d]", maxCount))
+	}
+	if cfg.AdaptiveArmor.PerHitReduction <= 0 || cfg.AdaptiveArmor.PerHitReduction >= 1.0 {
+		errs = append(errs, fmt.Errorf("adaptiveArmor.perHitReduction must be in (0, 1)"))
+	}
+	if cfg.Bloodlust.PerKillBonus <= 0 || cfg.Bloodlust.PerKillBonus >= 1.0 {
+		errs = append(errs, fmt.Errorf("bloodlust.perKillBonus must be in (0, 1)"))
+	}
+	if cfg.OpeningSalvo.DamageMult < minDamageMult || cfg.OpeningSalvo.DamageMult > maxDamageMult {
+		errs = append(errs, fmt.Errorf("openingSalvo.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
 	}
 	return errs
 }

@@ -1,7 +1,15 @@
 package perks
 
 import (
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"sync"
+	"testing"
+
 	"game_main/core/common"
+	"game_main/core/config"
 	"game_main/core/coords"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/combat/combattypes"
@@ -9,10 +17,23 @@ import (
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	testfx "game_main/testing"
-	"testing"
 
 	"github.com/bytearena/ecs"
 )
+
+// TestMain points config.AssetPath at the real resources/assets directory so
+// LoadPerkDefinitions / LoadPerkBalanceConfig find the JSON when go test runs
+// with CWD = this package. config.SetAssetRoot overrides the cache populated
+// by core/config package init (PlayerImagePath etc.), which would otherwise
+// pin the asset root to a CWD-relative fallback that doesn't exist here.
+func TestMain(m *testing.M) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	// thisFile = .../tactical/powers/perks/perks_test.go
+	// repo root is four levels up.
+	repoRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(thisFile))))
+	config.SetAssetRoot(filepath.Join(repoRoot, "resources", "assets"))
+	os.Exit(m.Run())
+}
 
 // ========================================
 // Test Helpers
@@ -60,23 +81,17 @@ func setupTestBalance() {
 	}
 }
 
-// setupTestPerkRegistry populates PerkRegistry with test definitions.
+// perkRegistryLoadOnce ensures the real perkdata.json is parsed only once per
+// test binary. Loop-driven from the JSON so new perks are covered automatically
+// — the previous hardcoded list drifted as perks were added.
+var perkRegistryLoadOnce sync.Once
+
+// setupTestPerkRegistry populates PerkRegistry from the real perkdata.json.
+// Relies on TestMain to set the asset-root env var.
 func setupTestPerkRegistry() {
-	PerkRegistry = map[PerkID]*PerkDefinition{
-		PerkCleave:           {ID: PerkCleave, ExclusiveWith: []PerkID{PerkPrecisionStrike}},
-		PerkPrecisionStrike:  {ID: PerkPrecisionStrike, ExclusiveWith: []PerkID{PerkCleave}},
-		PerkRecklessAssault:  {ID: PerkRecklessAssault, ExclusiveWith: []PerkID{PerkStalwart}},
-		PerkStalwart:         {ID: PerkStalwart, ExclusiveWith: []PerkID{PerkRecklessAssault}},
-		PerkBloodlust:        {ID: PerkBloodlust, ExclusiveWith: []PerkID{PerkFieldMedic}},
-		PerkFieldMedic:       {ID: PerkFieldMedic, ExclusiveWith: []PerkID{PerkBloodlust}},
-		PerkCounterpunch:     {ID: PerkCounterpunch, ExclusiveWith: []PerkID{}},
-		PerkFortify:          {ID: PerkFortify, ExclusiveWith: []PerkID{}},
-		PerkOpeningSalvo:     {ID: PerkOpeningSalvo, ExclusiveWith: []PerkID{}},
-		PerkResolute:         {ID: PerkResolute, ExclusiveWith: []PerkID{}},
-		PerkGrudgeBearer:     {ID: PerkGrudgeBearer, ExclusiveWith: []PerkID{}},
-		PerkAdaptiveArmor:    {ID: PerkAdaptiveArmor, ExclusiveWith: []PerkID{}},
-		PerkDeadshotsPatience: {ID: PerkDeadshotsPatience, ExclusiveWith: []PerkID{}},
-	}
+	perkRegistryLoadOnce.Do(func() {
+		_ = LoadPerkDefinitions()
+	})
 }
 
 // ========================================
@@ -868,8 +883,9 @@ func TestValidatePerkBalance_ValidConfig(t *testing.T) {
 		Resolute:             ResoluteBalance{HPThreshold: 0.5},
 		GrudgeBearer:         GrudgeBearerBalance{MaxStacks: 2, PerStackBonus: 0.2},
 	}
-	// Should not panic and should pass all checks
-	validatePerkBalance(cfg)
+	if errs := validatePerkBalance(cfg); len(errs) != 0 {
+		t.Errorf("expected no errors for valid config, got: %v", errs)
+	}
 }
 
 func TestPerkBalanceConfig_ZeroFieldsAreDetectable(t *testing.T) {
@@ -1017,5 +1033,153 @@ func TestGuardianProtocol_AdjacentTankRedirects(t *testing.T) {
 	}
 	if redirectAmt != 10 {
 		t.Errorf("expected redirectAmt=10, got %d", redirectAmt)
+	}
+}
+
+// ========================================
+// HitModifier Sign-Convention Tests
+// ========================================
+//
+// combattypes.DamageModifiers.HitModifier is "subtracted from attacker's hit
+// threshold. Positive = penalty; negative = accuracy bonus." Perks that grant
+// accuracy bonuses encode them by SUBTRACTING a positive HitBonus from
+// HitModifier. These tests lock in that direction so a future refactor that
+// flips the sign fails loudly instead of silently nerfing accuracy.
+
+func TestLastLine_HitModifierIsAccuracyBonus(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+
+	// One squad in a faction with no allies → LastLine triggers.
+	attackerSquadID := squadcore.CreateEmptySquad(manager, "Attacker")
+	factionID := ecs.EntityID(777)
+	attackerEntity := manager.FindEntityByID(attackerSquadID)
+	attackerEntity.AddComponent(combatstate.FactionMembershipComponent, &combatstate.CombatFactionData{FactionID: factionID})
+
+	mods := &combattypes.DamageModifiers{HitModifier: 0, DamageMultiplier: 1.0}
+	ctx := &HookContext{
+		PowerContext:    powercore.PowerContext{Manager: manager},
+		AttackerSquadID: attackerSquadID,
+	}
+	(&LastLineBehavior{}).AttackerDamageMod(ctx, mods)
+
+	expected := -PerkBalance.LastLine.HitBonus
+	if mods.HitModifier != expected {
+		t.Errorf("LastLine HitModifier should be negative (accuracy bonus): expected %d, got %d", expected, mods.HitModifier)
+	}
+}
+
+func TestDeadshotsPatience_HitModifierIsAccuracyBonus(t *testing.T) {
+	setupTestBalance()
+	manager := setupTestManager()
+
+	// Arm the perk: WasIdleLastTurn=true → TurnStart sets DeadshotState.Ready=true.
+	state := &PerkRoundState{WasIdleLastTurn: true}
+
+	// Ranged attacker so the perk's attack-type filter passes.
+	attacker := manager.World.NewEntity()
+	attacker.AddComponent(squadcore.TargetRowComponent, &squadcore.TargetRowData{
+		AttackType: unitdefs.AttackTypeRanged,
+	})
+
+	ctx := &HookContext{
+		PowerContext: powercore.PowerContext{Manager: manager},
+		AttackerID:   attacker.GetID(),
+		RoundState:   state,
+	}
+	behavior := &DeadshotsPatienceBehavior{}
+	behavior.TurnStart(ctx)
+
+	mods := &combattypes.DamageModifiers{HitModifier: 0, DamageMultiplier: 1.0}
+	behavior.AttackerDamageMod(ctx, mods)
+
+	expected := -PerkBalance.DeadshotsPatience.AccuracyBonus
+	if mods.HitModifier != expected {
+		t.Errorf("DeadshotsPatience HitModifier should be negative (accuracy bonus): expected %d, got %d", expected, mods.HitModifier)
+	}
+}
+
+// ========================================
+// Prevention Tests
+// ========================================
+
+// TestNoOrphanPerks fails if any perk has a JSON definition without a
+// registered behavior (or vice versa). Mirrors the boot-time
+// reportCoverage("perk", ValidateHookCoverage()) guard so drift is caught at
+// pre-merge time, not just at startup.
+func TestNoOrphanPerks(t *testing.T) {
+	setupTestPerkRegistry()
+	if errs := ValidateHookCoverage(); len(errs) != 0 {
+		for _, e := range errs {
+			t.Error(e)
+		}
+	}
+}
+
+// perksWithoutBalanceConfig lists PerkIDs that intentionally have no entry in
+// PerkBalanceConfig because their behavior has no tunable values (e.g. perks
+// that flip a single boolean modifier). New perks without balance fields must
+// be added here intentionally — the absence of a balance config is otherwise
+// indistinguishable from a forgotten one.
+var perksWithoutBalanceConfig = map[PerkID]bool{
+	PerkVigilance:       true, // SkipCrit = true (no tunable)
+	PerkRiposte:         true, // HitModifier = 0 (no tunable)
+	PerkStalwart:        true, // DamageMultiplier = 1.0 (no tunable)
+	PerkPrecisionStrike: true, // targeting-only (no tunable)
+}
+
+// TestPerkID_HasBalanceConfigField asserts every PerkID constant has a
+// corresponding non-zero PerkBalanceConfig field after the real JSON loads.
+// Reflection-based so it survives renames; the allowlist above is the
+// explicit exception list.
+func TestPerkID_HasBalanceConfigField(t *testing.T) {
+	setupTestPerkRegistry()
+	LoadPerkBalanceConfig()
+
+	// PerkID → expected PerkBalanceConfig field name. Field names follow the
+	// PerkID const naming (PerkBraceForImpact → BraceForImpact). Perks with no
+	// tunables go in perksWithoutBalanceConfig instead of this map.
+	expected := map[PerkID]string{
+		PerkBraceForImpact:       "BraceForImpact",
+		PerkExecutionersInstinct: "ExecutionersInstinct",
+		PerkShieldwallDiscipline: "ShieldwallDiscipline",
+		PerkIsolatedPredator:     "IsolatedPredator",
+		PerkFieldMedic:           "FieldMedic",
+		PerkLastLine:             "LastLine",
+		PerkCleave:               "Cleave",
+		PerkGuardianProtocol:     "GuardianProtocol",
+		PerkRecklessAssault:      "RecklessAssault",
+		PerkFortify:              "Fortify",
+		PerkCounterpunch:         "Counterpunch",
+		PerkDeadshotsPatience:    "DeadshotsPatience",
+		PerkAdaptiveArmor:        "AdaptiveArmor",
+		PerkBloodlust:            "Bloodlust",
+		PerkOpeningSalvo:         "OpeningSalvo",
+		PerkResolute:             "Resolute",
+		PerkGrudgeBearer:         "GrudgeBearer",
+	}
+
+	cfg := reflect.ValueOf(PerkBalance)
+	zero := reflect.New(cfg.Type()).Elem()
+
+	for id, fieldName := range expected {
+		field := cfg.FieldByName(fieldName)
+		if !field.IsValid() {
+			t.Errorf("perk %q expects PerkBalanceConfig field %q but it does not exist", id, fieldName)
+			continue
+		}
+		zeroField := zero.FieldByName(fieldName)
+		if reflect.DeepEqual(field.Interface(), zeroField.Interface()) {
+			t.Errorf("perk %q PerkBalanceConfig.%s is zero — JSON config missing or all fields zero", id, fieldName)
+		}
+	}
+
+	// Also assert that every PerkID in perkBehaviorImpls is accounted for in
+	// expected OR perksWithoutBalanceConfig. Catches the case where a new perk
+	// is added but the test mapping isn't updated.
+	for id := range perkBehaviorImpls {
+		if _, ok := expected[id]; !ok && !perksWithoutBalanceConfig[id] {
+			t.Errorf("perk %q has a registered behavior but no entry in this test's expected map or perksWithoutBalanceConfig allowlist", id)
+		}
 	}
 }

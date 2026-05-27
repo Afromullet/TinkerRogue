@@ -50,7 +50,7 @@ type PerkRoundState struct {
 
 	// PerkState holds per-perk state structs, keyed by perk ID.
 	// Each perk defines its own state struct and accesses it via GetPerkState/SetPerkState.
-	// Cleared entirely by ResetPerRound; per-battle state uses PerkBattleState instead.
+	// Cleared entirely by ResetPerkRoundStateRound; per-battle state lives in PerkBattleState instead.
 	PerkState map[PerkID]any
 
 	// PerkBattleState holds per-perk state that persists the entire combat.
