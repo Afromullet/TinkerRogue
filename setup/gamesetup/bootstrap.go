@@ -86,7 +86,12 @@ func (gb *GameBootstrap) InitializeCoreECS(em *common.EntityManager) {
 // CreateWorld generates the game map.
 // Phase 3: Depends on InitializeCoreECS for coordinate system.
 func (gb *GameBootstrap) CreateWorld(gm *worldmapcore.GameMap, mapType string) {
-	*gm = worldmapcore.NewGameMap(worldgen.GetGenerator(mapType))
+	ctx := worldmapcore.GenContext{
+		Width:    coords.ScreenInfo.DungeonWidth,
+		Height:   coords.ScreenInfo.DungeonHeight,
+		TileSize: coords.ScreenInfo.TileSize,
+	}
+	*gm = worldmapcore.NewGameMap(worldgen.GetGenerator(mapType), ctx)
 }
 
 // CreatePlayer initializes the player entity, creates all commanders defined in

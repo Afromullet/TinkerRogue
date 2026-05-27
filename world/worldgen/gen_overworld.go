@@ -87,9 +87,11 @@ func (g *StrategicOverworldGenerator) Description() string {
 	return "Strategic world map with multi-octave terrain, typed POIs, and faction starting positions"
 }
 
-func (g *StrategicOverworldGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+func (g *StrategicOverworldGenerator) Generate(ctx worldmapcore.GenContext, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+	width, height := ctx.Width, ctx.Height
+
 	result := worldmapcore.GenerationResult{
-		Tiles:                 CreateEmptyTiles(width, height, images),
+		Tiles:                 CreateEmptyTiles(ctx, images),
 		Rooms:                 make([]worldmapcore.Rect, 0),
 		ValidPositions:        make([]coords.LogicalPosition, 0),
 		POIs:                  make([]worldmapcore.POIData, 0),
@@ -126,12 +128,10 @@ func (g *StrategicOverworldGenerator) Generate(width, height int, images worldma
 	return result
 }
 
-// generateFBmMap creates a fractal Brownian motion noise map using multi-octave OpenSimplex noise
-func (g *StrategicOverworldGenerator) generateFBmMap(width, height int, baseScale float64, octaves int, seed int64) [][]float64 {
-	noiseMap := make([][]float64, height)
-	for i := range noiseMap {
-		noiseMap[i] = make([]float64, width)
-	}
+// generateFBmMap creates a fractal Brownian motion noise map using multi-octave OpenSimplex noise.
+// Returns a flat row-major slice indexed via PositionToIndex(x, y).
+func (g *StrategicOverworldGenerator) generateFBmMap(width, height int, baseScale float64, octaves int, seed int64) []float64 {
+	noiseMap := make([]float64, width*height)
 
 	noise := opensimplex.New(seed)
 
@@ -163,7 +163,7 @@ func (g *StrategicOverworldGenerator) generateFBmMap(width, height int, baseScal
 			if normalized > 1.0 {
 				normalized = 1.0
 			}
-			noiseMap[y][x] = normalized
+			noiseMap[PositionToIndex(x, y)] = normalized
 		}
 	}
 
@@ -171,7 +171,7 @@ func (g *StrategicOverworldGenerator) generateFBmMap(width, height int, baseScal
 }
 
 // applyContinentShaping applies radial distance falloff so map edges trend toward water
-func (g *StrategicOverworldGenerator) applyContinentShaping(elevationMap [][]float64, width, height int) {
+func (g *StrategicOverworldGenerator) applyContinentShaping(elevationMap []float64, width, height int) {
 	centerX := float64(width) / 2.0
 	centerY := float64(height) / 2.0
 	maxDist := math.Sqrt(centerX*centerX + centerY*centerY)
@@ -182,29 +182,30 @@ func (g *StrategicOverworldGenerator) applyContinentShaping(elevationMap [][]flo
 			dy := float64(y) - centerY
 			dist := math.Sqrt(dx*dx+dy*dy) / maxDist // 0-1
 
+			idx := PositionToIndex(x, y)
 			// Reduce elevation near edges
-			elevationMap[y][x] *= 1.0 - (dist * 0.6)
-			if elevationMap[y][x] < 0 {
-				elevationMap[y][x] = 0
+			elevationMap[idx] *= 1.0 - (dist * 0.6)
+			if elevationMap[idx] < 0 {
+				elevationMap[idx] = 0
 			}
 		}
 	}
 }
 
 // classifyBiomes converts elevation/moisture maps to biome-classified tiles
-func (g *StrategicOverworldGenerator) classifyBiomes(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
+func (g *StrategicOverworldGenerator) classifyBiomes(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap []float64, images worldmapcore.TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			elevation := elevationMap[y][x]
-			moisture := moistureMap[y][x]
-			biome := g.determineBiome(elevation, moisture)
-
-			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			index := PositionToIndex(x, y)
-
 			if index < 0 || index >= len(result.Tiles) {
 				continue
 			}
+
+			elevation := elevationMap[index]
+			moisture := moistureMap[index]
+			biome := g.determineBiome(elevation, moisture)
+
+			logicalPos := coords.LogicalPosition{X: x, Y: y}
 
 			tile := result.Tiles[index]
 			tile.Biome = biome
@@ -270,7 +271,7 @@ func (g *StrategicOverworldGenerator) buildTerrainMap(result *worldmapcore.Gener
 }
 
 // applyConnectivityFixes updates tiles that were carved by connectivity to be walkable
-func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *worldmapcore.GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
+func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *worldmapcore.GenerationResult, terrainMap []bool, width, height int, elevationMap, moistureMap []float64, images worldmapcore.TileImageSet) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
 			idx := PositionToIndex(x, y)
@@ -301,7 +302,7 @@ func (g *StrategicOverworldGenerator) applyConnectivityFixes(result *worldmapcor
 }
 
 // placeFactionStartPositions divides the map into sectors and finds optimal starting positions
-func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *worldmapcore.GenerationResult, width, height int, elevationMap [][]float64) {
+func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *worldmapcore.GenerationResult, width, height int, elevationMap []float64) {
 	// Build terrain map for openness scoring
 	terrainMap := g.buildTerrainMap(result, width, height)
 
@@ -369,89 +370,81 @@ func (g *StrategicOverworldGenerator) placeFactionStartPositions(result *worldma
 }
 
 // placeTypedPOIs places terrain-aware POIs in order: towns, temples, watchtowers, guild halls
-func (g *StrategicOverworldGenerator) placeTypedPOIs(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, images worldmapcore.TileImageSet) {
-	// Track placed POI positions for distance checks
+func (g *StrategicOverworldGenerator) placeTypedPOIs(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap []float64, images worldmapcore.TileImageSet) {
 	placedPositions := make([]coords.LogicalPosition, 0)
 
 	// Towns first (guild halls depend on them)
-	placedTowns := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POITown, g.config.TownCount, g.config.POIMinDistance, placedPositions, images)
+	placedTowns := g.placePOIs(result, elevationMap, moistureMap, images, poiPlacementRule{
+		nodeID:  worldmapcore.POITown,
+		count:   g.config.TownCount,
+		minDist: g.config.POIMinDistance,
+	}, placedPositions)
 	placedPositions = append(placedPositions, placedTowns...)
 
 	// Temples
-	placedTemples := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POITemple, g.config.TempleCount, 15, placedPositions, images)
+	placedTemples := g.placePOIs(result, elevationMap, moistureMap, images, poiPlacementRule{
+		nodeID:  worldmapcore.POITemple,
+		count:   g.config.TempleCount,
+		minDist: 15,
+	}, placedPositions)
 	placedPositions = append(placedPositions, placedTemples...)
 
 	// Watchtowers
-	placedWatchtowers := g.placePOIType(result, width, height, elevationMap, moistureMap, worldmapcore.POIWatchtower, g.config.WatchtowerCount, 10, placedPositions, images)
+	placedWatchtowers := g.placePOIs(result, elevationMap, moistureMap, images, poiPlacementRule{
+		nodeID:  worldmapcore.POIWatchtower,
+		count:   g.config.WatchtowerCount,
+		minDist: 10,
+	}, placedPositions)
 	placedPositions = append(placedPositions, placedWatchtowers...)
 
-	// Guild halls (must be near towns)
-	g.placeGuildHalls(result, width, height, elevationMap, placedTowns, placedPositions, images)
+	// Guild halls — same placement, but constrained to be within 20 tiles of a town.
+	g.placePOIs(result, elevationMap, moistureMap, images, poiPlacementRule{
+		nodeID:  worldmapcore.POIGuildHall,
+		count:   g.config.GuildHallCount,
+		minDist: g.config.POIMinDistance,
+		accept:  withinDistance(placedTowns, 20.0),
+	}, placedPositions)
 }
 
-// placePOIType places POIs of a specific type using terrain-aware rules
-func (g *StrategicOverworldGenerator) placePOIType(result *worldmapcore.GenerationResult, width, height int, elevationMap, moistureMap [][]float64, nodeID string, count, minDist int, existingPOIs []coords.LogicalPosition, images worldmapcore.TileImageSet) []coords.LogicalPosition {
+// poiPlacementRule parameterizes placePOIs. accept (optional) adds an extra
+// per-candidate predicate on top of terrain rules and spacing.
+type poiPlacementRule struct {
+	nodeID  string
+	count   int
+	minDist int
+	accept  func(pos coords.LogicalPosition) bool
+}
+
+// withinDistance returns an accept predicate that requires the candidate to lie
+// within maxDist of at least one anchor.
+func withinDistance(anchors []coords.LogicalPosition, maxDist float64) func(coords.LogicalPosition) bool {
+	if len(anchors) == 0 {
+		// No anchors -> never accept
+		return func(coords.LogicalPosition) bool { return false }
+	}
+	return func(pos coords.LogicalPosition) bool {
+		for _, a := range anchors {
+			if euclideanDistance(pos, a) <= maxDist {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+// placePOIs is the shared POI placement loop: random-pick-and-retry with
+// terrain validation, distance spacing, and an optional accept predicate.
+func (g *StrategicOverworldGenerator) placePOIs(
+	result *worldmapcore.GenerationResult,
+	elevationMap, moistureMap []float64,
+	images worldmapcore.TileImageSet,
+	rule poiPlacementRule,
+	existingPOIs []coords.LogicalPosition,
+) []coords.LogicalPosition {
 	placed := make([]coords.LogicalPosition, 0)
-	maxAttempts := count * 50
+	maxAttempts := rule.count * 50
 
-	for attempt := 0; attempt < maxAttempts && len(placed) < count; attempt++ {
-		if len(result.ValidPositions) == 0 {
-			break
-		}
-
-		// Pick random valid position
-		validIdx := common.GetRandomBetween(0, len(result.ValidPositions)-1)
-		pos := result.ValidPositions[validIdx]
-		idx := PositionToIndex(pos.X, pos.Y)
-
-		if idx < 0 || idx >= len(result.Tiles) {
-			continue
-		}
-
-		biome := result.BiomeMap[idx]
-		elevation := elevationMap[pos.Y][pos.X]
-
-		// Check terrain-specific placement rules
-		if !g.isValidPOITerrain(nodeID, biome, elevation, moistureMap[pos.Y][pos.X]) {
-			continue
-		}
-
-		// Check distance from all existing POIs
-		if g.isTooCloseEuclidean(pos, existingPOIs, minDist) || g.isTooCloseEuclidean(pos, placed, minDist) {
-			continue
-		}
-
-		// Place the POI
-		result.POIs = append(result.POIs, worldmapcore.POIData{
-			Position: pos,
-			NodeID:   nodeID,
-			Biome:    biome,
-		})
-
-		// Set POI-specific tile image so the renderer draws it
-		if poiImg, ok := images.POIImages[nodeID]; ok {
-			result.Tiles[idx].POIType = nodeID
-			result.Tiles[idx].Image = poiImg
-		}
-
-		// Add as a 1x1 Rect for backward compat with StartingPosition()/PlaceStairs()
-		result.Rooms = append(result.Rooms, worldmapcore.NewRect(pos.X, pos.Y, 1, 1))
-		placed = append(placed, pos)
-	}
-
-	return placed
-}
-
-// placeGuildHalls places guild halls near existing towns
-func (g *StrategicOverworldGenerator) placeGuildHalls(result *worldmapcore.GenerationResult, width, height int, elevationMap [][]float64, townPositions, existingPOIs []coords.LogicalPosition, images worldmapcore.TileImageSet) {
-	if len(townPositions) == 0 {
-		return
-	}
-
-	placed := 0
-	maxAttempts := g.config.GuildHallCount * 50
-
-	for attempt := 0; attempt < maxAttempts && placed < g.config.GuildHallCount; attempt++ {
+	for attempt := 0; attempt < maxAttempts && len(placed) < rule.count; attempt++ {
 		if len(result.ValidPositions) == 0 {
 			break
 		}
@@ -464,40 +457,37 @@ func (g *StrategicOverworldGenerator) placeGuildHalls(result *worldmapcore.Gener
 			continue
 		}
 
-		// Must be within 20 tiles of a town
-		nearTown := false
-		for _, town := range townPositions {
-			dist := euclideanDistance(pos, town)
-			if dist <= 20.0 {
-				nearTown = true
-				break
-			}
-		}
-		if !nearTown {
+		biome := result.BiomeMap[idx]
+
+		if !g.isValidPOITerrain(rule.nodeID, biome, elevationMap[idx], moistureMap[idx]) {
 			continue
 		}
 
-		// Check distance from other POIs
-		if g.isTooCloseEuclidean(pos, existingPOIs, g.config.POIMinDistance) {
+		if rule.accept != nil && !rule.accept(pos) {
+			continue
+		}
+
+		if IsTooCloseEuclidean(pos, existingPOIs, rule.minDist) || IsTooCloseEuclidean(pos, placed, rule.minDist) {
 			continue
 		}
 
 		result.POIs = append(result.POIs, worldmapcore.POIData{
 			Position: pos,
-			NodeID:   worldmapcore.POIGuildHall,
-			Biome:    result.BiomeMap[idx],
+			NodeID:   rule.nodeID,
+			Biome:    biome,
 		})
 
-		// Set POI-specific tile image so the renderer draws it
-		if poiImg, ok := images.POIImages[worldmapcore.POIGuildHall]; ok {
-			result.Tiles[idx].POIType = worldmapcore.POIGuildHall
+		if poiImg, ok := images.POIImages[rule.nodeID]; ok {
+			result.Tiles[idx].POIType = rule.nodeID
 			result.Tiles[idx].Image = poiImg
 		}
 
+		// Add as a 1x1 Rect for backward compat with StartingPosition()/PlaceStairs()
 		result.Rooms = append(result.Rooms, worldmapcore.NewRect(pos.X, pos.Y, 1, 1))
-		existingPOIs = append(existingPOIs, pos)
-		placed++
+		placed = append(placed, pos)
 	}
+
+	return placed
 }
 
 // isValidPOITerrain checks terrain-specific placement rules per POI type
@@ -519,16 +509,6 @@ func (g *StrategicOverworldGenerator) isValidPOITerrain(nodeID string, biome wor
 		// Guild halls and others: any walkable
 		return biome != worldmapcore.BiomeSwamp && biome != worldmapcore.BiomeMountain
 	}
-}
-
-// isTooCloseEuclidean checks if pos is within minDist (Euclidean) of any position in the list
-func (g *StrategicOverworldGenerator) isTooCloseEuclidean(pos coords.LogicalPosition, positions []coords.LogicalPosition, minDist int) bool {
-	for _, other := range positions {
-		if euclideanDistance(pos, other) < float64(minDist) {
-			return true
-		}
-	}
-	return false
 }
 
 // euclideanDistance computes Euclidean distance between two positions.

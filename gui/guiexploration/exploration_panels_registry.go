@@ -3,11 +3,12 @@ package guiexploration
 import (
 	"fmt"
 
+	"game_main/campaign/overworld/core"
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/gui/builders"
 	"game_main/gui/framework"
 	"game_main/gui/specs"
-	"game_main/campaign/overworld/core"
 	"game_main/templates"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
@@ -47,7 +48,12 @@ func createExplorationSubMenu(em *ExplorationMode, name string, buttons []builde
 // regenerateMap generates a new map using the named generator and repositions the player.
 func regenerateMap(em *ExplorationMode, generatorName string) {
 	// 1. Generate new map (replaces tile slice, rooms, valid positions, etc.)
-	newMap := worldmapcore.NewGameMap(worldgen.GetGenerator(generatorName))
+	ctx := worldmapcore.GenContext{
+		Width:    coords.ScreenInfo.DungeonWidth,
+		Height:   coords.ScreenInfo.DungeonHeight,
+		TileSize: coords.ScreenInfo.TileSize,
+	}
+	newMap := worldmapcore.NewGameMap(worldgen.GetGenerator(generatorName), ctx)
 	*em.Context.GameMap = newMap
 
 	// 2. Rebuild walkable grid

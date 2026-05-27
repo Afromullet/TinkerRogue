@@ -141,13 +141,4 @@ func applyGarrisonTableOverrides(cfg *templates.JSONMapGenConfig) {
 		}
 		garrisongen.SetGarrisonFloorScaling(scaling)
 	}
-
-	// Override spawn counts
-	if len(jgr.SpawnCounts) > 0 {
-		counts := make(map[string][4]int, len(jgr.SpawnCounts))
-		for key, sc := range jgr.SpawnCounts {
-			counts[key] = [4]int{sc.MinPlayer, sc.MaxPlayer, sc.MinDefender, sc.MaxDefender}
-		}
-		garrisongen.SetGarrisonSpawnCounts(counts)
-	}
 }

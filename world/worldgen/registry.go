@@ -1,6 +1,11 @@
 package worldgen
 
-import "game_main/world/worldmapcore"
+import (
+	"log"
+	"sort"
+
+	"game_main/world/worldmapcore"
+)
 
 // ConfigOverride is an optional hook that returns a configured MapGenerator
 // for the given name. If set and returns non-nil, the returned generator
@@ -17,18 +22,29 @@ func RegisterGenerator(gen worldmapcore.MapGenerator) {
 }
 
 // GetGenerator retrieves algorithm by name, checking ConfigOverride first,
-// then falling back to registry, then to default "rooms_corridors".
+// then falling back to the registry, then to the default "rooms_corridors".
+// Logs a warning when falling back from an unknown name so typos in save
+// files or config don't silently swap the algorithm.
 func GetGenerator(name string) worldmapcore.MapGenerator {
-	// Check for config override first
 	if ConfigOverride != nil {
 		if gen := ConfigOverride(name); gen != nil {
 			return gen
 		}
 	}
-	// Fall back to registry
-	gen := generators[name]
-	if gen == nil {
-		gen = generators["rooms_corridors"] // Default fallback
+	if gen, ok := generators[name]; ok {
+		return gen
 	}
-	return gen
+	log.Printf("worldgen: generator %q not registered; falling back to rooms_corridors (known: %v)",
+		name, registeredNames())
+	return generators["rooms_corridors"]
+}
+
+// registeredNames returns the sorted list of registered generator names.
+func registeredNames() []string {
+	names := make([]string, 0, len(generators))
+	for n := range generators {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
 }

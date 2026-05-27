@@ -24,8 +24,10 @@ type BiomeTileSet struct {
 	FloorImages []*ebiten.Image
 }
 
-// LoadTileImages loads all tile images from disk
-// Returns a TileImageSet instead of setting global variables
+// LoadTileImages loads all tile images from disk and returns a TileImageSet.
+// Panics if the default floor, wall, or stairs assets are missing — the game
+// is unrunnable without these. Biome-specific and POI directories are
+// optional; missing entries fall back to the defaults at draw time.
 func LoadTileImages() TileImageSet {
 	images := TileImageSet{
 		WallImages:  make([]*ebiten.Image, 0),
@@ -35,39 +37,50 @@ func LoadTileImages() TileImageSet {
 	}
 
 	// Load floor tiles
-	dir := defaultFloorPath()
-	files, _ := os.ReadDir(dir)
-
-	for _, file := range files {
-		if !file.IsDir() {
-			imagePath := filepath.Join(dir, file.Name())
-			floor, _, _ := ebitenutil.NewImageFromFile(imagePath)
-			images.FloorImages = append(images.FloorImages, floor)
+	floorDir := defaultFloorPath()
+	if files, err := os.ReadDir(floorDir); err == nil {
+		for _, file := range files {
+			if !file.IsDir() {
+				imagePath := filepath.Join(floorDir, file.Name())
+				if floor, _, err := ebitenutil.NewImageFromFile(imagePath); err == nil {
+					images.FloorImages = append(images.FloorImages, floor)
+				}
+			}
 		}
+	}
+	if len(images.FloorImages) == 0 {
+		panic("worldmapcore: no floor tiles loaded from " + floorDir)
 	}
 
 	// Load wall tiles
-	dir = defaultWallPath()
-	files, _ = os.ReadDir(dir)
-
-	for _, file := range files {
-		if !file.IsDir() {
-			imagePath := filepath.Join(dir, file.Name())
-			wall, _, _ := ebitenutil.NewImageFromFile(imagePath)
-			images.WallImages = append(images.WallImages, wall)
+	wallDir := defaultWallPath()
+	if files, err := os.ReadDir(wallDir); err == nil {
+		for _, file := range files {
+			if !file.IsDir() {
+				imagePath := filepath.Join(wallDir, file.Name())
+				if wall, _, err := ebitenutil.NewImageFromFile(imagePath); err == nil {
+					images.WallImages = append(images.WallImages, wall)
+				}
+			}
 		}
+	}
+	if len(images.WallImages) == 0 {
+		panic("worldmapcore: no wall tiles loaded from " + wallDir)
 	}
 
 	// Load stairs
 	s, _, _ := ebitenutil.NewImageFromFile(stairsPath())
+	if s == nil {
+		panic("worldmapcore: failed to load stairs image from " + stairsPath())
+	}
 	images.StairsDown = s
 
-	// Load biome-specific images
+	// Load biome-specific images (optional — fall back to defaults at draw time)
 	for _, biome := range allBiomes {
 		images.BiomeImages[biome] = loadBiomeTiles(biome)
 	}
 
-	// Load POI-specific images
+	// Load POI-specific images (optional)
 	for poiType := range poiAssetConfig {
 		assetPath := poiAssetPath(poiType)
 		if img, _, err := ebitenutil.NewImageFromFile(assetPath); err == nil {

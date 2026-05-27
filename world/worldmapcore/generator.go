@@ -26,13 +26,22 @@ type GenerationResult struct {
 	POIs                  []POIData              // Typed points of interest
 	FactionStartPositions []FactionStartPosition // Generator-chosen faction positions
 	BiomeMap              []Biome                // Flat array indexed by PositionToIndex
-	GarrisonData          any                    // Garrison floor metadata (nil for non-garrison generators)
+}
+
+// GenContext carries the dimensions a generator needs without forcing it to
+// read package globals. Callers (typically gamesetup, which has legitimate
+// access to coords.ScreenInfo) build a context and pass it to NewGameMap;
+// headless tests and save-file migration construct their own.
+type GenContext struct {
+	Width    int
+	Height   int
+	TileSize int
 }
 
 // MapGenerator defines the interface for all map generation algorithms
 type MapGenerator interface {
-	// Generate creates a new map layout
-	Generate(width, height int, images TileImageSet) GenerationResult
+	// Generate creates a new map layout sized and pixel-scaled per ctx.
+	Generate(ctx GenContext, images TileImageSet) GenerationResult
 
 	// Name returns the algorithm name for selection
 	Name() string

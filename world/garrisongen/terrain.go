@@ -2,6 +2,7 @@ package garrisongen
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/world/worldgen"
 	"game_main/world/worldmapcore"
 )
@@ -140,17 +141,18 @@ func placePillarRow(result *worldmapcore.GenerationResult, startX, startY int, i
 }
 
 // placeSpacedPillars places 2x2 pillars with minimum spacing, returns positions placed.
-func placeSpacedPillars(result *worldmapcore.GenerationResult, room worldmapcore.Rect, count, minSpacing, width int, images worldmapcore.TileImageSet, use1x1 bool) [][2]int {
-	positions := make([][2]int, 0, count)
+func placeSpacedPillars(result *worldmapcore.GenerationResult, room worldmapcore.Rect, count, minSpacing, width int, images worldmapcore.TileImageSet, use1x1 bool) []coords.LogicalPosition {
+	positions := make([]coords.LogicalPosition, 0, count)
 	for attempt := 0; attempt < count*20 && len(positions) < count; attempt++ {
 		px := common.GetRandomBetween(room.X1+3, room.X2-4)
 		py := common.GetRandomBetween(room.Y1+3, room.Y2-4)
+		pos := coords.LogicalPosition{X: px, Y: py}
 
-		if worldgen.IsTooCloseToAny(px, py, positions, minSpacing) {
+		if worldgen.IsTooCloseChebyshev(pos, positions, minSpacing) {
 			continue
 		}
 
-		positions = append(positions, [2]int{px, py})
+		positions = append(positions, pos)
 		if use1x1 {
 			setTileWall(result, px, py, width, images)
 		} else {
@@ -514,18 +516,19 @@ func injectMageTowerTerrain(room worldmapcore.Rect, width int, result *worldmapc
 // Layout A: 4-6 staggered pillars (mix 1x1 and 2x2), no two share X or Y.
 func injectMageTowerStaggeredGrid(room worldmapcore.Rect, width int, result *worldmapcore.GenerationResult, images worldmapcore.TileImageSet) {
 	numPillars := common.GetRandomBetween(4, 6)
-	positions := make([][2]int, 0, numPillars)
+	positions := make([]coords.LogicalPosition, 0, numPillars)
 
 	for attempt := 0; attempt < numPillars*15 && len(positions) < numPillars; attempt++ {
 		px := common.GetRandomBetween(room.X1+3, room.X2-4)
 		py := common.GetRandomBetween(room.Y1+3, room.Y2-4)
+		pos := coords.LogicalPosition{X: px, Y: py}
 
 		// Enforce minimum 3-tile spacing AND staggering
-		if worldgen.IsTooCloseToAny(px, py, positions, 3) {
+		if worldgen.IsTooCloseChebyshev(pos, positions, 3) {
 			continue
 		}
 
-		positions = append(positions, [2]int{px, py})
+		positions = append(positions, pos)
 		if common.GetDiceRoll(2) == 1 {
 			setTileWall(result, px, py, width, images)
 		} else {

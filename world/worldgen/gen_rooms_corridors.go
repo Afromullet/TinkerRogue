@@ -42,28 +42,28 @@ func (g *RoomsAndCorridorsGenerator) Description() string {
 	return "Classic roguelike: rectangular rooms connected by L-shaped corridors"
 }
 
-func (g *RoomsAndCorridorsGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+func (g *RoomsAndCorridorsGenerator) Generate(ctx worldmapcore.GenContext, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
 	if g.config.Seed != 0 {
 		common.SetRNGSeed(uint64(g.config.Seed), uint64(g.config.Seed))
 	}
 
 	result := worldmapcore.GenerationResult{
-		Tiles:          CreateEmptyTiles(width, height, images),
+		Tiles:          CreateEmptyTiles(ctx, images),
 		Rooms:          make([]worldmapcore.Rect, 0, g.config.MaxRooms),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
 
 	// Generate rooms with collision detection
 	for idx := 0; idx < g.config.MaxRooms; idx++ {
-		room := g.generateRandomRoom(width, height)
+		room := g.generateRandomRoom(ctx.Width, ctx.Height)
 
 		if g.canPlaceRoom(room, result.Rooms) {
-			CarveRoom(&result, room, width, images)
+			CarveRoom(&result, room, ctx.Width, images)
 
 			// Connect to previous room if not the first
 			if len(result.Rooms) > 0 {
 				prevRoom := result.Rooms[len(result.Rooms)-1]
-				g.connectRooms(&result, prevRoom, room, width, images)
+				g.connectRooms(&result, prevRoom, room, ctx.Width, images)
 			}
 
 			result.Rooms = append(result.Rooms, room)

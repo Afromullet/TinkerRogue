@@ -506,17 +506,16 @@ There are exactly three tile types. `STAIRS_DOWN` is placed post-generation by `
 ```go
 // world/worldmap/dungeontile.go
 type Tile struct {
-    PixelX       int
-    PixelY       int
-    TileCords    coords.LogicalPosition
-    Blocked      bool
-    Image        *ebiten.Image
-    tileContents TileContents      // unexported: holds entity IDs on the tile
-    TileType     TileType
-    IsRevealed   bool
-    cm           graphics.ColorMatrix  // unexported: color tint
-    Biome        Biome
-    POIType      string  // "town", "temple", etc., or "" if not a POI
+    PixelX     int
+    PixelY     int
+    TileCords  coords.LogicalPosition
+    Blocked    bool
+    Image      *ebiten.Image
+    TileType   TileType
+    IsRevealed bool
+    cm         graphics.ColorMatrix  // unexported: color tint
+    Biome      Biome
+    POIType    string  // "town", "temple", etc., or "" if not a POI
 }
 
 func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition,
@@ -524,16 +523,6 @@ func NewTile(pixelX, pixelY int, tileCords coords.LogicalPosition,
 ```
 
 **Caution:** `NewTile` hardcodes `Blocked = true` and `TileType = WALL` regardless of parameters. Callers that need a non-wall tile must set those fields explicitly after construction. This is done in all generator `convertToTiles` methods.
-
-### TileContents
-
-```go
-type TileContents struct {
-    EntityIDs []ecs.EntityID
-}
-```
-
-`TileContents` stores ECS entity IDs (not pointers) for items resting on the tile. Currently used only for item pickup.
 
 ---
 
@@ -778,17 +767,10 @@ func (gm *GameMap) PlaceStairs(images TileImageSet)
 func (gm *GameMap) GetBiomeAt(pos coords.LogicalPosition) Biome
 
 // IsOpaque returns true if the tile at (x, y) is a WALL (used by FOV).
-func (gameMap GameMap) IsOpaque(x, y int) bool
+func (gameMap *GameMap) IsOpaque(x, y int) bool
 
-// InBounds checks if (x, y) is within DungeonWidth/DungeonHeight.
-func (gameMap GameMap) InBounds(x, y int) bool
-
-// AddEntityToTile adds an entity ID to a tile's TileContents.
-func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *coords.LogicalPosition)
-
-// RemoveItemFromTile removes the entity at index from a tile's TileContents.
-// Returns the EntityID (ECS-compliant, no entity pointer).
-func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPosition) (ecs.EntityID, error)
+// InBounds checks if (x, y) is within the GameMap's Width/Height.
+func (gameMap *GameMap) InBounds(x, y int) bool
 
 // ApplyColorMatrix sets a ColorMatrix on tiles at the given indices.
 // Sets TileColorsDirty = true to trigger a render pass.

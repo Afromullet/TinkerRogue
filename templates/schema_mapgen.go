@@ -62,9 +62,8 @@ type JSONOverworldGenConfig struct {
 
 // JSONGarrisonRaidConfig holds garrison raid generator parameters.
 type JSONGarrisonRaidConfig struct {
-	RoomSizes    map[string]JSONRoomSize   `json:"roomSizes"`
-	FloorScaling []JSONFloorScaling        `json:"floorScaling"`
-	SpawnCounts  map[string]JSONSpawnCount `json:"spawnCounts"`
+	RoomSizes    map[string]JSONRoomSize `json:"roomSizes"`
+	FloorScaling []JSONFloorScaling      `json:"floorScaling"`
 }
 
 // JSONRoomSize holds min/max width and height for a garrison room type.
@@ -85,10 +84,3 @@ type JSONFloorScaling struct {
 	AllowedTypes []string `json:"allowedTypes"`
 }
 
-// JSONSpawnCount holds spawn count ranges for player and defender per room type.
-type JSONSpawnCount struct {
-	MinPlayer   int `json:"minPlayer"`
-	MaxPlayer   int `json:"maxPlayer"`
-	MinDefender int `json:"minDefender"`
-	MaxDefender int `json:"maxDefender"`
-}

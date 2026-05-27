@@ -34,13 +34,15 @@ func NewGarrisonRaidGenerator(config GarrisonFloorConfig) *GarrisonRaidGenerator
 func (g *GarrisonRaidGenerator) Name() string        { return "garrison_raid" }
 func (g *GarrisonRaidGenerator) Description() string { return "DAG-based garrison raid floors" }
 
-func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+func (g *GarrisonRaidGenerator) Generate(ctx worldmapcore.GenContext, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
 	if g.config.Seed != 0 {
 		common.SetRNGSeed(uint64(g.config.Seed), uint64(g.config.Seed))
 	}
 
+	width, height := ctx.Width, ctx.Height
+
 	result := worldmapcore.GenerationResult{
-		Tiles:          worldgen.CreateEmptyTiles(width, height, images),
+		Tiles:          worldgen.CreateEmptyTiles(ctx, images),
 		Rooms:          make([]worldmapcore.Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -212,12 +214,11 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmapcore.
 	worldgen.EnsureTerrainConnectivity(terrainMap, width, height)
 	for i := 0; i < len(terrainMap); i++ {
 		if terrainMap[i] && result.Tiles[i].Blocked {
-			x := i % width
-			y := i / width
+			pos := coords.CoordManager.IndexToLogical(i)
 			result.Tiles[i].Blocked = false
 			result.Tiles[i].TileType = worldmapcore.FLOOR
 			result.Tiles[i].Image = worldgen.SelectRandomImage(images.FloorImages)
-			result.ValidPositions = append(result.ValidPositions, coords.LogicalPosition{X: x, Y: y})
+			result.ValidPositions = append(result.ValidPositions, pos)
 		}
 	}
 
@@ -226,9 +227,6 @@ func (g *GarrisonRaidGenerator) Generate(width, height int, images worldmapcore.
 		room := placedRooms[node.ID]
 		injectGarrisonTerrain(node.RoomType, room, width, &result, images)
 	}
-
-	// Build floor metadata (spawn positions, room types)
-	result.GarrisonData = buildGarrisonFloorData(dag, placedRooms, floorNum, &result, width)
 
 	return result
 }

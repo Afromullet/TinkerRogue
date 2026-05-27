@@ -194,7 +194,6 @@ type Item struct {
 TinkerRogue has undergone several refactorings to eliminate entity pointers:
 
 - **Inventory System (2025-10-21)**: Converted from `*ecs.Entity` to `ecs.EntityID` - eliminated dangling pointer bugs
-- **TileContents (2025-11-08)**: Changed `[]*ecs.Entity` to `[]ecs.EntityID` - fixed memory leaks
 - **Position System (2025-10-15)**: Used value-based map keys instead of pointer keys - 50x performance improvement
 
 **When You Need Entity Pointers:**

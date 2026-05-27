@@ -4,16 +4,18 @@
 package worldmapcore
 
 import (
-	"errors"
-
 	"game_main/core/common"
-	"game_main/visual/graphics"
 	"game_main/core/coords"
-
-	"github.com/bytearena/ecs"
+	"game_main/visual/graphics"
 )
 
-// Rect represents a rectangular room or area on the game map.
+// Rect represents a half-open rectangular region [X1, X2) × [Y1, Y2).
+// NewRect(x, y, w, h) sets X2 = x+w, Y2 = y+h.
+// CarveRoom carves the open interior (X1+1 ≤ x < X2, Y1+1 ≤ y < Y2).
+// NOTE: Intersect currently uses inclusive bounds (<=, >=) — two rooms
+// sharing an edge will report as intersecting even though their carved
+// interiors do not overlap. See WORLD_TECH_DEBT 1.10. Changing Intersect to
+// half-open is deferred until callers are audited.
 type Rect struct {
 	X1 int
 	X2 int
@@ -45,6 +47,8 @@ type GameMap struct {
 	Tiles                 []*Tile
 	Rooms                 []Rect
 	NumTiles              int
+	Width                 int // Logical dungeon width (tiles)
+	Height                int // Logical dungeon height (tiles)
 	RightEdgeX            int
 	TopEdgeY              int
 	ValidPositions        []coords.LogicalPosition
@@ -54,27 +58,26 @@ type GameMap struct {
 	TileColorsDirty       bool
 }
 
-// NewGameMap creates a new game map using the provided generator.
-// Callers resolve the generator via worldgen.GetGenerator before passing it in.
-func NewGameMap(gen MapGenerator) GameMap {
+// NewGameMap creates a new game map using the provided generator at the given
+// dimensions. Callers (typically gamesetup or GUI bootstrap) build the
+// GenContext from coords.ScreenInfo; this function does not touch globals so
+// it can be driven at any size (headless tests, save-file migration, etc.).
+func NewGameMap(gen MapGenerator, ctx GenContext) GameMap {
 	images := LoadTileImages()
 
-	dungeonMap := GameMap{}
+	result := gen.Generate(ctx, images)
 
-	// Generate the map
-	result := gen.Generate(
-		coords.ScreenInfo.DungeonWidth,
-		coords.ScreenInfo.DungeonHeight,
-		images,
-	)
-
-	dungeonMap.Tiles = result.Tiles
-	dungeonMap.Rooms = result.Rooms
-	dungeonMap.NumTiles = len(dungeonMap.Tiles)
-	dungeonMap.ValidPositions = result.ValidPositions
-	dungeonMap.BiomeMap = result.BiomeMap
-	dungeonMap.POIs = result.POIs
-	dungeonMap.FactionStartPositions = result.FactionStartPositions
+	dungeonMap := GameMap{
+		Tiles:                 result.Tiles,
+		Rooms:                 result.Rooms,
+		NumTiles:              len(result.Tiles),
+		Width:                 ctx.Width,
+		Height:                ctx.Height,
+		ValidPositions:        result.ValidPositions,
+		BiomeMap:              result.BiomeMap,
+		POIs:                  result.POIs,
+		FactionStartPositions: result.FactionStartPositions,
+	}
 
 	dungeonMap.PlaceStairs(images)
 
@@ -97,8 +100,8 @@ func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
 	}
 
 	// Fallback for non-room generators: use center of map
-	centerX := coords.ScreenInfo.DungeonWidth / 2
-	centerY := coords.ScreenInfo.DungeonHeight / 2
+	centerX := gameMap.Width / 2
+	centerY := gameMap.Height / 2
 
 	// If center is not walkable, find first valid position
 	logicalPos := coords.LogicalPosition{X: centerX, Y: centerY}
@@ -114,46 +117,6 @@ func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
 
 	// Shouldn't reach here, but return center as final fallback
 	return coords.LogicalPosition{X: centerX, Y: centerY}
-}
-
-// The Entity Manager continues to track an entity when it is added to a tile.
-// Since a tile has a position, we use the pos parameter to determine which tile to add it to
-func (gameMap *GameMap) AddEntityToTile(entity *ecs.Entity, pos *coords.LogicalPosition) {
-
-	tile := gameMap.Tile(pos)
-
-	if tile.tileContents.EntityIDs == nil {
-		tile.tileContents.EntityIDs = make([]ecs.EntityID, 0)
-	}
-
-	tile.tileContents.EntityIDs = append(tile.tileContents.EntityIDs, entity.ID)
-}
-
-// This removes the item at the specified index from the tile.
-// Right now it's just used for the inventory
-// The item is removed from the tile but still exists in the entity manager.
-// Since this removes the item from tile.tileContents, the caller will have to store it somewhere
-// Otherwise, it'll only exist in the entity manager
-// Returns EntityID instead of entity pointer (ECS compliance)
-func (gameMap *GameMap) RemoveItemFromTile(index int, pos *coords.LogicalPosition) (ecs.EntityID, error) {
-
-	tile := gameMap.Tile(pos)
-
-	if tile.tileContents.EntityIDs == nil {
-		return 0, errors.New("entityIDs slice is nil")
-	}
-
-	entityIDs := tile.tileContents.EntityIDs
-
-	if index < 0 || index >= len(entityIDs) {
-		return 0, errors.New("index out of range")
-	}
-
-	entityID := entityIDs[index]
-
-	tile.tileContents.EntityIDs = append(entityIDs[:index], entityIDs[index+1:]...)
-
-	return entityID, nil
 }
 
 // Old generation methods removed - now handled by generator implementations
@@ -210,9 +173,8 @@ func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatri
 	gameMap.TileColorsDirty = true
 }
 
-func (gameMap GameMap) InBounds(x, y int) bool {
-
-	if x < 0 || x >= coords.ScreenInfo.DungeonWidth || y < 0 || y >= coords.ScreenInfo.DungeonHeight {
+func (gameMap *GameMap) InBounds(x, y int) bool {
+	if x < 0 || x >= gameMap.Width || y < 0 || y >= gameMap.Height {
 		return false
 	}
 	return true
@@ -230,9 +192,7 @@ func (gm *GameMap) GetBiomeAt(pos coords.LogicalPosition) Biome {
 	return gm.BiomeMap[idx]
 }
 
-// TODO: Change this to check for WALL, not blocked
-// Shouldn't this be a pointer?
-func (gameMap GameMap) IsOpaque(x, y int) bool {
+func (gameMap *GameMap) IsOpaque(x, y int) bool {
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
 	if idx < 0 || idx >= len(gameMap.Tiles) {

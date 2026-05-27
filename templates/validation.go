@@ -405,14 +405,6 @@ func validateGarrisonRaidConfig(gr *JSONGarrisonRaidConfig) error {
 		}
 	}
 
-	for key, sc := range gr.SpawnCounts {
-		if !roomtypes.Valid[key] {
-			return fmt.Errorf("garrison_raid spawnCounts invalid room type: %q", key)
-		}
-		if sc.MinPlayer > sc.MaxPlayer || sc.MinDefender > sc.MaxDefender {
-			return fmt.Errorf("garrison_raid spawnCounts min must be <= max for %q", key)
-		}
-	}
 	return nil
 }
 

@@ -47,6 +47,13 @@ type mstEdge struct {
 	from, to int
 }
 
+// erosionChange describes one terrain cell flip queued during a pass.
+// Collected first, applied after, to avoid cascading mutations mid-scan.
+type erosionChange struct {
+	idx int
+	val bool
+}
+
 // DefaultCavernConfig returns tuned defaults for organic cave generation.
 func DefaultCavernConfig() CavernConfig {
 	return CavernConfig{
@@ -81,9 +88,11 @@ func (g *CavernGenerator) Description() string {
 	return "Organic cave layouts with irregular chambers and winding tunnels for tactical combat"
 }
 
-func (g *CavernGenerator) Generate(width, height int, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+func (g *CavernGenerator) Generate(ctx worldmapcore.GenContext, images worldmapcore.TileImageSet) worldmapcore.GenerationResult {
+	width, height := ctx.Width, ctx.Height
+
 	result := worldmapcore.GenerationResult{
-		Tiles:          CreateEmptyTiles(width, height, images),
+		Tiles:          CreateEmptyTiles(ctx, images),
 		Rooms:          make([]worldmapcore.Rect, 0),
 		ValidPositions: make([]coords.LogicalPosition, 0),
 	}
@@ -143,7 +152,7 @@ func (g *CavernGenerator) Generate(width, height int, images worldmapcore.TileIm
 	factionStarts := g.placeFactionStarts(terrainMap, width, height)
 
 	// Step 13: Convert to tiles
-	ConvertTerrainMapToTiles(&result, terrainMap, width, height, images, worldmapcore.BiomeMountain)
+	ConvertTerrainMapToTiles(&result, terrainMap, ctx, images, worldmapcore.BiomeMountain)
 
 	// Record chambers as rooms for compatibility
 	for _, ch := range chambers {
@@ -509,10 +518,7 @@ func (g *CavernGenerator) cellularAutomataStep(terrainMap []bool, width, height 
 // Erosion: wall with 5+ walkable neighbors -> 50% chance floor.
 // Accretion: floor with 7+ wall neighbors -> wall.
 func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height int) {
-	changes := make([]struct {
-		idx int
-		val bool
-	}, 0)
+	changes := make([]erosionChange, 0)
 
 	for y := 1; y < height-1; y++ {
 		for x := 1; x < width-1; x++ {
@@ -541,17 +547,11 @@ func (g *CavernGenerator) erosionAccretionPass(terrainMap []bool, width, height 
 			if !terrainMap[idx] && walkableCount >= 5 {
 				// Erosion: wall tile surrounded by mostly walkable -> 50% become floor
 				if common.GetDiceRoll(100) <= 50 {
-					changes = append(changes, struct {
-						idx int
-						val bool
-					}{idx, true})
+					changes = append(changes, erosionChange{idx: idx, val: true})
 				}
 			} else if terrainMap[idx] && wallCount >= 7 {
 				// Accretion: floor tile surrounded by mostly wall -> become wall
-				changes = append(changes, struct {
-					idx int
-					val bool
-				}{idx, false})
+				changes = append(changes, erosionChange{idx: idx, val: false})
 			}
 		}
 	}

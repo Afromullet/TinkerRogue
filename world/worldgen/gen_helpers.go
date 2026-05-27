@@ -43,32 +43,26 @@ func GetBiomeImages(images worldmapcore.TileImageSet, biome worldmapcore.Biome) 
 	return wallImages, floorImages
 }
 
-// CreateEmptyTiles initializes all tiles as walls
-// Optimized to reduce allocations: allocates one contiguous slice of Tile values
-// and reuses pointers to those values, avoiding per-tile heap allocations
-func CreateEmptyTiles(width, height int, images worldmapcore.TileImageSet) []*worldmapcore.Tile {
-	numTiles := width * height
+// CreateEmptyTiles initializes all tiles as walls. Allocates a single contiguous
+// slice of Tile values and a pointer slice that references it (avoids per-tile
+// heap allocations).
+func CreateEmptyTiles(ctx worldmapcore.GenContext, images worldmapcore.TileImageSet) []*worldmapcore.Tile {
+	numTiles := ctx.Width * ctx.Height
 
-	// Allocate all tiles in one contiguous slice (single allocation instead of thousands)
 	tileValues := make([]worldmapcore.Tile, numTiles)
-
-	// Create pointer slice that points into the contiguous allocation
 	tiles := make([]*worldmapcore.Tile, numTiles)
 
-	for x := 0; x < width; x++ {
-		for y := 0; y < height; y++ {
+	for x := 0; x < ctx.Width; x++ {
+		for y := 0; y < ctx.Height; y++ {
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
 			index := PositionToIndex(x, y)
 			wallImg := SelectRandomImage(images.WallImages)
 
-			// Initialize tile directly in the contiguous slice
 			tileValues[index] = worldmapcore.NewTile(
-				x*coords.ScreenInfo.TileSize,
-				y*coords.ScreenInfo.TileSize,
+				x*ctx.TileSize,
+				y*ctx.TileSize,
 				logicalPos, true, wallImg, worldmapcore.WALL, false,
 			)
-
-			// Store pointer to the tile in the contiguous slice
 			tiles[index] = &tileValues[index]
 		}
 	}
@@ -167,8 +161,10 @@ func FloodFillRegion(terrainMap []bool, visited []bool, startX, startY, width, h
 // CarveCorridorBetween creates an L-shaped corridor between two flat indices on the terrain map.
 // Sets traversed cells to walkable (true).
 func CarveCorridorBetween(terrainMap []bool, width, height, fromIdx, toIdx int) {
-	fromX, fromY := fromIdx%width, fromIdx/width
-	toX, toY := toIdx%width, toIdx/width
+	fromPos := coords.CoordManager.IndexToLogical(fromIdx)
+	toPos := coords.CoordManager.IndexToLogical(toIdx)
+	fromX, fromY := fromPos.X, fromPos.Y
+	toX, toY := toPos.X, toPos.Y
 
 	// Horizontal first
 	if fromX < toX {
@@ -258,17 +254,17 @@ func EnsureTerrainConnectivity(terrainMap []bool, width, height int) {
 
 // ConvertTerrainMapToTiles converts a boolean terrain map to actual Tile objects.
 // terrainMap true = walkable floor, false = wall. Assigns biome images and populates ValidPositions.
-func ConvertTerrainMapToTiles(result *worldmapcore.GenerationResult, terrainMap []bool, width, height int, images worldmapcore.TileImageSet, biome worldmapcore.Biome) {
+func ConvertTerrainMapToTiles(result *worldmapcore.GenerationResult, terrainMap []bool, ctx worldmapcore.GenContext, images worldmapcore.TileImageSet, biome worldmapcore.Biome) {
 	wallImages, floorImages := GetBiomeImages(images, biome)
 
-	result.BiomeMap = make([]worldmapcore.Biome, width*height)
+	result.BiomeMap = make([]worldmapcore.Biome, ctx.Width*ctx.Height)
 
-	for y := 0; y < height; y++ {
-		for x := 0; x < width; x++ {
+	for y := 0; y < ctx.Height; y++ {
+		for x := 0; x < ctx.Width; x++ {
 			idx := PositionToIndex(x, y)
 			logicalPos := coords.LogicalPosition{X: x, Y: y}
-			pixelX := x * coords.ScreenInfo.TileSize
-			pixelY := y * coords.ScreenInfo.TileSize
+			pixelX := x * ctx.TileSize
+			pixelY := y * ctx.TileSize
 
 			result.BiomeMap[idx] = biome
 
@@ -341,12 +337,12 @@ func FindBestOpenPosition(terrainMap []bool, width, height, xMin, xMax, yMin, yM
 	return bestPos
 }
 
-// IsTooCloseToAny checks if (px, py) is within minSpacing of any position in placed
-// using Chebyshev distance (both dx AND dy must be < minSpacing to be "too close").
-func IsTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
+// IsTooCloseChebyshev reports whether pos is within minSpacing of any candidate
+// in placed under Chebyshev distance (both |dx| AND |dy| must be < minSpacing).
+func IsTooCloseChebyshev(pos coords.LogicalPosition, placed []coords.LogicalPosition, minSpacing int) bool {
 	for _, pp := range placed {
-		dx := px - pp[0]
-		dy := py - pp[1]
+		dx := pos.X - pp.X
+		dy := pos.Y - pp.Y
 		if dx < 0 {
 			dx = -dx
 		}
@@ -354,6 +350,20 @@ func IsTooCloseToAny(px, py int, placed [][2]int, minSpacing int) bool {
 			dy = -dy
 		}
 		if dx < minSpacing && dy < minSpacing {
+			return true
+		}
+	}
+	return false
+}
+
+// IsTooCloseEuclidean reports whether pos is within minDist (Euclidean) of any
+// candidate in placed.
+func IsTooCloseEuclidean(pos coords.LogicalPosition, placed []coords.LogicalPosition, minDist int) bool {
+	limitSq := float64(minDist * minDist)
+	for _, pp := range placed {
+		dx := float64(pos.X - pp.X)
+		dy := float64(pos.Y - pp.Y)
+		if dx*dx+dy*dy < limitSq {
 			return true
 		}
 	}

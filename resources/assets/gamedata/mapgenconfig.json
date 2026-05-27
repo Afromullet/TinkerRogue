@@ -83,17 +83,7 @@
           "minTotal": 6, "maxTotal": 8,
           "allowedTypes": ["guard_post", "barracks", "patrol_route", "rest_room", "armory", "command_post", "mage_tower"]
         }
-      ],
-      "spawnCounts": {
-        "guard_post": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
-        "barracks": { "minPlayer": 3, "maxPlayer": 4, "minDefender": 2, "maxDefender": 3 },
-        "armory": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
-        "command_post": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
-        "patrol_route": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 2, "maxDefender": 3 },
-        "mage_tower": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 1, "maxDefender": 2 },
-        "rest_room": { "minPlayer": 2, "maxPlayer": 3, "minDefender": 0, "maxDefender": 0 },
-        "stairs": { "minPlayer": 2, "maxPlayer": 2, "minDefender": 0, "maxDefender": 0 }
-      }
+      ]
     }
   }
 }
