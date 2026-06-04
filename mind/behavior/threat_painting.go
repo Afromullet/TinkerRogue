@@ -19,34 +19,23 @@ var NoFalloff = func(distance, maxRange int) float64 {
 }
 
 // PaintThreatToMap paints threat values onto a map with configurable falloff.
-// If trackPositions is true, returns slice of painted positions (excludes center).
-// If trackPositions is false, returns nil.
 func PaintThreatToMap(
 	threatMap map[coords.LogicalPosition]float64,
 	center coords.LogicalPosition,
 	radius int,
 	threatValue float64,
 	falloffFunc FalloffFunc,
-	trackPositions bool,
-) []coords.LogicalPosition {
-	var paintedPositions []coords.LogicalPosition
-
+) {
 	for dx := -radius; dx <= radius; dx++ {
 		for dy := -radius; dy <= radius; dy++ {
 			pos := coords.LogicalPosition{X: center.X + dx, Y: center.Y + dy}
 			distance := center.ChebyshevDistance(&pos)
 
-			// Skip center position (distance == 0) when tracking
-			// Center is the squad's own position - not a valid threat target
+			// Skip the center position (distance == 0): it is the squad's own tile, not a threat target.
 			if distance > 0 && distance <= radius {
 				falloff := falloffFunc(distance, radius)
 				threatMap[pos] += threatValue * falloff
-				if trackPositions {
-					paintedPositions = append(paintedPositions, pos)
-				}
 			}
 		}
 	}
-
-	return paintedPositions
 }

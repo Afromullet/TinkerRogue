@@ -211,13 +211,19 @@ func validateAIConfig(config *JSONAIConfig) error {
 
 	tc := config.ThreatCalculation
 	if tc.FlankingThreatRangeBonus <= 0 || tc.IsolationThreshold <= 0 ||
-		tc.RetreatSafeThreatThreshold <= 0 {
+		tc.RetreatSafeThreatThreshold <= 0 || tc.IsolationMaxDistance <= 0 ||
+		tc.EngagementPressureMax <= 0 {
 		return fmt.Errorf("all threatCalculation distances must be positive")
 	}
 
 	sl := config.SupportLayer
 	if sl.HealRadius <= 0 {
 		return fmt.Errorf("supportLayer.healRadius must be positive")
+	}
+
+	prw := config.PositionalRiskWeights
+	if prw.Flanking < 0 || prw.Isolation < 0 || prw.EngagementPressure < 0 || prw.Retreat < 0 {
+		return fmt.Errorf("positionalRiskWeights must not be negative")
 	}
 	return nil
 }

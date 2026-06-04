@@ -10,8 +10,6 @@ import (
 	"github.com/bytearena/ecs"
 )
 
-// Note: RoleThreatWeights struct and GetRoleBehaviorWeights are defined in threat_constants.go
-
 // CompositeThreatEvaluator combines multiple threat layers
 // Provides role-aware threat queries for AI decision-making
 type CompositeThreatEvaluator struct {

@@ -32,12 +32,6 @@ func (ftlm *FactionThreatLevelManager) AddFaction(factionID ecs.EntityID) {
 	ftlm.factions[factionID].UpdateThreatRatings()
 }
 
-func (ftlm *FactionThreatLevelManager) UpdateFaction(factionID ecs.EntityID) {
-	if faction, exists := ftlm.factions[factionID]; exists {
-		faction.UpdateThreatRatings()
-	}
-}
-
 func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
 	for _, faction := range ftlm.factions {
 		faction.UpdateThreatRatings()

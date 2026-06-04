@@ -15,11 +15,17 @@ import (
 type PositionalRiskLayer struct {
 	*ThreatLayerBase
 
-	// Core risk data
-	flankingRisk       map[coords.LogicalPosition]float64 // Position -> flank exposure
-	isolationRisk      map[coords.LogicalPosition]float64 // Position -> isolation penalty
-	engagementPressure map[coords.LogicalPosition]float64 // Position -> net damage exposure
-	retreatQuality     map[coords.LogicalPosition]float64 // Position -> escape route quality
+	// Core risk data. These maps are sparse: only positions whose value differs from the
+	// dimension's default are stored. The Get*At accessors below supply the default for
+	// missing keys, so consumers must read through them rather than indexing the maps.
+	flankingRisk       map[coords.LogicalPosition]float64 // Position -> flank exposure (default 0)
+	isolationRisk      map[coords.LogicalPosition]float64 // Position -> isolation penalty (default 1.0 when allies exist)
+	engagementPressure map[coords.LogicalPosition]float64 // Position -> net damage exposure (default 0)
+	retreatQuality     map[coords.LogicalPosition]float64 // Position -> escape route quality (default 1.0)
+
+	// hasAllies records whether the faction had any positioned allies on the last Compute.
+	// When false, isolation risk is undefined and GetIsolationRiskAt returns 0.
+	hasAllies bool
 
 	// Dependencies
 	baseThreatMgr *FactionThreatLevelManager
@@ -67,7 +73,7 @@ func (prl *PositionalRiskLayer) Compute() {
 	prl.computeEngagementPressure()
 
 	// Compute retreat path quality
-	prl.computeRetreatQuality(alliedSquads)
+	prl.computeRetreatQuality()
 }
 
 // computeFlankingRisk identifies positions that can be attacked from multiple directions
@@ -96,7 +102,7 @@ func (prl *PositionalRiskLayer) computeFlankingRisk(enemyFactions []ecs.EntityID
 
 					if distance > 0 && distance <= threatRange {
 						// Calculate attack angle (simplified to 8 directions)
-						angle := prl.getDirection(dx, dy)
+						angle := getDirection(dx, dy)
 
 						if threatDirections[pos] == nil {
 							threatDirections[pos] = make(map[int]bool)
@@ -123,24 +129,29 @@ func (prl *PositionalRiskLayer) computeFlankingRisk(enemyFactions []ecs.EntityID
 	}
 }
 
-// getDirection returns simplified direction (0-7) based on dx, dy
-func (prl *PositionalRiskLayer) getDirection(dx, dy int) int {
-	if dx == 0 && dy > 0 {
-		return 0 // North
-	} else if dx > 0 && dy > 0 {
-		return 1 // NE
-	} else if dx > 0 && dy == 0 {
-		return 2 // East
-	} else if dx > 0 && dy < 0 {
-		return 3 // SE
-	} else if dx == 0 && dy < 0 {
-		return 4 // South
-	} else if dx < 0 && dy < 0 {
-		return 5 // SW
-	} else if dx < 0 && dy == 0 {
-		return 6 // West
-	} else {
-		return 7 // NW
+// directionTable maps (sign(dx)+1, sign(dy)+1) to one of 8 compass directions
+// (N=0, NE=1, E=2, SE=3, S=4, SW=5, W=6, NW=7). The center cell [1][1] (dx==dy==0)
+// is never read — callers only classify offsets at distance > 0.
+var directionTable = [3][3]int{
+	{5, 6, 7},  // dx<0:  dy<0 SW, dy==0 W,  dy>0 NW
+	{4, -1, 0}, // dx==0: dy<0 S,  center,  dy>0 N
+	{3, 2, 1},  // dx>0:  dy<0 SE, dy==0 E,  dy>0 NE
+}
+
+// getDirection returns simplified direction (0-7) based on dx, dy.
+func getDirection(dx, dy int) int {
+	return directionTable[sign(dx)+1][sign(dy)+1]
+}
+
+// sign returns -1, 0, or 1 for negative, zero, or positive n.
+func sign(n int) int {
+	switch {
+	case n > 0:
+		return 1
+	case n < 0:
+		return -1
+	default:
+		return 0
 	}
 }
 
@@ -156,15 +167,27 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 		allyPositions = append(allyPositions, pos)
 	}
 
-	if len(allyPositions) == 0 {
+	prl.hasAllies = len(allyPositions) > 0
+	if !prl.hasAllies {
 		return
 	}
 
 	threshold := GetIsolationThreshold()
-	maxDist := isolationMaxDistance
+	maxDist := GetIsolationMaxDistance()
 
-	// For each position, find distance to nearest ally
-	IterateMapGrid(func(pos coords.LogicalPosition) {
+	// Only positions within maxDist of an ally can fall below the 1.0 isolation default
+	// (see GetIsolationRiskAt). Walk the Chebyshev box around each ally instead of the whole
+	// grid, deduping shared positions into a candidate set.
+	candidates := make(map[coords.LogicalPosition]struct{})
+	for _, allyPos := range allyPositions {
+		for dx := -maxDist; dx <= maxDist; dx++ {
+			for dy := -maxDist; dy <= maxDist; dy++ {
+				candidates[coords.LogicalPosition{X: allyPos.X + dx, Y: allyPos.Y + dy}] = struct{}{}
+			}
+		}
+	}
+
+	for pos := range candidates {
 		minDistance := math.MaxInt32
 		for _, allyPos := range allyPositions {
 			distance := pos.ChebyshevDistance(&allyPos)
@@ -173,64 +196,88 @@ func (prl *PositionalRiskLayer) computeIsolationRisk(alliedSquads []ecs.EntityID
 			}
 		}
 
-		// Isolation risk increases linearly with distance from nearest ally
-		// Below threshold: no risk. Above threshold: linear gradient to 1.0 at max distance.
-		if minDistance >= maxDist {
-			prl.isolationRisk[pos] = 1.0
-		} else if minDistance > threshold {
-			// Linear gradient from 0 at threshold to 1.0 at maxDist
+		// Isolation risk grows linearly with distance from the nearest ally.
+		// >= maxDist defaults to 1.0 (skip). Within the threshold we store 0 explicitly,
+		// because a missing key now reads as "fully isolated".
+		switch {
+		case minDistance >= maxDist:
+			// default 1.0 via GetIsolationRiskAt
+		case minDistance > threshold:
 			prl.isolationRisk[pos] = float64(minDistance-threshold) / float64(maxDist-threshold)
+		default:
+			prl.isolationRisk[pos] = 0
 		}
-	})
+	}
 }
 
 // computeEngagementPressure combines melee and ranged threat for net pressure
 func (prl *PositionalRiskLayer) computeEngagementPressure() {
-	maxPressure := float64(engagementPressureMax)
+	maxPressure := float64(GetEngagementPressureMax())
 
-	IterateMapGrid(func(pos coords.LogicalPosition) {
-		meleeThreat := prl.combatLayer.GetMeleeThreatAt(pos)
-		rangedThreat := prl.combatLayer.GetRangedPressureAt(pos)
-
-		// Total engagement pressure, normalized to 0-1 range
-		totalPressure := meleeThreat + rangedThreat
+	// Engagement pressure is non-zero only where the combat layer painted threat. Iterate
+	// those positions instead of the whole grid; everything else defaults to 0 via
+	// GetEngagementPressureAt, which equals math.Min(0/max, 1).
+	set := func(pos coords.LogicalPosition) {
+		if _, done := prl.engagementPressure[pos]; done {
+			return
+		}
+		totalPressure := prl.combatLayer.GetMeleeThreatAt(pos) + prl.combatLayer.GetRangedPressureAt(pos)
 		prl.engagementPressure[pos] = math.Min(totalPressure/maxPressure, 1.0)
-	})
+	}
+	for pos := range prl.combatLayer.meleeThreatByPos {
+		set(pos)
+	}
+	for pos := range prl.combatLayer.rangedPressureByPos {
+		set(pos)
+	}
 }
 
 // computeRetreatQuality evaluates escape route quality
-func (prl *PositionalRiskLayer) computeRetreatQuality(alliedSquads []ecs.EntityID) {
+func (prl *PositionalRiskLayer) computeRetreatQuality() {
 	retreatThreshold := float64(GetRetreatSafeThreatThreshold())
 
-	IterateMapGrid(func(pos coords.LogicalPosition) {
-		// Check adjacent positions for low-threat retreat paths
-		retreatScore := 0.0
-		checkedDirs := 0
+	// A position's retreat quality is below the 1.0 default (GetRetreatQuality) only when at
+	// least one of its 8 neighbours is "unsafe" (threat >= retreatThreshold). Collect the
+	// neighbours of every unsafe tile, then score only those candidates.
+	candidates := make(map[coords.LogicalPosition]struct{})
+	collect := func(threatMap map[coords.LogicalPosition]float64) {
+		for tp, v := range threatMap {
+			if v < retreatThreshold {
+				continue
+			}
+			for dx := -1; dx <= 1; dx++ {
+				for dy := -1; dy <= 1; dy++ {
+					if dx == 0 && dy == 0 {
+						continue
+					}
+					candidates[coords.LogicalPosition{X: tp.X + dx, Y: tp.Y + dy}] = struct{}{}
+				}
+			}
+		}
+	}
+	collect(prl.combatLayer.meleeThreatByPos)
+	collect(prl.combatLayer.rangedPressureByPos)
 
+	for pos := range candidates {
+		// Count adjacent positions that are low-threat (good retreat routes).
+		retreatScore := 0.0
 		for dx := -1; dx <= 1; dx++ {
 			for dy := -1; dy <= 1; dy++ {
 				if dx == 0 && dy == 0 {
 					continue
 				}
-
 				adjacentPos := coords.LogicalPosition{X: pos.X + dx, Y: pos.Y + dy}
-
 				meleeThreat := prl.combatLayer.GetMeleeThreatAt(adjacentPos)
 				rangedThreat := prl.combatLayer.GetRangedPressureAt(adjacentPos)
-
-				// Low threat path = good retreat route
 				if meleeThreat < retreatThreshold && rangedThreat < retreatThreshold {
 					retreatScore += 1.0
 				}
-				checkedDirs++
 			}
 		}
 
-		// Retreat quality = percentage of low-threat adjacent positions
-		if checkedDirs > 0 {
-			prl.retreatQuality[pos] = retreatScore / float64(checkedDirs)
-		}
-	})
+		// 8 directions are always checked (out-of-bounds neighbours read as 0 = safe).
+		prl.retreatQuality[pos] = retreatScore / 8.0
+	}
 }
 
 // Query API methods
@@ -240,26 +287,47 @@ func (prl *PositionalRiskLayer) GetFlankingRiskAt(pos coords.LogicalPosition) fl
 	return prl.flankingRisk[pos]
 }
 
-// GetIsolationRiskAt returns isolation penalty at a position (0-1)
+// GetIsolationRiskAt returns isolation penalty at a position (0-1).
+// With no positioned allies isolation is undefined and reads 0; otherwise a position not
+// stored by the sparse computation is beyond maxDist of every ally, i.e. fully isolated (1.0).
 func (prl *PositionalRiskLayer) GetIsolationRiskAt(pos coords.LogicalPosition) float64 {
-	return prl.isolationRisk[pos]
+	if !prl.hasAllies {
+		return 0
+	}
+	if v, ok := prl.isolationRisk[pos]; ok {
+		return v
+	}
+	return 1.0
 }
 
-// GetEngagementPressureAt returns net damage exposure at a position (0-1)
+// GetEngagementPressureAt returns net damage exposure at a position (0-1).
+// Positions without painted threat default to 0.
 func (prl *PositionalRiskLayer) GetEngagementPressureAt(pos coords.LogicalPosition) float64 {
 	return prl.engagementPressure[pos]
 }
 
-// GetRetreatQuality returns escape route quality at a position (0-1, higher = better)
+// GetRetreatQuality returns escape route quality at a position (0-1, higher = better).
+// Positions not adjacent to any threat have perfect retreat (1.0), the default for missing keys.
 func (prl *PositionalRiskLayer) GetRetreatQuality(pos coords.LogicalPosition) float64 {
-	return prl.retreatQuality[pos]
+	if v, ok := prl.retreatQuality[pos]; ok {
+		return v
+	}
+	return 1.0
 }
 
-// GetTotalRiskAt returns combined positional risk as a simple average
+// GetTotalRiskAt returns combined positional risk as a weighted, normalized blend of the four
+// risk dimensions. Weights come from aiconfig.json (positionalRiskWeights); the default equal
+// weights reproduce a simple average. Reads go through the Get*At accessors so sparse-storage
+// defaults are applied consistently.
 func (prl *PositionalRiskLayer) GetTotalRiskAt(pos coords.LogicalPosition) float64 {
-	flanking := prl.flankingRisk[pos]
-	isolation := prl.isolationRisk[pos]
-	pressure := prl.engagementPressure[pos]
-	retreatPenalty := 1.0 - prl.retreatQuality[pos]
-	return (flanking + isolation + pressure + retreatPenalty) * 0.25
+	w := getPositionalRiskWeights()
+	totalWeight := w.Flanking + w.Isolation + w.EngagementPressure + w.Retreat
+	if totalWeight == 0 {
+		return 0
+	}
+	flanking := prl.GetFlankingRiskAt(pos)
+	isolation := prl.GetIsolationRiskAt(pos)
+	pressure := prl.GetEngagementPressureAt(pos)
+	retreatPenalty := 1.0 - prl.GetRetreatQuality(pos)
+	return (flanking*w.Flanking + isolation*w.Isolation + pressure*w.EngagementPressure + retreatPenalty*w.Retreat) / totalWeight
 }

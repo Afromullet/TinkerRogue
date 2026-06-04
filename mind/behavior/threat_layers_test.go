@@ -2,18 +2,37 @@ package behavior
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"testing"
+
 	"game_main/core/common"
+	"game_main/core/config"
+	"game_main/core/coords"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
 	"game_main/templates"
 	testfx "game_main/testing"
-	"game_main/core/coords"
-	"testing"
 )
 
 func init() {
 	templates.GlobalDifficulty = templates.NewDefaultDifficultyManager()
+}
+
+// TestMain points config.AssetPath at the real resources/assets directory and loads
+// aiconfig.json, so role-behavior weights come from the JSON (the source of truth) rather
+// than the neutral in-code fallback. Mirrors tactical/powers/perks/perks_test.go.
+func TestMain(m *testing.M) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	// thisFile = .../mind/behavior/threat_layers_test.go; repo root is three levels up.
+	repoRoot := filepath.Dir(filepath.Dir(filepath.Dir(thisFile)))
+	config.SetAssetRoot(filepath.Join(repoRoot, "resources", "assets"))
+	if err := templates.ReadAIConfig(); err != nil {
+		panic(fmt.Sprintf("failed to load aiconfig.json: %v", err))
+	}
+	os.Exit(m.Run())
 }
 
 // createTestCombatManager creates a fully initialized EntityManager with combat system.
@@ -189,5 +208,41 @@ func TestThreatLayerBase_GetEnemyFactions(t *testing.T) {
 
 	if !foundFaction2 || !foundFaction3 {
 		t.Error("All other factions should be in enemy list")
+	}
+}
+
+// BenchmarkPositionalRiskLayer_Compute measures the cost of the positional-risk pass, which
+// item 1 of BEHAVIOR_TECH_DEBT.md converted from three full-grid sweeps to sparse iteration.
+//
+// It paints a realistic mid-engagement threat footprint (~8 squad clusters over a 100x60
+// battlefield) directly into the combat layer, then loops PositionalRiskLayer.Compute(). This
+// isolates the engagement-pressure and retreat-quality passes — the doc's primary offenders —
+// whose cost now scales with the threatened-tile count instead of width*height. (A full
+// CompositeThreatEvaluator.Update benchmark would require constructing squads with combat
+// units, whose helpers live in other packages' _test.go files.)
+func BenchmarkPositionalRiskLayer_Compute(b *testing.B) {
+	manager := createTestCombatManager()
+	cache := combatstate.NewCombatQueryCache(manager)
+	baseThreatMgr := NewFactionThreatLevelManager(manager, cache)
+	fm := combatstate.NewCombatFactionManager(manager, cache)
+	factionID := fm.CreateCombatFaction("Bench", true)
+	baseThreatMgr.AddFaction(factionID)
+
+	combatLayer := NewCombatThreatLayer(factionID, manager, cache, baseThreatMgr)
+	clusters := []coords.LogicalPosition{
+		{X: 10, Y: 10}, {X: 30, Y: 15}, {X: 50, Y: 20}, {X: 70, Y: 25},
+		{X: 90, Y: 30}, {X: 20, Y: 45}, {X: 60, Y: 50}, {X: 80, Y: 55},
+	}
+	for _, c := range clusters {
+		PaintThreatToMap(combatLayer.meleeThreatByPos, c, 7, 120.0, LinearFalloff)
+		PaintThreatToMap(combatLayer.rangedPressureByPos, c, 5, 80.0, NoFalloff)
+	}
+
+	prl := NewPositionalRiskLayer(factionID, manager, cache, baseThreatMgr, combatLayer)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		prl.Compute()
 	}
 }

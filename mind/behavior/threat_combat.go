@@ -10,7 +10,6 @@ import (
 )
 
 // CombatThreatLayer computes both melee and ranged threats from enemy squads.
-// This is a unified layer that replaces the separate MeleeThreatLayer and RangedThreatLayer.
 //
 // Melee threat: ThreatByRange[1] * LinearFalloff over (MoveSpeed + AttackRange)
 // Ranged threat: ThreatByRange[maxRange] * NoFalloff over maxRange
@@ -92,7 +91,7 @@ func (ctl *CombatThreatLayer) computeMeleeThreat(
 	totalThreat := squadThreat.ThreatByRange[1]
 
 	// Paint threat on map with linear falloff
-	PaintThreatToMap(ctl.meleeThreatByPos, squadPos, threatRadius, totalThreat, LinearFalloff, false)
+	PaintThreatToMap(ctl.meleeThreatByPos, squadPos, threatRadius, totalThreat, LinearFalloff)
 }
 
 // computeRangedThreat computes ranged threat for a single squad
@@ -114,7 +113,6 @@ func (ctl *CombatThreatLayer) computeRangedThreat(
 		maxRange,
 		rangedDanger,
 		NoFalloff,
-		false,
 	)
 }
 

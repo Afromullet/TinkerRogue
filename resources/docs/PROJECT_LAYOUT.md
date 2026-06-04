@@ -130,7 +130,7 @@ TinkerRogue/
 │   ├── behavior/           # Threat analysis and danger painting
 │   │   ├── threat_layers.go, threat_painting.go, threat_composite.go
 │   │   ├── threat_combat.go, threat_positional.go, threat_support.go
-│   │   ├── threat_queries.go, threat_gridutils.go, threat_constants.go
+│   │   ├── threat_queries.go, threat_constants.go
 │   │   └── dangerlevel.go
 │   ├── evaluation/         # Power and role evaluation
 │   │   ├── power.go, power_config.go, roles.go

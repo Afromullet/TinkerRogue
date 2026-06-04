@@ -2,7 +2,9 @@
   "threatCalculation": {
     "flankingThreatRangeBonus": 3,
     "isolationThreshold": 3,
-    "retreatSafeThreatThreshold": 10
+    "retreatSafeThreatThreshold": 10,
+    "isolationMaxDistance": 8,
+    "engagementPressureMax": 200
   },
   "roleBehaviors": [
     {
@@ -23,6 +25,12 @@
   ],
   "supportLayer": {
     "healRadius": 3
+  },
+  "positionalRiskWeights": {
+    "flanking": 1.0,
+    "isolation": 1.0,
+    "engagementPressure": 1.0,
+    "retreat": 1.0
   },
   "sharedRangedWeight": 0.5,
   "sharedPositionalWeight": 0.5

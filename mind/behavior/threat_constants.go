@@ -5,12 +5,6 @@ import (
 	"game_main/templates"
 )
 
-// Max isolation distance for linear gradient calculation (internal constant)
-const isolationMaxDistance = 8
-
-// Hardcoded normalizer for engagement pressure (cosmetic, converts to 0-1 range)
-const engagementPressureMax = 200
-
 // Default values for shared weights (used when config not loaded)
 const (
 	defaultSharedRangedWeight     = 0.5
@@ -94,9 +88,32 @@ func GetRetreatSafeThreatThreshold() int {
 	return result
 }
 
+// GetIsolationMaxDistance returns the distance at which isolation risk saturates to 1.0.
+// No difficulty offset applies; it is a pure gradient parameter.
+func GetIsolationMaxDistance() int {
+	base := 8 // Default isolation max distance
+	if v := templates.AIConfigTemplate.ThreatCalculation.IsolationMaxDistance; v > 0 {
+		base = v
+	}
+	return base
+}
+
+// GetEngagementPressureMax returns the combined melee+ranged threat that normalizes to 1.0.
+// Combined threat above this value clamps every position to maximum engagement pressure, so
+// raising it spreads the gradient out while lowering it saturates the layer sooner.
+func GetEngagementPressureMax() int {
+	base := 200 // Default engagement pressure normalizer
+	if v := templates.AIConfigTemplate.ThreatCalculation.EngagementPressureMax; v > 0 {
+		base = v
+	}
+	return base
+}
+
 // GetRoleBehaviorWeights returns threat layer weights for a specific role from config.
 // RangedWeight and PositionalWeight use shared config values (roles differentiated by melee/support).
-// Falls back to default values if template lookup fails.
+// Role behaviors are validated at boot (every role is required), so the lookup normally
+// succeeds; the neutral fallback only guards a missing/malformed config rather than mirroring
+// the JSON values, which would silently rot.
 func GetRoleBehaviorWeights(role unitdefs.UnitRole) RoleThreatWeights {
 	rangedWeight := getSharedRangedWeight()
 	positionalWeight := getSharedPositionalWeight()
@@ -112,36 +129,12 @@ func GetRoleBehaviorWeights(role unitdefs.UnitRole) RoleThreatWeights {
 			}
 		}
 	}
-	// Fallback to default values by role
-	switch role {
-	case unitdefs.RoleTank:
-		return RoleThreatWeights{
-			MeleeWeight:      -0.5,         // Tanks SEEK melee danger
-			RangedWeight:     rangedWeight, // Shared config value
-			SupportWeight:    0.2,          // Stay near support for heals
-			PositionalWeight: positionalWeight,
-		}
-	case unitdefs.RoleDPS:
-		return RoleThreatWeights{
-			MeleeWeight:      0.7,          // Avoid melee danger
-			RangedWeight:     rangedWeight, // Shared config value
-			SupportWeight:    0.1,          // Low support priority
-			PositionalWeight: positionalWeight,
-		}
-	case unitdefs.RoleSupport:
-		return RoleThreatWeights{
-			MeleeWeight:      1.0,          // Strongly avoid melee danger
-			RangedWeight:     rangedWeight, // Shared config value
-			SupportWeight:    -1.0,         // SEEK high support value positions
-			PositionalWeight: positionalWeight,
-		}
-	default:
-		return RoleThreatWeights{
-			MeleeWeight:      0.5,
-			RangedWeight:     rangedWeight,
-			SupportWeight:    0.5,
-			PositionalWeight: positionalWeight,
-		}
+	// Neutral fallback (config not loaded). Source of truth is aiconfig.json.
+	return RoleThreatWeights{
+		MeleeWeight:      0.5,
+		RangedWeight:     rangedWeight,
+		SupportWeight:    0.5,
+		PositionalWeight: positionalWeight,
 	}
 }
 
@@ -156,4 +149,15 @@ func GetSupportLayerParams() (healRadius, proximityRadius int) {
 	}
 	const defaultHealRadius = 3
 	return defaultHealRadius, defaultHealRadius - 1
+}
+
+// getPositionalRiskWeights returns the weights for combining the four positional risk
+// dimensions. When the config section is absent (all zero) it falls back to equal weights,
+// which reproduces the historic simple average.
+func getPositionalRiskWeights() templates.PositionalRiskWeightsConfig {
+	w := templates.AIConfigTemplate.PositionalRiskWeights
+	if w.Flanking == 0 && w.Isolation == 0 && w.EngagementPressure == 0 && w.Retreat == 0 {
+		return templates.PositionalRiskWeightsConfig{Flanking: 1, Isolation: 1, EngagementPressure: 1, Retreat: 1}
+	}
+	return w
 }

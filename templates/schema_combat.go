@@ -8,11 +8,12 @@ package templates
 
 // JSONAIConfig is the root container for AI behavior configuration.
 type JSONAIConfig struct {
-	ThreatCalculation      ThreatCalculationConfig `json:"threatCalculation"`
-	RoleBehaviors          []RoleBehaviorConfig    `json:"roleBehaviors"`
-	SupportLayer           SupportLayerConfig      `json:"supportLayer"`
-	SharedRangedWeight     float64                 `json:"sharedRangedWeight"`     // Shared ranged threat weight (all roles)
-	SharedPositionalWeight float64                 `json:"sharedPositionalWeight"` // Shared positional awareness weight (all roles)
+	ThreatCalculation      ThreatCalculationConfig     `json:"threatCalculation"`
+	RoleBehaviors          []RoleBehaviorConfig        `json:"roleBehaviors"`
+	SupportLayer           SupportLayerConfig          `json:"supportLayer"`
+	PositionalRiskWeights  PositionalRiskWeightsConfig `json:"positionalRiskWeights"`  // Relative weights for combining the four positional risk dimensions
+	SharedRangedWeight     float64                     `json:"sharedRangedWeight"`     // Shared ranged threat weight (all roles)
+	SharedPositionalWeight float64                     `json:"sharedPositionalWeight"` // Shared positional awareness weight (all roles)
 }
 
 // ThreatCalculationConfig defines threat calculation parameters.
@@ -20,6 +21,8 @@ type ThreatCalculationConfig struct {
 	FlankingThreatRangeBonus   int `json:"flankingThreatRangeBonus"`
 	IsolationThreshold         int `json:"isolationThreshold"`
 	RetreatSafeThreatThreshold int `json:"retreatSafeThreatThreshold"`
+	IsolationMaxDistance       int `json:"isolationMaxDistance"`  // Distance at which isolation risk saturates to 1.0
+	EngagementPressureMax      int `json:"engagementPressureMax"` // Combined melee+ranged threat that normalizes to 1.0; above this, all positions clamp to max risk
 }
 
 // RoleBehaviorConfig defines how a role weighs different threat layers.
@@ -33,6 +36,16 @@ type RoleBehaviorConfig struct {
 // SupportLayerConfig defines support layer parameters.
 type SupportLayerConfig struct {
 	HealRadius int `json:"healRadius"`
+}
+
+// PositionalRiskWeightsConfig defines the relative weights used to combine the four
+// positional risk dimensions into a single score (see PositionalRiskLayer.GetTotalRiskAt).
+// The values are normalized by their sum, so equal weights reproduce a simple average.
+type PositionalRiskWeightsConfig struct {
+	Flanking           float64 `json:"flanking"`
+	Isolation          float64 `json:"isolation"`
+	EngagementPressure float64 `json:"engagementPressure"`
+	Retreat            float64 `json:"retreat"`
 }
 
 // --- Power config (powerconfig.json) ---
