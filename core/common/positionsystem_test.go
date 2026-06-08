@@ -76,10 +76,7 @@ func TestPositionSystem_BasicOperations(t *testing.T) {
 	// Test Add
 	pos1 := coords.LogicalPosition{X: 5, Y: 10}
 	entityID1 := ecs.EntityID(42)
-	err := ps.AddEntity(entityID1, pos1)
-	if err != nil {
-		t.Fatalf("AddEntity failed: %v", err)
-	}
+	ps.AddEntity(entityID1, pos1)
 
 	// Test GetEntityIDAt
 	foundID := ps.GetEntityIDAt(pos1)
@@ -96,7 +93,7 @@ func TestPositionSystem_BasicOperations(t *testing.T) {
 
 	// Test Move
 	pos2 := coords.LogicalPosition{X: 6, Y: 11}
-	err = ps.MoveEntity(entityID1, pos1, pos2)
+	err := ps.MoveEntity(entityID1, pos1, pos2)
 	if err != nil {
 		t.Fatalf("MoveEntity failed: %v", err)
 	}

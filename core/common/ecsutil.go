@@ -4,6 +4,9 @@
 package common
 
 import (
+	"errors"
+	"fmt"
+
 	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
@@ -18,6 +21,11 @@ var (
 	// Used by utility functions that need to work with any entity regardless of components.
 	AllEntitiesTag ecs.Tag
 
+	// GlobalPositionSystem is a deliberate global mutable singleton: the spatial
+	// grid is shared process-wide and initialized once at boot. The trade-off is
+	// that tests touching it cannot run in parallel and init order matters. This is
+	// acceptable for a solo project; see docs/.../ECS_BEST_PRACTICES.md if injection
+	// ever becomes necessary (parallel tests, snapshot/replay).
 	GlobalPositionSystem *PositionSystem
 
 	RenderableComponent *ecs.Component
@@ -99,12 +107,28 @@ func (em *EntityManager) FindEntityByID(entityID ecs.EntityID) *ecs.Entity {
 	return result.Entity
 }
 
+// ErrNoPositionComponent is returned (wrapped) by MoveEntity when the target
+// entity has no PositionComponent. Single-entity movers (squads, commanders)
+// treat it as a real error; bulk movers like MoveSquadAndMembers treat it as an
+// expected skip for members that are not positioned yet (e.g. reserves). Test for
+// it with errors.Is.
+var ErrNoPositionComponent = errors.New("entity has no position component")
+
 // MoveEntity updates position component and position system atomically.
 // This ensures that position is synchronized across:
 // 1. Entity's PositionComponent
 // 2. GlobalPositionSystem spatial grid
 //
-// Returns error if entity has no position component.
+// Returns an error wrapping ErrNoPositionComponent if the entity has no
+// PositionComponent (a real misuse for single-entity callers, not a silent no-op).
+//
+// Upsert semantics: this is intentionally NOT the same operation as
+// PositionSystem.MoveEntity (a strict grid-only move that errors if the entity
+// is not at oldPos). The RemoveEntity error here is deliberately ignored because
+// callers such as combatlifecycle.EnsureUnitPositions move entities that hold a
+// stale PositionComponent but are not yet registered in the spatial grid; the
+// AddEntity below then registers them at newPos. That is why this function
+// re-implements remove+add instead of delegating to PositionSystem.MoveEntity.
 func (em *EntityManager) MoveEntity(
 	entityID ecs.EntityID,
 	entity *ecs.Entity,
@@ -114,14 +138,15 @@ func (em *EntityManager) MoveEntity(
 	// 1. Update component
 	posComponent, ok := entity.GetComponentData(PositionComponent)
 	if !ok {
-		return nil // Silently skip entities without position component
+		return fmt.Errorf("MoveEntity: entity %d: %w", entityID, ErrNoPositionComponent)
 	}
 
 	posPtr := posComponent.(*coords.LogicalPosition)
 	posPtr.X = newPos.X
 	posPtr.Y = newPos.Y
 
-	// 2. Update position system
+	// 2. Update position system (upsert; see doc comment for why the remove error
+	// is intentionally ignored).
 	GlobalPositionSystem.RemoveEntity(entityID, oldPos)
 	GlobalPositionSystem.AddEntity(entityID, newPos)
 
@@ -134,7 +159,9 @@ func (em *EntityManager) MoveEntity(
 // 2. GlobalPositionSystem spatial grid
 // 3. Unit member position components
 //
-// Returns error if squad has no position component.
+// Returns an error if the squad cannot be moved, or a joined error describing any
+// member units that failed to move (the move continues for the remaining members
+// rather than aborting half-way).
 func (em *EntityManager) MoveSquadAndMembers(
 	squadID ecs.EntityID,
 	squadEntity *ecs.Entity,
@@ -144,20 +171,30 @@ func (em *EntityManager) MoveSquadAndMembers(
 ) error {
 	// Move squad
 	if err := em.MoveEntity(squadID, squadEntity, oldPos, newPos); err != nil {
-		return err
+		return fmt.Errorf("failed to move squad %d: %w", squadID, err)
 	}
 
-	// Move all unit members
+	// Move all unit members, collecting (not swallowing) real errors. A member
+	// without a PositionComponent is an expected skip (e.g. units not positioned
+	// before the squad is enrolled), not a failure.
+	var errs []error
 	for _, unitID := range unitIDs {
 		unitEntity := em.FindEntityByID(unitID)
 		if unitEntity == nil {
 			continue
 		}
 
-		// Skip error - some units may not have position component
-		em.MoveEntity(unitID, unitEntity, oldPos, newPos)
+		if err := em.MoveEntity(unitID, unitEntity, oldPos, newPos); err != nil {
+			if errors.Is(err, ErrNoPositionComponent) {
+				continue
+			}
+			errs = append(errs, fmt.Errorf("unit %d: %w", unitID, err))
+		}
 	}
 
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
 	return nil
 }
 
@@ -234,6 +271,12 @@ var subsystemRegistrars []func(*EntityManager)
 // RegisterSubsystem adds a subsystem initialization function to the registry.
 // This is called by subsystem packages in their init() functions.
 //
+// Init-order invariant: registrars run in the order their packages' init()
+// functions ran, which Go does not guarantee across packages. A registrar must
+// therefore NOT depend on another subsystem's components or tags being created
+// yet — it may only create its own. Cross-subsystem wiring belongs in a later
+// explicit setup step, not in a registrar.
+//
 // Example usage in a subsystem package:
 //
 //	func init() {
@@ -258,10 +301,8 @@ func InitializeSubsystems(em *EntityManager) {
 
 // GetEntityName retrieves the name of an entity. Returns defaultName if not found.
 func GetEntityName(manager *EntityManager, entityID ecs.EntityID, defaultName string) string {
-	if nameComp, ok := manager.GetComponent(entityID, NameComponent); ok {
-		if name := nameComp.(*Name); name != nil {
-			return name.NameStr
-		}
+	if name := GetComponentTypeByID[*Name](manager, entityID, NameComponent); name != nil {
+		return name.NameStr
 	}
 	return defaultName
 }

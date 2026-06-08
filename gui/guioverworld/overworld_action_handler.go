@@ -321,13 +321,13 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 		return
 	}
 	cost := templates.GameConfig.Commander.Cost
-	if !common.CanAffordGold(stockpile, cost) {
+	if !stockpile.CanAffordGold(cost) {
 		ah.deps.LogEvent(fmt.Sprintf("Not enough gold (need %d, have %d)", cost, stockpile.Gold))
 		return
 	}
 
 	// Spend gold
-	if err := common.SpendGold(stockpile, cost); err != nil {
+	if err := stockpile.SpendGold(cost); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
 		return
 	}
@@ -337,7 +337,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 	if err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: Failed to load commander image: %v", err))
 		// Refund gold on failure
-		common.AddGold(stockpile, cost)
+		stockpile.AddGold(cost)
 		return
 	}
 
@@ -357,7 +357,7 @@ func (ah *OverworldActionHandler) RecruitCommander() {
 	// Add to roster
 	if err := roster.AddCommander(newCmdID); err != nil {
 		ah.deps.LogEvent(fmt.Sprintf("ERROR: %v", err))
-		common.AddGold(stockpile, cost)
+		stockpile.AddGold(cost)
 		return
 	}
 

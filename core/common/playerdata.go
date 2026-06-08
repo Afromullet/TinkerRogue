@@ -9,7 +9,6 @@ import (
 // Component markers
 var (
 	PlayerComponent *ecs.Component // Marks player entity
-
 )
 
 // Player is a component marker for player entities
@@ -31,12 +30,9 @@ type PlayerData struct {
 }
 
 // PlayerAttributes retrieves the attributes component from the player entity.
+// Returns nil if the player entity is unset or has no AttributeComponent, so
+// callers can distinguish a missing player from a real zero-stat block (and no
+// throwaway Attributes is allocated on the miss path).
 func (pl *PlayerData) PlayerAttributes(ecsManager *EntityManager) *Attributes {
-	attr := &Attributes{}
-	if pl.PlayerEntityID != 0 {
-		if data, ok := ecsManager.GetComponent(pl.PlayerEntityID, AttributeComponent); ok {
-			attr = data.(*Attributes)
-		}
-	}
-	return attr
+	return GetComponentTypeByID[*Attributes](ecsManager, pl.PlayerEntityID, AttributeComponent)
 }

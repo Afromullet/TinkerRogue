@@ -48,8 +48,8 @@ func NewAttributes(strength, dexterity, magic, leadership, armor, weapon int) At
 		Leadership:    leadership,
 		Armor:         armor,
 		Weapon:        weapon,
-		MovementSpeed: 3, // Default movement
-		AttackRange:   1, // Default melee
+		MovementSpeed: config.DefaultMovementSpeed, // single source of truth (config), matches GetMovementSpeed fallback
+		AttackRange:   config.DefaultAttackRange,   // single source of truth (config), matches GetAttackRange fallback
 		CanAct:        true,
 	}
 

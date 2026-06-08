@@ -13,12 +13,12 @@ type ResourceCost struct {
 
 // CanAfford returns true if the stockpile has enough resources to cover the cost.
 func CanAfford(stockpile *common.ResourceStockpile, cost ResourceCost) bool {
-	return common.CanAffordMaterials(stockpile, cost.Iron, cost.Wood, cost.Stone)
+	return stockpile.CanAffordMaterials(cost.Iron, cost.Wood, cost.Stone)
 }
 
 // SpendResources deducts the cost from the stockpile.
 // Returns an error if the stockpile cannot afford the cost.
 func SpendResources(stockpile *common.ResourceStockpile, cost ResourceCost) error {
-	return common.SpendMaterials(stockpile, cost.Iron, cost.Wood, cost.Stone)
+	return stockpile.SpendMaterials(cost.Iron, cost.Wood, cost.Stone)
 }
 

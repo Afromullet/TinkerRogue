@@ -1,5 +1,5 @@
-// Package systems provides ECS systems that operate on game entities.
-// Systems contain logic that processes components, following proper ECS patterns.
+// This file implements PositionSystem, an O(1) spatial grid for position-based
+// entity lookup. See ecsutil.go for the common package overview.
 package common
 
 import (
@@ -37,25 +37,6 @@ func (ps *PositionSystem) GetEntityIDAt(pos coords.LogicalPosition) ecs.EntityID
 	return 0 // No entity found
 }
 
-// GetEntityAt returns the first entity at the specified position (entity pointer).
-// Returns nil if no entity exists at that position.
-// This is a convenience method that converts EntityID to *ecs.Entity.
-func (ps *PositionSystem) GetEntityAt(pos coords.LogicalPosition) *ecs.Entity {
-	entityID := ps.GetEntityIDAt(pos)
-	if entityID == 0 {
-		return nil
-	}
-
-	// Find entity by ID (bytearena/ecs doesn't have GetEntityByID, so we search)
-	// This is still much faster than searching all entities for position
-	for _, result := range ps.manager.Query(ecs.BuildTag()) {
-		if result.Entity.GetID() == entityID {
-			return result.Entity
-		}
-	}
-	return nil
-}
-
 // GetAllEntityIDsAt returns all entities at the specified position.
 // Returns empty slice if no entities exist at that position.
 // Useful for stacked entities (items, effects, etc.)
@@ -72,19 +53,18 @@ func (ps *PositionSystem) GetAllEntityIDsAt(pos coords.LogicalPosition) []ecs.En
 // AddEntity adds an entity to the spatial grid at its current position.
 // The entity must have a PositionComponent.
 // If the entity is already at this position, this is a no-op.
-func (ps *PositionSystem) AddEntity(entityID ecs.EntityID, pos coords.LogicalPosition) error {
+func (ps *PositionSystem) AddEntity(entityID ecs.EntityID, pos coords.LogicalPosition) {
 	// Check if entity already exists at this position
 	if ids, ok := ps.spatialGrid[pos]; ok {
 		for _, id := range ids {
 			if id == entityID {
-				return nil // Entity already registered at this position
+				return // Entity already registered at this position
 			}
 		}
 	}
 
 	// Add entity to spatial grid
 	ps.spatialGrid[pos] = append(ps.spatialGrid[pos], entityID)
-	return nil
 }
 
 // RemoveEntity removes an entity from the spatial grid.
@@ -127,9 +107,7 @@ func (ps *PositionSystem) MoveEntity(entityID ecs.EntityID, oldPos, newPos coord
 	}
 
 	// Add to new position
-	if err := ps.AddEntity(entityID, newPos); err != nil {
-		return fmt.Errorf("failed to add entity to new position: %w", err)
-	}
+	ps.AddEntity(entityID, newPos)
 
 	return nil
 }

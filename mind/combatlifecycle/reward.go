@@ -111,7 +111,7 @@ func grantGold(manager *common.EntityManager, playerEntityID ecs.EntityID, amoun
 	if resources == nil {
 		return ""
 	}
-	common.AddGold(resources, amount)
+	resources.AddGold(amount)
 	if config.DEBUG_MODE {
 		fmt.Printf("Granted %d gold to player %d\n", amount, playerEntityID)
 	}

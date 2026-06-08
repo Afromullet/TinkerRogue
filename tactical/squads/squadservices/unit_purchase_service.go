@@ -85,7 +85,7 @@ func (ups *UnitPurchaseService) CanPurchaseUnit(playerID ecs.EntityID, template 
 	result.RosterCount, result.RosterCapacity = roster.GetUnitCount()
 
 	// Check affordability
-	if !common.CanAffordGold(resources, cost) {
+	if !resources.CanAffordGold(cost) {
 		result.Error = fmt.Sprintf("insufficient gold: need %d, have %d", cost, resources.Gold)
 		return result
 	}
@@ -137,7 +137,7 @@ func (ups *UnitPurchaseService) PurchaseUnit(playerID ecs.EntityID, template uni
 	}
 
 	// Step 3: Spend gold (with rollback on failure)
-	if err := common.SpendGold(resources, cost); err != nil {
+	if err := resources.SpendGold(cost); err != nil {
 		// Rollback: Remove from roster and dispose entity
 		roster.RemoveUnit(unitID)
 		pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
@@ -238,7 +238,7 @@ func (ups *UnitPurchaseService) RefundUnitPurchase(playerID ecs.EntityID, unitID
 	}
 
 	// Step 2: Refund gold
-	common.AddGold(resources, costPaid)
+	resources.AddGold(costPaid)
 
 	// Step 3: Dispose unit entity
 	pos := common.GetComponentType[*coords.LogicalPosition](unitEntity, common.PositionComponent)
