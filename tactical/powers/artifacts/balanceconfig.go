@@ -2,8 +2,10 @@ package artifacts
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"game_main/core/config"
+	"game_main/tactical/powers/powercore"
 	"log"
 	"os"
 )
@@ -14,7 +16,7 @@ type ArtifactBalanceConfig struct {
 }
 
 type SaboteursHourglassBalance struct {
-	MovementReduction int `json:"movementReduction"`
+	MovementReduction int `json:"movementReduction" balance:"count"`
 }
 
 // ArtifactBalance is the global artifact balance config, loaded at startup.
@@ -45,8 +47,8 @@ func LoadArtifactBalanceConfig() error {
 }
 
 func validateArtifactBalance(cfg *ArtifactBalanceConfig) error {
-	if cfg.SaboteursHourglass.MovementReduction <= 0 {
-		return fmt.Errorf("saboteursHourglass.movementReduction must be positive, got %d", cfg.SaboteursHourglass.MovementReduction)
+	if errs := powercore.ValidateBalanceRanges(cfg); len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 	return nil
 }

@@ -857,7 +857,7 @@ func TestMultiPerk_ExclusionPreventsCleaveAndPrecisionStrike(t *testing.T) {
 
 func TestValidatePerkBalance_ZeroMultipliersWarn(t *testing.T) {
 	cfg := &PerkBalanceConfig{} // All zero values — every field should produce an error
-	errs := validatePerkBalance(cfg)
+	errs := powercore.ValidateBalanceRanges(cfg)
 	if len(errs) == 0 {
 		t.Error("expected validation errors for zero-valued config, got none")
 	}
@@ -883,7 +883,7 @@ func TestValidatePerkBalance_ValidConfig(t *testing.T) {
 		Resolute:             ResoluteBalance{HPThreshold: 0.5},
 		GrudgeBearer:         GrudgeBearerBalance{MaxStacks: 2, PerStackBonus: 0.2},
 	}
-	if errs := validatePerkBalance(cfg); len(errs) != 0 {
+	if errs := powercore.ValidateBalanceRanges(cfg); len(errs) != 0 {
 		t.Errorf("expected no errors for valid config, got: %v", errs)
 	}
 }
@@ -1134,7 +1134,9 @@ var perksWithoutBalanceConfig = map[PerkID]bool{
 // explicit exception list.
 func TestPerkID_HasBalanceConfigField(t *testing.T) {
 	setupTestPerkRegistry()
-	LoadPerkBalanceConfig()
+	if err := LoadPerkBalanceConfig(); err != nil {
+		t.Fatalf("LoadPerkBalanceConfig: %v", err)
+	}
 
 	// PerkID → expected PerkBalanceConfig field name. Field names follow the
 	// PerkID const naming (PerkBraceForImpact → BraceForImpact). Perks with no

@@ -71,8 +71,8 @@ TinkerRogue/
 │   │   └── init.go                 # Subsystem registration
 │   │
 │   └── powers/             # Unified powers pipeline (spells, effects, artifacts, perks)
-│       ├── powercore/              # Shared pipeline, context, logger
-│       │   ├── pipeline.go, context.go, logger.go
+│       ├── powercore/              # Shared pipeline, context, logger, balance validation
+│       │   ├── pipeline.go, context.go, logger.go, balancevalidate.go
 │       ├── spells/                 # Spell casting system
 │       │   ├── components.go, system.go, queries.go, init.go
 │       ├── effects/                # Active effects (buffs/debuffs applied by spells/artifacts)

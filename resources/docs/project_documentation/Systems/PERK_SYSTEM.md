@@ -81,8 +81,8 @@ tactical/powers/perks/
 │                       forEachPerkBehavior, getSquadIDForUnit
 ├── registry.go      -- PerkDefinition, PerkID type, PerkTier/PerkCategory enums, PerkRegistry,
 │                       LoadPerkDefinitions, ValidateHookCoverage
-├── balanceconfig.go -- PerkBalanceConfig, per-perk balance structs, LoadPerkBalanceConfig,
-│                       validatePerkBalance
+├── balanceconfig.go -- PerkBalanceConfig, per-perk balance structs (range-checked via
+│                       `balance` struct tags), LoadPerkBalanceConfig
 ├── system.go        -- EquipPerk, UnequipPerk, InitializeRoundState, CleanupRoundState,
 │                       InitializePerkRoundStatesForFaction, HasAnyPerks,
 │                       ResetPerkRoundStateTurn, ResetPerkRoundStateRound, RunTurnStartHooks
@@ -92,10 +92,12 @@ tactical/powers/perks/
 └── perks_test.go    -- Unit tests
 
 tactical/powers/powercore/
-├── context.go  -- PowerContext (shared runtime context for artifacts + perks)
-├── logger.go   -- PowerLogger interface, LoggerFunc adapter, nil-safe ctx.Log helper
-└── pipeline.go -- PowerPipeline (ordered subscriber lists for PostReset, AttackComplete,
-                  TurnEnd, MoveComplete events)
+├── context.go         -- PowerContext (shared runtime context for artifacts + perks)
+├── logger.go          -- PowerLogger interface, LoggerFunc adapter, nil-safe ctx.Log helper
+├── pipeline.go        -- PowerPipeline (ordered subscriber lists for PostReset, AttackComplete,
+│                         TurnEnd, MoveComplete events)
+└── balancevalidate.go -- ValidateBalanceRanges: tag-driven range checks for balance configs
+                          (kinds: fraction, mult, count, bonus; shared by perks + artifacts)
 
 tactical/combat/combattypes/
 └── perk_callbacks.go -- PerkDispatcher interface (no perks import; 9 methods)
@@ -659,8 +661,8 @@ type IronWillBehavior struct{ BasePerkBehavior }
 func (b *IronWillBehavior) PerkID() PerkID { return PerkIronWill }
 
 func (b *IronWillBehavior) DefenderDamageMod(ctx *HookContext, modifiers *combattypes.DamageModifiers) {
-    if HasWoundedUnit(ctx.DefenderSquadID, 0.5, ctx.Manager) {
-        modifiers.DamageMultiplier *= 0.90
+    if HasWoundedUnit(ctx.DefenderSquadID, PerkBalance.IronWill.HPThreshold, ctx.Manager) {
+        modifiers.DamageMultiplier *= PerkBalance.IronWill.DamageMult
         ctx.LogPerk(PerkIronWill, ctx.DefenderSquadID, "-10% damage (squad wounded)")
     }
 }
@@ -690,11 +692,32 @@ type IronWillState struct {
 // Store:  SetPerkState(ctx.RoundState, PerkIronWill, &IronWillState{...})
 ```
 
-### Step 6: Verify
+### Step 6: Add Balance Tuning Values (if tunable)
+
+Iron Will has two tunables (the HP threshold and the damage multiplier). In `balanceconfig.go`, add a struct and a field on `PerkBalanceConfig`:
+
+```go
+type IronWillBalance struct {
+    HPThreshold float64 `json:"hpThreshold" balance:"fraction"`
+    DamageMult  float64 `json:"damageMult" balance:"mult"`
+}
+```
+
+Then add the matching entry to `assets/gamedata/perkbalanceconfig.json`:
+
+```json
+"ironWill": { "hpThreshold": 0.5, "damageMult": 0.9 }
+```
+
+The `balance` tag declares the field's valid range — `fraction` (0, 1), `mult` [0.1, 10], `count` (0, 100], or `bonus` [0, 100] — and `LoadPerkBalanceConfig` range-checks every tagged field automatically via `powercore.ValidateBalanceRanges`. There is no validator function to edit; a numeric field *without* a `balance` tag fails loading, so validation can't be forgotten.
+
+If your perk has **no** tunables, skip this step but add its ID to the `perksWithoutBalanceConfig` allowlist in `perks_test.go` — otherwise `TestPerkID_HasBalanceConfigField` fails, treating the missing config as forgotten.
+
+### Step 7: Verify
 
 1. `go build ./...` — confirms no compile errors.
 2. `go test ./tactical/powers/perks/...` — runs perk tests.
-3. On startup, `LoadPerkDefinitions()` + `ValidateHookCoverage()` prints a warning for any ID that has a JSON entry but no registered behavior, or vice versa.
+3. On startup, `LoadPerkDefinitions()` + `ValidateHookCoverage()` prints a warning for any ID that has a JSON entry but no registered behavior, or vice versa. `LoadPerkBalanceConfig()` fails the boot if a balance value is out of range.
 
 ### Complete Worked Example Summary
 
@@ -705,7 +728,8 @@ type IronWillState struct {
 | 3 | `tactical/powers/perks/behaviors.go` | Create behavior struct, embed `BasePerkBehavior`, override methods |
 | 4 | `tactical/powers/perks/behaviors.go` | Add `RegisterPerkBehavior(&IronWillBehavior{})` in `init()` |
 | 5 | `tactical/powers/perks/components.go` | Add per-perk state struct if needed |
-| 6 | Terminal | Build and test |
+| 6 | `balanceconfig.go` + `perkbalanceconfig.json` | Add tagged balance struct + JSON entry (validation is automatic) |
+| 7 | Terminal | Build and test |
 
 ---
 
@@ -854,13 +878,14 @@ Logging only fires when the perk has an observable effect — no-op paths produc
 | `tactical/powers/perks/unithelpers.go` | Shared unit-query helpers (`FindLowestHPUnit`, `HasWoundedUnit`, `CountTanksInRow`, …) |
 | `tactical/powers/perks/queries.go` | `HasPerk`, `GetEquippedPerkIDs`, `GetRoundState`, `ForEachFriendlySquad`, `forEachPerkBehavior`, `getSquadIDForUnit` |
 | `tactical/powers/perks/registry.go` | `PerkID` type, `PerkDefinition`, `PerkTier`/`PerkCategory` enums, `PerkRegistry`, `LoadPerkDefinitions`, `ValidateHookCoverage` |
-| `tactical/powers/perks/balanceconfig.go` | `PerkBalanceConfig`, per-perk balance structs, `LoadPerkBalanceConfig`, `validatePerkBalance` |
+| `tactical/powers/perks/balanceconfig.go` | `PerkBalanceConfig`, per-perk balance structs (range-checked via `balance` struct tags), `LoadPerkBalanceConfig` |
 | `tactical/powers/perks/system.go` | `EquipPerk`, `UnequipPerk`, `InitializeRoundState`, `CleanupRoundState`, `InitializePerkRoundStatesForFaction`, `HasAnyPerks`, `ResetPerkRoundStateTurn`, `ResetPerkRoundStateRound`, `RunTurnStartHooks` |
 | `tactical/powers/perks/perkids.go` | Typed `PerkID` constants |
 | `tactical/powers/perks/init.go` | ECS subsystem `init()` — registers `PerkSlotComponent`, `PerkRoundStateComponent`, `PerkSlotTag` |
 | `tactical/powers/powercore/context.go` | `PowerContext` (shared runtime context embedded by both HookContext and BehaviorContext) |
 | `tactical/powers/powercore/logger.go` | `PowerLogger` interface, `LoggerFunc` adapter, nil-safe `ctx.Log` |
 | `tactical/powers/powercore/pipeline.go` | `PowerPipeline` — ordered subscriber lists for combat lifecycle events |
+| `tactical/powers/powercore/balancevalidate.go` | `ValidateBalanceRanges` — tag-driven range checks for balance configs (perks + artifacts) |
 | `tactical/combat/combattypes/perk_callbacks.go` | `PerkDispatcher` interface |
 | `tactical/combat/combatservices/combat_service.go` | Owns `PowerPipeline`; registers pipeline subscribers in order |
 | `tactical/combat/combatservices/combat_power_dispatch.go` | `setupPowerDispatch`: constructs shared `PowerLogger`, injects it into both dispatchers |

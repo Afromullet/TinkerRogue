@@ -2,13 +2,20 @@ package perks
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"game_main/core/config"
+	"game_main/tactical/powers/powercore"
 	"log"
 	"os"
 )
 
 // PerkBalanceConfig holds all perk balance tuning values, loaded from JSON.
+//
+// Every numeric field declares its valid range via a `balance` tag
+// (fraction/mult/count/bonus — see powercore.ValidateBalanceRanges). Untagged
+// numeric fields fail validation at load, so adding a tuning value here is
+// the only step needed for it to be range-checked.
 type PerkBalanceConfig struct {
 	BraceForImpact       BraceForImpactBalance       `json:"braceForImpact"`
 	ExecutionersInstinct ExecutionersInstinctBalance `json:"executionersInstinct"`
@@ -30,80 +37,80 @@ type PerkBalanceConfig struct {
 }
 
 type BraceForImpactBalance struct {
-	CoverBonus float64 `json:"coverBonus"`
+	CoverBonus float64 `json:"coverBonus" balance:"fraction"`
 }
 
 type ExecutionersInstinctBalance struct {
-	HPThreshold float64 `json:"hpThreshold"`
-	CritBonus   int     `json:"critBonus"`
+	HPThreshold float64 `json:"hpThreshold" balance:"fraction"`
+	CritBonus   int     `json:"critBonus" balance:"bonus"`
 }
 
 type ShieldwallDisciplineBalance struct {
-	MaxTanks         int     `json:"maxTanks"`
-	PerTankReduction float64 `json:"perTankReduction"`
+	MaxTanks         int     `json:"maxTanks" balance:"count"`
+	PerTankReduction float64 `json:"perTankReduction" balance:"fraction"`
 }
 
 type IsolatedPredatorBalance struct {
-	Range      int     `json:"range"`
-	DamageMult float64 `json:"damageMult"`
+	Range      int     `json:"range" balance:"count"`
+	DamageMult float64 `json:"damageMult" balance:"mult"`
 }
 
 type FieldMedicBalance struct {
-	HealDivisor int `json:"healDivisor"` // Max HP is divided by this value to get heal amount (e.g. 10 = heal 10% max HP)
+	HealDivisor int `json:"healDivisor" balance:"count"` // Max HP is divided by this value to get heal amount (e.g. 10 = heal 10% max HP)
 }
 
 type LastLineBalance struct {
-	DamageMult float64 `json:"damageMult"`
-	HitBonus   int     `json:"hitBonus"`
+	DamageMult float64 `json:"damageMult" balance:"mult"`
+	HitBonus   int     `json:"hitBonus" balance:"bonus"`
 }
 
 type CleaveBalance struct {
-	DamageMult float64 `json:"damageMult"`
+	DamageMult float64 `json:"damageMult" balance:"mult"`
 }
 
 type GuardianProtocolBalance struct {
-	RedirectFraction int `json:"redirectFraction"`
+	RedirectFraction int `json:"redirectFraction" balance:"count"`
 }
 
 type RecklessAssaultBalance struct {
-	AttackerMult float64 `json:"attackerMult"`
-	DefenderMult float64 `json:"defenderMult"`
+	AttackerMult float64 `json:"attackerMult" balance:"mult"`
+	DefenderMult float64 `json:"defenderMult" balance:"mult"`
 }
 
 type FortifyBalance struct {
-	MaxStationaryTurns int     `json:"maxStationaryTurns"`
-	PerTurnCoverBonus  float64 `json:"perTurnCoverBonus"`
+	MaxStationaryTurns int     `json:"maxStationaryTurns" balance:"count"`
+	PerTurnCoverBonus  float64 `json:"perTurnCoverBonus" balance:"fraction"`
 }
 
 type CounterpunchBalance struct {
-	DamageMult float64 `json:"damageMult"`
+	DamageMult float64 `json:"damageMult" balance:"mult"`
 }
 
 type DeadshotsPatienceBalance struct {
-	DamageMult    float64 `json:"damageMult"`
-	AccuracyBonus int     `json:"accuracyBonus"`
+	DamageMult    float64 `json:"damageMult" balance:"mult"`
+	AccuracyBonus int     `json:"accuracyBonus" balance:"bonus"`
 }
 
 type AdaptiveArmorBalance struct {
-	MaxHits         int     `json:"maxHits"`
-	PerHitReduction float64 `json:"perHitReduction"`
+	MaxHits         int     `json:"maxHits" balance:"count"`
+	PerHitReduction float64 `json:"perHitReduction" balance:"fraction"`
 }
 
 type BloodlustBalance struct {
-	PerKillBonus float64 `json:"perKillBonus"`
+	PerKillBonus float64 `json:"perKillBonus" balance:"fraction"`
 }
 
 type OpeningSalvoBalance struct {
-	DamageMult float64 `json:"damageMult"`
+	DamageMult float64 `json:"damageMult" balance:"mult"`
 }
 
 type ResoluteBalance struct {
-	HPThreshold float64 `json:"hpThreshold"`
+	HPThreshold float64 `json:"hpThreshold" balance:"fraction"`
 }
 
 type GrudgeBearerBalance struct {
-	MaxStacks     int     `json:"maxStacks"`
-	PerStackBonus float64 `json:"perStackBonus"`
+	MaxStacks     int     `json:"maxStacks" balance:"count"`
+	PerStackBonus float64 `json:"perStackBonus" balance:"fraction"`
 }
 
 // PerkBalance is the global perk balance config, loaded at startup.
@@ -112,118 +119,23 @@ var PerkBalance PerkBalanceConfig
 const perkBalancePath = "gamedata/perkbalanceconfig.json"
 
 // LoadPerkBalanceConfig reads perk balance tuning values from JSON.
-func LoadPerkBalanceConfig() {
+// Returns an error if the file is missing, unparseable, or fails validation —
+// any of these would leave PerkBalance zero-valued, silently no-oping every
+// perk (and dividing by zero in FieldMedic).
+func LoadPerkBalanceConfig() error {
 	data, err := os.ReadFile(config.AssetPath(perkBalancePath))
 	if err != nil {
-		log.Printf("WARNING: Failed to read perk balance config: %v", err)
-		return
+		return fmt.Errorf("read %s: %w", perkBalancePath, err)
 	}
 
 	if err := json.Unmarshal(data, &PerkBalance); err != nil {
-		log.Printf("WARNING: Failed to parse perk balance config: %v", err)
-		return
+		return fmt.Errorf("parse %s: %w", perkBalancePath, err)
 	}
 
-	if errs := validatePerkBalance(&PerkBalance); len(errs) > 0 {
-		for _, e := range errs {
-			log.Printf("WARNING: perk balance config: %v", e)
-		}
-		if config.DEBUG_MODE {
-			panic("perk balance config invalid — fix gamedata/perkbalanceconfig.json before running")
-		}
+	if errs := powercore.ValidateBalanceRanges(&PerkBalance); len(errs) > 0 {
+		return fmt.Errorf("validate %s: %w", perkBalancePath, errors.Join(errs...))
 	}
+
 	log.Println("Perk balance config loaded")
-}
-
-// Range bounds catch typos in JSON that the previous "must be positive" checks
-// would let through (e.g. DamageMult: 0.001 silently nerfing a perk, or
-// MaxStationaryTurns: 1000 never capping). Fractions are bounded < 1.0,
-// damage multipliers to [0.1, 10.0], and counts/bonuses to ≤ 100.
-const (
-	minDamageMult = 0.1
-	maxDamageMult = 10.0
-	maxCount      = 100
-)
-
-func validatePerkBalance(cfg *PerkBalanceConfig) []error {
-	var errs []error
-	if cfg.BraceForImpact.CoverBonus <= 0 || cfg.BraceForImpact.CoverBonus >= 1.0 {
-		errs = append(errs, fmt.Errorf("braceForImpact.coverBonus must be in (0, 1)"))
-	}
-	if cfg.ExecutionersInstinct.HPThreshold <= 0 || cfg.ExecutionersInstinct.HPThreshold >= 1.0 {
-		errs = append(errs, fmt.Errorf("executionersInstinct.hpThreshold must be between 0 and 1"))
-	}
-	if cfg.ExecutionersInstinct.CritBonus < 0 || cfg.ExecutionersInstinct.CritBonus > maxCount {
-		errs = append(errs, fmt.Errorf("executionersInstinct.critBonus must be in [0, %d]", maxCount))
-	}
-	if cfg.ShieldwallDiscipline.MaxTanks <= 0 || cfg.ShieldwallDiscipline.MaxTanks > maxCount {
-		errs = append(errs, fmt.Errorf("shieldwallDiscipline.maxTanks must be in (0, %d]", maxCount))
-	}
-	if cfg.ShieldwallDiscipline.PerTankReduction <= 0 || cfg.ShieldwallDiscipline.PerTankReduction >= 1.0 {
-		errs = append(errs, fmt.Errorf("shieldwallDiscipline.perTankReduction must be in (0, 1)"))
-	}
-	if cfg.FieldMedic.HealDivisor <= 0 || cfg.FieldMedic.HealDivisor > maxCount {
-		errs = append(errs, fmt.Errorf("fieldMedic.healDivisor must be in (0, %d]", maxCount))
-	}
-	if cfg.GuardianProtocol.RedirectFraction <= 0 || cfg.GuardianProtocol.RedirectFraction > maxCount {
-		errs = append(errs, fmt.Errorf("guardianProtocol.redirectFraction must be in (0, %d]", maxCount))
-	}
-	if cfg.Resolute.HPThreshold <= 0 || cfg.Resolute.HPThreshold >= 1.0 {
-		errs = append(errs, fmt.Errorf("resolute.hpThreshold must be between 0 and 1"))
-	}
-	if cfg.GrudgeBearer.MaxStacks <= 0 || cfg.GrudgeBearer.MaxStacks > maxCount {
-		errs = append(errs, fmt.Errorf("grudgeBearer.maxStacks must be in (0, %d]", maxCount))
-	}
-	if cfg.GrudgeBearer.PerStackBonus <= 0 || cfg.GrudgeBearer.PerStackBonus >= 1.0 {
-		errs = append(errs, fmt.Errorf("grudgeBearer.perStackBonus must be in (0, 1)"))
-	}
-	if cfg.IsolatedPredator.DamageMult < minDamageMult || cfg.IsolatedPredator.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("isolatedPredator.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.IsolatedPredator.Range <= 0 || cfg.IsolatedPredator.Range > maxCount {
-		errs = append(errs, fmt.Errorf("isolatedPredator.range must be in (0, %d]", maxCount))
-	}
-	if cfg.LastLine.DamageMult < minDamageMult || cfg.LastLine.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("lastLine.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.LastLine.HitBonus < 0 || cfg.LastLine.HitBonus > maxCount {
-		errs = append(errs, fmt.Errorf("lastLine.hitBonus must be in [0, %d]", maxCount))
-	}
-	if cfg.Cleave.DamageMult < minDamageMult || cfg.Cleave.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("cleave.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.RecklessAssault.AttackerMult < minDamageMult || cfg.RecklessAssault.AttackerMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("recklessAssault.attackerMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.RecklessAssault.DefenderMult < minDamageMult || cfg.RecklessAssault.DefenderMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("recklessAssault.defenderMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.Fortify.MaxStationaryTurns <= 0 || cfg.Fortify.MaxStationaryTurns > maxCount {
-		errs = append(errs, fmt.Errorf("fortify.maxStationaryTurns must be in (0, %d]", maxCount))
-	}
-	if cfg.Fortify.PerTurnCoverBonus <= 0 || cfg.Fortify.PerTurnCoverBonus >= 1.0 {
-		errs = append(errs, fmt.Errorf("fortify.perTurnCoverBonus must be in (0, 1)"))
-	}
-	if cfg.Counterpunch.DamageMult < minDamageMult || cfg.Counterpunch.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("counterpunch.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.DeadshotsPatience.DamageMult < minDamageMult || cfg.DeadshotsPatience.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("deadshotsPatience.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	if cfg.DeadshotsPatience.AccuracyBonus < 0 || cfg.DeadshotsPatience.AccuracyBonus > maxCount {
-		errs = append(errs, fmt.Errorf("deadshotsPatience.accuracyBonus must be in [0, %d]", maxCount))
-	}
-	if cfg.AdaptiveArmor.MaxHits <= 0 || cfg.AdaptiveArmor.MaxHits > maxCount {
-		errs = append(errs, fmt.Errorf("adaptiveArmor.maxHits must be in (0, %d]", maxCount))
-	}
-	if cfg.AdaptiveArmor.PerHitReduction <= 0 || cfg.AdaptiveArmor.PerHitReduction >= 1.0 {
-		errs = append(errs, fmt.Errorf("adaptiveArmor.perHitReduction must be in (0, 1)"))
-	}
-	if cfg.Bloodlust.PerKillBonus <= 0 || cfg.Bloodlust.PerKillBonus >= 1.0 {
-		errs = append(errs, fmt.Errorf("bloodlust.perKillBonus must be in (0, 1)"))
-	}
-	if cfg.OpeningSalvo.DamageMult < minDamageMult || cfg.OpeningSalvo.DamageMult > maxDamageMult {
-		errs = append(errs, fmt.Errorf("openingSalvo.damageMult must be in [%v, %v]", minDamageMult, maxDamageMult))
-	}
-	return errs
+	return nil
 }

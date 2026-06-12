@@ -38,7 +38,9 @@ func (gb *GameBootstrap) LoadGameData() {
 		log.Fatalf("LoadGameData: %v", err)
 	}
 	reportCoverage("perk-data", perks.LoadPerkDefinitions())
-	perks.LoadPerkBalanceConfig()
+	if err := perks.LoadPerkBalanceConfig(); err != nil {
+		log.Fatalf("LoadPerkBalanceConfig: %v", err)
+	}
 	if err := artifacts.LoadArtifactBalanceConfig(); err != nil {
 		log.Fatalf("LoadArtifactBalanceConfig: %v", err)
 	}
