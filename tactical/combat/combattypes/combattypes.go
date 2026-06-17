@@ -171,6 +171,18 @@ type DamageModifiers struct {
 	SkipCrit    bool    // If true, crits become normal hits (Vigilance)
 }
 
+// NewAttackModifiers returns the default modifiers for a normal attack:
+// no hit penalty, full damage, not a counterattack.
+func NewAttackModifiers() DamageModifiers {
+	return DamageModifiers{HitModifier: 0, DamageMultiplier: 1.0, IsCounterattack: false}
+}
+
+// NewCounterattackModifiers returns modifiers for a counterattack with the given
+// hit penalty and damage multiplier (IsCounterattack is always true).
+func NewCounterattackModifiers(hitModifier int, damageMultiplier float64) DamageModifiers {
+	return DamageModifiers{HitModifier: hitModifier, DamageMultiplier: damageMultiplier, IsCounterattack: true}
+}
+
 // CombatResult is the unified result of a combat action. It groups three
 // separately-owned concerns so callers can reach into the part they care about
 // without scanning a flat 9-field struct:

@@ -3,7 +3,6 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/core/common"
-	rstr "game_main/tactical/squads/roster"
 
 	"github.com/bytearena/ecs"
 )
@@ -35,9 +34,9 @@ func NewReorderSquadsCommand(
 }
 
 func (c *ReorderSquadsCommand) Validate() error {
-	roster := rstr.GetPlayerSquadRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player squad roster not found")
+	roster, err := getPlayerSquadRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	squadCount := len(roster.OwnedSquads)
@@ -60,9 +59,9 @@ func (c *ReorderSquadsCommand) Validate() error {
 }
 
 func (c *ReorderSquadsCommand) Execute() error {
-	roster := rstr.GetPlayerSquadRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player squad roster not found")
+	roster, err := getPlayerSquadRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	// Capture old order for undo
@@ -92,9 +91,9 @@ func (c *ReorderSquadsCommand) Undo() error {
 		return fmt.Errorf("no order to restore (command was not executed)")
 	}
 
-	roster := rstr.GetPlayerSquadRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player squad roster not found")
+	roster, err := getPlayerSquadRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	// Restore old order

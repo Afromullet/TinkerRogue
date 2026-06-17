@@ -120,11 +120,7 @@ func (cas *CombatActionSystem) executeCounterattack(attackerID, defenderID ecs.E
 	defenderWouldSurvive := squadcore.WouldSquadSurvive(defenderID, result.Damage.DamageByUnit, cas.manager)
 
 	// Build counterattack modifiers (may be modified by perk hooks)
-	counterModifiers := combattypes.DamageModifiers{
-		HitModifier:      counterattackHitPenalty(),
-		DamageMultiplier: counterattackDamageMultiplier(),
-		IsCounterattack:  true,
-	}
+	counterModifiers := combattypes.NewCounterattackModifiers(counterattackHitPenalty(), counterattackDamageMultiplier())
 
 	// Check if counter should be suppressed by perks
 	skipCounter := cas.perkDispatcher.CounterMod(defenderID, attackerID, &counterModifiers, cas.manager)

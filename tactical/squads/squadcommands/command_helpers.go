@@ -3,6 +3,7 @@ package squadcommands
 import (
 	"fmt"
 	"game_main/core/common"
+	rstr "game_main/tactical/squads/roster"
 	"game_main/tactical/squads/squadcore"
 
 	"github.com/bytearena/ecs"
@@ -97,4 +98,22 @@ func getGridPositionOrError(unitID ecs.EntityID, manager *common.EntityManager) 
 		return nil, fmt.Errorf("unit has no grid position")
 	}
 	return gridPos, nil
+}
+
+// getPlayerRosterOrError retrieves the player's unit roster or returns an error.
+func getPlayerRosterOrError(playerID ecs.EntityID, manager *common.EntityManager) (*rstr.UnitRoster, error) {
+	roster := rstr.GetPlayerRoster(playerID, manager)
+	if roster == nil {
+		return nil, fmt.Errorf("player roster not found")
+	}
+	return roster, nil
+}
+
+// getPlayerSquadRosterOrError retrieves the player's squad roster or returns an error.
+func getPlayerSquadRosterOrError(playerID ecs.EntityID, manager *common.EntityManager) (*rstr.SquadRoster, error) {
+	roster := rstr.GetPlayerSquadRoster(playerID, manager)
+	if roster == nil {
+		return nil, fmt.Errorf("player squad roster not found")
+	}
+	return roster, nil
 }

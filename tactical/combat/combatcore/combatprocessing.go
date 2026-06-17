@@ -181,11 +181,7 @@ func ProcessAttackOnTargets(attackerID ecs.EntityID, defenderSquadID ecs.EntityI
 	targetIDs []ecs.EntityID, result *combattypes.CombatResult,
 	log *combattypes.CombatLog, attackIndex int, dispatcher combattypes.PerkDispatcher, manager *common.EntityManager) int {
 
-	modifiers := combattypes.DamageModifiers{
-		HitModifier:      0,
-		DamageMultiplier: 1.0,
-		IsCounterattack:  false,
-	}
+	modifiers := combattypes.NewAttackModifiers()
 	return processAttack(attackerID, defenderSquadID, targetIDs, result, log, attackIndex, modifiers, dispatcher, manager)
 }
 

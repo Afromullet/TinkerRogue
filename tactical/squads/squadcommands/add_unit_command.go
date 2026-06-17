@@ -46,9 +46,9 @@ func (c *AddUnitCommand) Validate() error {
 	}
 
 	// Check roster exists
-	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player roster not found")
+	roster, err := getPlayerRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	// Check template exists and is available
@@ -67,9 +67,9 @@ func (c *AddUnitCommand) Validate() error {
 }
 
 func (c *AddUnitCommand) Execute() error {
-	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player roster not found")
+	roster, err := getPlayerRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	// Get an available (not in any squad) unit entity from roster
@@ -91,9 +91,9 @@ func (c *AddUnitCommand) Undo() error {
 		return fmt.Errorf("no unit to remove (command was not executed)")
 	}
 
-	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player roster not found")
+	roster, err := getPlayerRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	if err := rstr.UnassignUnitFromSquad(roster, c.addedUnitID, c.squadID, c.manager); err != nil {

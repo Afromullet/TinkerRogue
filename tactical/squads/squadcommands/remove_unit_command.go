@@ -65,18 +65,18 @@ func (c *RemoveUnitCommand) Execute() error {
 	c.previousGridRow = gridPos.AnchorRow
 	c.previousGridCol = gridPos.AnchorCol
 
-	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player roster not found")
+	roster, err := getPlayerRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 
 	return rstr.UnassignUnitFromSquad(roster, c.unitID, c.squadID, c.manager)
 }
 
 func (c *RemoveUnitCommand) Undo() error {
-	roster := rstr.GetPlayerRoster(c.playerID, c.manager)
-	if roster == nil {
-		return fmt.Errorf("player roster not found")
+	roster, err := getPlayerRosterOrError(c.playerID, c.manager)
+	if err != nil {
+		return err
 	}
 	return rstr.AssignUnitToSquad(roster, c.unitID, c.squadID, c.previousGridRow, c.previousGridCol, c.manager)
 }
