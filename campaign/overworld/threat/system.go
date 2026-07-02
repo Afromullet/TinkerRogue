@@ -66,7 +66,7 @@ func CreateThreatNode(
 		CurrentTick:      currentTick,
 	})
 	if err != nil {
-		fmt.Printf("WARNING: CreateThreatNode failed: %v\n", err)
+		core.Warnf("CreateThreatNode failed: %v", err)
 		return 0
 	}
 

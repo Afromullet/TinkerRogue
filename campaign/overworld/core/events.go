@@ -100,7 +100,7 @@ func LogEvent(eventType EventType, tick int64, entityID ecs.EntityID, descriptio
 	ctx.EventLog.AddEvent(event)
 
 	// Also print to console for debugging
-	fmt.Printf("[Tick %d] %s: %s\n", tick, eventType, description)
+	Debugf("[Tick %d] %s: %s", tick, eventType, description)
 }
 
 // StartRecordingSession initializes the overworld recorder for a new game session.
@@ -109,7 +109,7 @@ func StartRecordingSession(currentTick int64) {
 	ctx.Recorder.SetEnabled(config.ENABLE_OVERWORLD_LOG_EXPORT)
 	if ctx.Recorder.IsEnabled() {
 		ctx.Recorder.Start(currentTick)
-		fmt.Printf("Overworld recording started (tick %d)\n", currentTick)
+		Debugf("Overworld recording started (tick %d)", currentTick)
 	}
 }
 

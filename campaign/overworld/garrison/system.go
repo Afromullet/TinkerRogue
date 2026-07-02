@@ -70,7 +70,7 @@ func AssignSquadToNode(manager *common.EntityManager, squadID ecs.EntityID, node
 	core.LogEvent(core.EventGarrisonAssigned, core.GetCurrentTick(manager), nodeID,
 		fmt.Sprintf("Squad %s assigned to garrison at node %d", squadData.Name, nodeID), nil)
 
-	fmt.Printf("Assigned squad %d (%s) to garrison at node %d\n", squadID, squadData.Name, nodeID)
+	core.Debugf("Assigned squad %d (%s) to garrison at node %d", squadID, squadData.Name, nodeID)
 	return nil
 }
 
@@ -177,7 +177,7 @@ func CreateNPCGarrison(
 	core.LogEvent(core.EventGarrisonAssigned, core.GetCurrentTick(manager), nodeID,
 		fmt.Sprintf("%s garrison created at node %d (squad %d)", factionType.String(), nodeID, squadID), nil)
 
-	fmt.Printf("Created NPC garrison at node %d: squad %d (%s)\n", nodeID, squadID, squadName)
+	core.Debugf("Created NPC garrison at node %d: squad %d (%s)", nodeID, squadID, squadName)
 	return nil
 }
 
@@ -233,6 +233,6 @@ func TransferNodeOwnership(manager *common.EntityManager, nodeID ecs.EntityID, n
 	core.LogEvent(core.EventNodeCaptured, core.GetCurrentTick(manager), nodeID,
 		fmt.Sprintf("Node %d captured: %s -> %s", nodeID, oldOwner, newOwnerID), nil)
 
-	fmt.Printf("Node %d ownership transferred: %s -> %s\n", nodeID, oldOwner, newOwnerID)
+	core.Debugf("Node %d ownership transferred: %s -> %s", nodeID, oldOwner, newOwnerID)
 	return nil
 }

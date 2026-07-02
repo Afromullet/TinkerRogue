@@ -9,10 +9,6 @@ import (
 
 // Debug and profiling flags
 const (
-	DISPLAY_THREAT_MAP_LOG_OUTPUT = false
-
-	DISPLAY_DEATAILED_COMBAT_OUTPUT = false
-
 	// DEBUG_MODE enables debug visualization and logging
 	DEBUG_MODE = true
 

@@ -38,6 +38,7 @@ type EntityManager struct {
 	WorldTags map[string]ecs.Tag
 }
 
+// NewEntityManager creates an EntityManager with an empty ECS world and tag map.
 func NewEntityManager() *EntityManager {
 	return &EntityManager{
 		World:     ecs.NewManager(),

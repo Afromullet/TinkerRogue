@@ -736,8 +736,6 @@ Compile-time constants defined in `config/config.go`. These require recompilatio
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `DISPLAY_THREAT_MAP_LOG_OUTPUT` | false | Show threat map debug logging |
-| `DISPLAY_DEATAILED_COMBAT_OUTPUT` | false | Show detailed combat debug logging |
 | `DEBUG_MODE` | true | Enable debug visualization and logging |
 | `ENABLE_BENCHMARKING` | **true** | Enable pprof profiling server on localhost:6060 |
 | `ENABLE_COMBAT_LOG` | false | Enable combat log UI panel and message recording |

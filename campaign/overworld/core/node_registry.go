@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"image/color"
 
 	"game_main/campaign/overworld/ids"
@@ -161,7 +160,7 @@ func (r *NodeRegistry) GetNodeByID(id ids.NodeTypeID) *NodeDefinition {
 	if def, ok := r.nodesByID[id]; ok {
 		return def
 	}
-	fmt.Printf("WARNING: NodeRegistry: no node definition for %q, using default\n", id)
+	Warnf("NodeRegistry: no node definition for %q, using default", id)
 	return r.defaultNode
 }
 
@@ -191,7 +190,7 @@ func (r *NodeRegistry) GetEncounterByID(id ids.EncounterID) *EncounterDefinition
 	if enc, ok := r.encountersByID[id]; ok {
 		return enc
 	}
-	fmt.Printf("WARNING: NodeRegistry: no encounter definition for %q, using default\n", id)
+	Warnf("NodeRegistry: no encounter definition for %q, using default", id)
 	return r.defaultEncounter
 }
 
@@ -229,7 +228,7 @@ func (r *NodeRegistry) GetEncounterByTypeID(encounterTypeID ids.EncounterTypeID)
 			return enc
 		}
 	}
-	fmt.Printf("WARNING: NodeRegistry: no encounter with type ID %q, using default\n", encounterTypeID)
+	Warnf("NodeRegistry: no encounter with type ID %q, using default", encounterTypeID)
 	return r.defaultEncounter
 }
 
@@ -278,7 +277,7 @@ func ValidateNodeRegistry() {
 	registry := GetNodeRegistry()
 
 	if registry.defaultNode == nil {
-		fmt.Println("WARNING: NodeRegistry: no default node definition loaded")
+		Warnf("NodeRegistry: no default node definition loaded")
 	}
 
 	// Check that every threat node has at least one encounter via its faction
@@ -287,12 +286,12 @@ func ValidateNodeRegistry() {
 			continue
 		}
 		if node.FactionID == "" {
-			fmt.Printf("WARNING: NodeRegistry: threat node %q has no FactionID\n", id)
+			Warnf("NodeRegistry: threat node %q has no FactionID", id)
 			continue
 		}
 		encounters := registry.GetEncountersByFaction(node.FactionID)
 		if len(encounters) == 0 {
-			fmt.Printf("WARNING: NodeRegistry: threat node %q (faction %q) has no matching encounters\n", id, node.FactionID)
+			Warnf("NodeRegistry: threat node %q (faction %q) has no matching encounters", id, node.FactionID)
 		}
 	}
 
@@ -309,10 +308,10 @@ func ValidateNodeRegistry() {
 			}
 		}
 		if !foundNode {
-			fmt.Printf("WARNING: NodeRegistry: encounter %q references faction %q with no matching node\n", id, enc.FactionID)
+			Warnf("NodeRegistry: encounter %q references faction %q with no matching node", id, enc.FactionID)
 		}
 	}
 
-	fmt.Printf("NodeRegistry validated: %d nodes, %d encounters\n",
+	Debugf("NodeRegistry validated: %d nodes, %d encounters",
 		len(registry.nodesByID), len(registry.encountersByID))
 }

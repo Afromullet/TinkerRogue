@@ -53,7 +53,6 @@ func (s ScreenData) GetCanvasHeight() int {
 }
 
 // NewScreenData creates default screen configuration.
-//TODO,
 func NewScreenData() ScreenData {
 	g := ScreenData{
 		DungeonWidth:  100,

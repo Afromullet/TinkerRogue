@@ -28,7 +28,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 
 		// Export overworld log on defeat
 		if err := core.FinalizeRecording("Defeat", defeatMessage); err != nil {
-			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+			core.Warnf("Failed to export overworld log: %v", err)
 		}
 		core.ClearRecording()
 
@@ -48,7 +48,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 
 			// Export overworld log on survival victory
 			if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
-				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+				core.Warnf("Failed to export overworld log: %v", err)
 			}
 			core.ClearRecording()
 
@@ -71,7 +71,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 
 		// Export overworld log on threat elimination victory
 		if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
-			fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+			core.Warnf("Failed to export overworld log: %v", err)
 		}
 		core.ClearRecording()
 
@@ -90,7 +90,7 @@ func CheckVictoryCondition(manager *common.EntityManager) core.VictoryCondition 
 
 			// Export overworld log on faction victory
 			if err := core.FinalizeRecording("Victory", victoryReason); err != nil {
-				fmt.Printf("WARNING: Failed to export overworld log: %v\n", err)
+				core.Warnf("Failed to export overworld log: %v", err)
 			}
 			core.ClearRecording()
 

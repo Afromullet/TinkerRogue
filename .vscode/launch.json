@@ -9,7 +9,7 @@
             "type": "go",
             "request": "launch",
             "mode": "auto",
-            "program": "${workspaceFolder}/game_main",  // Replace with your actual path to game_main
+            "program": "${workspaceFolder}/game_main",
             "env": {},
             "args": []
         }
