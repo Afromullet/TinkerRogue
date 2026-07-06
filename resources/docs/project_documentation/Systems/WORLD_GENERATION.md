@@ -718,42 +718,47 @@ func BuildPath(gm *GameMap, start, other *coords.LogicalPosition) []coords.Logic
 ### Construction
 
 ```go
-// world/worldmap/dungeongen.go
+// world/worldmapcore/dungeongen.go
 
-// NewGameMap creates a GameMap using the named generator.
-// Falls back to "rooms_corridors" if the name is not registered.
-func NewGameMap(generatorName string) GameMap
+// NewGameMap creates a GameMap using the provided generator and context.
+// Loads tile images, runs the generator, and places stairs.
+func NewGameMap(gen MapGenerator, ctx GenContext) GameMap
 
-// NewGameMapDefault is a convenience wrapper for "rooms_corridors".
-func NewGameMapDefault() GameMap
+// NewGameMapFromParts assembles a GameMap from generator output without
+// image loading or stair placement. Used by NewGameMap, the save-system
+// load path, and headless tests.
+func NewGameMapFromParts(width, height int, result GenerationResult) GameMap
 ```
-
-`NewGameMap` calls `LoadTileImages()`, runs the generator, copies all result fields to `GameMap`, and then calls `PlaceStairs`.
 
 ### GameMap
 
+`GameMap`'s fields are unexported (`tiles`, `rooms`, `width`, `height`,
+`validPositions`, `biomeMap`, `pois`, `factionStartPositions`,
+`tileColorsDirty`); consumers use the accessor API in
+`gamemap_accessors.go`. Construction goes through `NewGameMap` /
+`NewGameMapFromParts`. Whole-struct assignment through a pointer
+(`*gm = newMap`) remains legal across packages and is used by map
+regeneration and save-load.
+
 ```go
-type GameMap struct {
-    Tiles                 []*Tile
-    Rooms                 []Rect
-    NumTiles              int
-    RightEdgeX            int
-    TopEdgeY              int
-    ValidPositions        []coords.LogicalPosition
-    BiomeMap              []Biome
-    POIs                  []POIData
-    FactionStartPositions []FactionStartPosition
-    TileColorsDirty       bool
-}
+// Accessors (world/worldmapcore/gamemap_accessors.go)
+func (gm *GameMap) TileAt(pos coords.LogicalPosition) *Tile // nil if out of bounds
+func (gm *GameMap) TileAtIndex(i int) *Tile                 // nil if out of range
+func (gm *GameMap) Tiles() []*Tile                          // read-only, identity-stable
+func (gm *GameMap) TileCount() int
+func (gm *GameMap) Width() int
+func (gm *GameMap) Height() int
+func (gm *GameMap) Rooms() []Rect
+func (gm *GameMap) ValidPositions() []coords.LogicalPosition
+func (gm *GameMap) POIs() []POIData
+func (gm *GameMap) FactionStartPositions() []FactionStartPosition
+func (gm *GameMap) MarkTileColorsDirty()
+func (gm *GameMap) ConsumeTileColorsDirty() bool // returns then clears
 ```
 
 ### Key Methods
 
 ```go
-// Tile looks up a tile by logical position.
-// Uses coords.CoordManager.LogicalToIndex internally.
-func (gameMap *GameMap) Tile(pos *coords.LogicalPosition) *Tile
-
 // StartingPosition returns the player start position.
 // For room-based generators: center of Rooms[0].
 // For non-room generators: map center if walkable, then first ValidPosition, then map center as fallback.
@@ -773,7 +778,8 @@ func (gameMap *GameMap) IsOpaque(x, y int) bool
 func (gameMap *GameMap) InBounds(x, y int) bool
 
 // ApplyColorMatrix sets a ColorMatrix on tiles at the given indices.
-// Sets TileColorsDirty = true to trigger a render pass.
+// Marks tile colors dirty to trigger a render pass; the renderer clears
+// the flag via ConsumeTileColorsDirty.
 func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix)
 func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatrix)
 

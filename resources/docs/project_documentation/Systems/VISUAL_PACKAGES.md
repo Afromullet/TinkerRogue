@@ -337,7 +337,7 @@ type RenderedBounds struct {
 }
 ```
 
-The `RightEdgeX` and `TopEdgeY` fields are populated during viewport rendering and stored back on `GameMap` by the game loop to allow UI panels to align themselves to the edge of the rendered map.
+The `RightEdgeX` and `TopEdgeY` fields are populated during viewport rendering. `RenderedBounds` (returned by `DrawMapCentered`) is the source of truth for render-edge information; `GameMap` does not carry these values.
 
 ### Map Rendering Entry Points
 
@@ -594,15 +594,13 @@ coords.CoordManager.UpdateScreenDimensions(...)
 
 // Render map (one of two modes)
 if coords.MAP_SCROLLING_ENABLED {
-    bounds := rendering.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos,
+    maprender.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos,
         config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
-    g.gameMap.RightEdgeX = bounds.RightEdgeX
-    g.gameMap.TopEdgeY = bounds.TopEdgeY
-    rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos,
+    rendering.ProcessRenderablesInSquare(&g.gameMap, screen, g.playerData.Pos,
         config.DefaultZoomNumberOfSquare, g.renderingCache)
 } else {
-    rendering.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
-    rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
+    maprender.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
+    rendering.ProcessRenderables(&g.gameMap, screen, g.renderingCache)
 }
 
 // Draw visual effects on top of map
