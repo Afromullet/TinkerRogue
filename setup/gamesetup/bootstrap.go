@@ -162,7 +162,7 @@ func (gb *GameBootstrap) InitializeGameplay(em *common.EntityManager, pd *common
 // This allows POIs to participate in the influence system (mildly suppress nearby threats).
 func (gb *GameBootstrap) ConvertPOIsToNodes(em *common.EntityManager, gm *worldmapcore.GameMap) {
 	currentTick := core.GetCurrentTick(em)
-	for _, poi := range gm.POIs {
+	for _, poi := range gm.POIs() {
 		nodeID, err := node.CreateNode(em, node.CreateNodeParams{
 			Position:    poi.Position,
 			NodeTypeID:  ids.NodeTypeID(poi.NodeID),

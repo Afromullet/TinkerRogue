@@ -18,7 +18,7 @@ func InitWalkableGridFromMap(gm *worldmapcore.GameMap) {
 	core.InitWalkableGridFromPositions(
 		templates.GameConfig.Display.MapWidth,
 		templates.GameConfig.Display.MapHeight,
-		gm.ValidPositions,
+		gm.ValidPositions(),
 	)
 }
 

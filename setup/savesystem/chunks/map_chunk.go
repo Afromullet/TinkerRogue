@@ -76,7 +76,7 @@ func (c *MapChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	}
 
 	// Save tiles
-	for _, tile := range gm.Tiles {
+	for _, tile := range gm.Tiles() {
 		if tile == nil {
 			continue
 		}
@@ -93,19 +93,19 @@ func (c *MapChunk) Save(em *common.EntityManager) (json.RawMessage, error) {
 	}
 
 	// Save rooms
-	for _, room := range gm.Rooms {
+	for _, room := range gm.Rooms() {
 		chunkData.Rooms = append(chunkData.Rooms, savedRect{
 			X1: room.X1, X2: room.X2, Y1: room.Y1, Y2: room.Y2,
 		})
 	}
 
 	// Save valid positions
-	for _, pos := range gm.ValidPositions {
+	for _, pos := range gm.ValidPositions() {
 		chunkData.ValidPositions = append(chunkData.ValidPositions, savedPosition{X: pos.X, Y: pos.Y})
 	}
 
 	// Save POIs
-	for _, poi := range gm.POIs {
+	for _, poi := range gm.POIs() {
 		chunkData.POIs = append(chunkData.POIs, savedPOIData{
 			X: poi.Position.X, Y: poi.Position.Y,
 			NodeID: poi.NodeID, Biome: int(poi.Biome),
@@ -143,12 +143,15 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 	width := chunkData.Width
 	height := chunkData.Height
 
-	gm := c.GameMap
 	numTiles := width * height
 
-	// Allocate tiles contiguously
+	// Rebuild the map as generator-shaped parts, then replace the GameMap
+	// wholesale via NewGameMapFromParts (same pattern as map regeneration).
+	// Allocate tiles contiguously.
 	tileValues := make([]worldmapcore.Tile, numTiles)
-	gm.Tiles = make([]*worldmapcore.Tile, numTiles)
+	parts := worldmapcore.GenerationResult{
+		Tiles: make([]*worldmapcore.Tile, numTiles),
+	}
 
 	// Initialize all tiles as default walls
 	for y := 0; y < height; y++ {
@@ -160,7 +163,7 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 				y*coords.ScreenInfo.TileSize,
 				logicalPos, true, nil, worldmapcore.WALL, false,
 			)
-			gm.Tiles[idx] = &tileValues[idx]
+			parts.Tiles[idx] = &tileValues[idx]
 		}
 	}
 
@@ -172,7 +175,7 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 			continue
 		}
 
-		tile := gm.Tiles[idx]
+		tile := parts.Tiles[idx]
 		tile.TileType = worldmapcore.TileType(st.TileType)
 		tile.Blocked = st.Blocked
 		tile.Biome = worldmapcore.Biome(st.Biome)
@@ -184,28 +187,31 @@ func (c *MapChunk) Load(em *common.EntityManager, data json.RawMessage, idMap *s
 	}
 
 	// Restore rooms
-	gm.Rooms = make([]worldmapcore.Rect, len(chunkData.Rooms))
+	parts.Rooms = make([]worldmapcore.Rect, len(chunkData.Rooms))
 	for i, sr := range chunkData.Rooms {
-		gm.Rooms[i] = worldmapcore.Rect{X1: sr.X1, X2: sr.X2, Y1: sr.Y1, Y2: sr.Y2}
+		parts.Rooms[i] = worldmapcore.Rect{X1: sr.X1, X2: sr.X2, Y1: sr.Y1, Y2: sr.Y2}
 	}
 
 	// Restore valid positions
-	gm.ValidPositions = make([]coords.LogicalPosition, len(chunkData.ValidPositions))
+	parts.ValidPositions = make([]coords.LogicalPosition, len(chunkData.ValidPositions))
 	for i, sp := range chunkData.ValidPositions {
-		gm.ValidPositions[i] = coords.LogicalPosition{X: sp.X, Y: sp.Y}
+		parts.ValidPositions[i] = coords.LogicalPosition{X: sp.X, Y: sp.Y}
 	}
 
-	gm.NumTiles = numTiles
-
 	// Restore POIs
-	gm.POIs = make([]worldmapcore.POIData, len(chunkData.POIs))
+	parts.POIs = make([]worldmapcore.POIData, len(chunkData.POIs))
 	for i, sp := range chunkData.POIs {
-		gm.POIs[i] = worldmapcore.POIData{
+		parts.POIs[i] = worldmapcore.POIData{
 			Position: coords.LogicalPosition{X: sp.X, Y: sp.Y},
 			NodeID:   sp.NodeID,
 			Biome:    worldmapcore.Biome(sp.Biome),
 		}
 	}
+
+	// BiomeMap and FactionStartPositions are not saved; they stay empty here.
+	// Both are only consumed during new-game setup, and per-tile biomes are
+	// restored on the tiles themselves above.
+	*c.GameMap = worldmapcore.NewGameMapFromParts(width, height, parts)
 
 	return nil
 }

@@ -36,11 +36,11 @@ func ResetMapRenderers() {
 
 // DrawMap renders the entire game map to the screen
 func DrawMap(screen *ebiten.Image, gameMap *worldmapcore.GameMap, revealAll bool) {
-	if tilesChanged(gameMap.Tiles) {
+	if tilesChanged(gameMap.Tiles()) {
 		ResetMapRenderers()
 	}
 	if cachedFullRenderer == nil {
-		cachedFullRenderer = NewTileRenderer(gameMap.Tiles)
+		cachedFullRenderer = NewTileRenderer(gameMap.Tiles())
 	}
 	cachedFullRenderer.Render(RenderOptions{
 		RevealAll:       revealAll,
@@ -55,11 +55,11 @@ func DrawMap(screen *ebiten.Image, gameMap *worldmapcore.GameMap, revealAll bool
 func DrawMapCentered(screen *ebiten.Image, gameMap *worldmapcore.GameMap,
 	centerPos *coords.LogicalPosition, viewportSize int,
 	revealAll bool) RenderedBounds {
-	if tilesChanged(gameMap.Tiles) {
+	if tilesChanged(gameMap.Tiles()) {
 		ResetMapRenderers()
 	}
 	if cachedViewportRenderer == nil {
-		cachedViewportRenderer = NewTileRenderer(gameMap.Tiles)
+		cachedViewportRenderer = NewTileRenderer(gameMap.Tiles())
 	}
 	bounds := cachedViewportRenderer.Render(RenderOptions{
 		RevealAll:       revealAll,

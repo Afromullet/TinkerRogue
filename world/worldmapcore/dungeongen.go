@@ -42,20 +42,21 @@ func (r *Rect) Intersect(other Rect) bool {
 	return (r.X1 <= other.X2 && r.X2 >= other.X1 && r.Y1 <= other.Y2 && r.Y2 >= other.Y1)
 }
 
-// Holds the Map Information
+// Holds the Map Information. Fields are unexported; consumers go through the
+// accessor methods (see gamemap_accessors.go) and construction goes through
+// NewGameMap or NewGameMapFromParts. Whole-struct assignment through a
+// pointer (`*gm = newMap`) remains legal across packages and is load-bearing:
+// map regeneration and the save-system load path both rely on it.
 type GameMap struct {
-	Tiles                 []*Tile
-	Rooms                 []Rect
-	NumTiles              int
-	Width                 int // Logical dungeon width (tiles)
-	Height                int // Logical dungeon height (tiles)
-	RightEdgeX            int
-	TopEdgeY              int
-	ValidPositions        []coords.LogicalPosition
-	BiomeMap              []Biome
-	POIs                  []POIData
-	FactionStartPositions []FactionStartPosition
-	TileColorsDirty       bool
+	tiles                 []*Tile
+	rooms                 []Rect
+	width                 int // Logical dungeon width (tiles)
+	height                int // Logical dungeon height (tiles)
+	validPositions        []coords.LogicalPosition
+	biomeMap              []Biome
+	pois                  []POIData
+	factionStartPositions []FactionStartPosition
+	tileColorsDirty       bool
 }
 
 // NewGameMap creates a new game map using the provided generator at the given
@@ -76,25 +77,25 @@ func NewGameMap(gen MapGenerator, ctx GenContext) GameMap {
 
 func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
 	// For room-based generators
-	if len(gameMap.Rooms) > 0 {
-		x, y := gameMap.Rooms[0].Center()
+	if len(gameMap.rooms) > 0 {
+		x, y := gameMap.rooms[0].Center()
 		return coords.LogicalPosition{X: x, Y: y}
 	}
 
 	// Fallback for non-room generators: use center of map
-	centerX := gameMap.Width / 2
-	centerY := gameMap.Height / 2
+	centerX := gameMap.width / 2
+	centerY := gameMap.height / 2
 
 	// If center is not walkable, find first valid position
 	logicalPos := coords.LogicalPosition{X: centerX, Y: centerY}
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
-	if idx < len(gameMap.Tiles) && !gameMap.Tiles[idx].Blocked {
+	if idx < len(gameMap.tiles) && !gameMap.tiles[idx].Blocked {
 		return logicalPos
 	}
 
 	// Last resort: return first valid position from ValidPositions
-	if len(gameMap.ValidPositions) > 0 {
-		return gameMap.ValidPositions[0]
+	if len(gameMap.validPositions) > 0 {
+		return gameMap.validPositions[0]
 	}
 
 	// Shouldn't reach here, but return center as final fallback
@@ -112,14 +113,14 @@ func (gm *GameMap) PlaceStairs(images TileImageSet) {
 	var x, y int
 
 	// For room-based generators with multiple rooms
-	if len(gm.Rooms) >= 2 {
+	if len(gm.rooms) >= 2 {
 		//Starts at 1 so we don't create stairs in the starting room
-		randRoom := common.GetRandomBetween(1, len(gm.Rooms)-1)
-		x, y = gm.Rooms[randRoom].Center()
-	} else if len(gm.ValidPositions) > 0 {
+		randRoom := common.GetRandomBetween(1, len(gm.rooms)-1)
+		x, y = gm.rooms[randRoom].Center()
+	} else if len(gm.validPositions) > 0 {
 		// Fallback for non-room generators: place stairs at random valid position
-		randIndex := common.GetRandomBetween(0, len(gm.ValidPositions)-1)
-		pos := gm.ValidPositions[randIndex]
+		randIndex := common.GetRandomBetween(0, len(gm.validPositions)-1)
+		pos := gm.validPositions[randIndex]
 		x, y = pos.X, pos.Y
 	} else {
 		// No valid positions available - shouldn't happen, but return safely
@@ -129,8 +130,8 @@ func (gm *GameMap) PlaceStairs(images TileImageSet) {
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	ind := coords.CoordManager.LogicalToIndex(logicalPos)
 
-	gm.Tiles[ind].TileType = STAIRS_DOWN
-	gm.Tiles[ind].Image = images.StairsDown
+	gm.tiles[ind].TileType = STAIRS_DOWN
+	gm.tiles[ind].Image = images.StairsDown
 
 }
 
@@ -139,24 +140,24 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) 
 
 	for _, ind := range indices {
 
-		if ind < len(gameMap.Tiles) {
-			gameMap.Tiles[ind].SetColorMatrix(m)
+		if ind < len(gameMap.tiles) {
+			gameMap.tiles[ind].SetColorMatrix(m)
 		}
 	}
-	gameMap.TileColorsDirty = true
+	gameMap.tileColorsDirty = true
 }
 
 // Applies the scaling ColorMatrix to the tiles at the Indices
 func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatrix) {
 
-	if index >= 0 && index < len(gameMap.Tiles) {
-		gameMap.Tiles[index].SetColorMatrix(m)
+	if index >= 0 && index < len(gameMap.tiles) {
+		gameMap.tiles[index].SetColorMatrix(m)
 	}
-	gameMap.TileColorsDirty = true
+	gameMap.tileColorsDirty = true
 }
 
 func (gameMap *GameMap) InBounds(x, y int) bool {
-	if x < 0 || x >= gameMap.Width || y < 0 || y >= gameMap.Height {
+	if x < 0 || x >= gameMap.width || y < 0 || y >= gameMap.height {
 		return false
 	}
 	return true
@@ -164,21 +165,21 @@ func (gameMap *GameMap) InBounds(x, y int) bool {
 
 // GetBiomeAt returns the biome at the given position, defaulting to BiomeGrassland
 func (gm *GameMap) GetBiomeAt(pos coords.LogicalPosition) Biome {
-	if gm.BiomeMap == nil {
+	if gm.biomeMap == nil {
 		return BiomeGrassland
 	}
 	idx := coords.CoordManager.LogicalToIndex(pos)
-	if idx < 0 || idx >= len(gm.BiomeMap) {
+	if idx < 0 || idx >= len(gm.biomeMap) {
 		return BiomeGrassland
 	}
-	return gm.BiomeMap[idx]
+	return gm.biomeMap[idx]
 }
 
 func (gameMap *GameMap) IsOpaque(x, y int) bool {
 	logicalPos := coords.LogicalPosition{X: x, Y: y}
 	idx := coords.CoordManager.LogicalToIndex(logicalPos)
-	if idx < 0 || idx >= len(gameMap.Tiles) {
+	if idx < 0 || idx >= len(gameMap.tiles) {
 		return true // Out-of-bounds treated as opaque (blocks vision)
 	}
-	return gameMap.Tiles[idx].TileType == WALL
+	return gameMap.tiles[idx].TileType == WALL
 }

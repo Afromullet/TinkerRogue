@@ -60,7 +60,7 @@ func regenerateMap(em *ExplorationMode, generatorName string) {
 	core.InitWalkableGridFromPositions(
 		templates.GameConfig.Display.MapWidth,
 		templates.GameConfig.Display.MapHeight,
-		em.Context.GameMap.ValidPositions,
+		em.Context.GameMap.ValidPositions(),
 	)
 
 	// 3. Reposition player

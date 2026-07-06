@@ -24,8 +24,8 @@ func CreateInitialFactions(em *common.EntityManager, pd *common.PlayerData, gm *
 		}
 
 		var pos coords.LogicalPosition
-		if i < len(gm.FactionStartPositions) {
-			pos = gm.FactionStartPositions[i].Position
+		if fsp := gm.FactionStartPositions(); i < len(fsp) {
+			pos = fsp[i].Position
 		} else {
 			fp := cfg.FallbackPositions[i]
 			pos = coords.LogicalPosition{X: fp.X, Y: fp.Y}

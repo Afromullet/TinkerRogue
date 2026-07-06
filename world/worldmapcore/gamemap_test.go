@@ -69,10 +69,10 @@ func TestNewGameMapFromParts(t *testing.T) {
 	gm := newTestMap(t, 20, 15)
 	carveFloor(gm, 4, 4)
 	parts := GenerationResult{
-		Tiles:          gm.Tiles,
+		Tiles:          gm.tiles,
 		Rooms:          []Rect{NewRect(1, 1, 5, 5)},
-		ValidPositions: gm.ValidPositions,
-		BiomeMap:       make([]Biome, len(gm.Tiles)),
+		ValidPositions: gm.validPositions,
+		BiomeMap:       make([]Biome, len(gm.tiles)),
 	}
 
 	built := NewGameMapFromParts(20, 15, parts)
@@ -80,12 +80,12 @@ func TestNewGameMapFromParts(t *testing.T) {
 	if built.TileCount() != len(parts.Tiles) {
 		t.Errorf("TileCount() = %d, want %d", built.TileCount(), len(parts.Tiles))
 	}
-	if built.Width != 20 || built.Height != 15 {
-		t.Errorf("dimensions = %dx%d, want 20x15", built.Width, built.Height)
+	if built.Width() != 20 || built.Height() != 15 {
+		t.Errorf("dimensions = %dx%d, want 20x15", built.Width(), built.Height())
 	}
-	if len(built.Rooms) != 1 || len(built.ValidPositions) != 1 {
+	if len(built.Rooms()) != 1 || len(built.ValidPositions()) != 1 {
 		t.Errorf("Rooms/ValidPositions not carried over: %d rooms, %d positions",
-			len(built.Rooms), len(built.ValidPositions))
+			len(built.Rooms()), len(built.ValidPositions()))
 	}
 	if built.TileAt(coords.LogicalPosition{X: 4, Y: 4}) == nil {
 		t.Error("TileAt on built map returned nil for carved position")
@@ -110,7 +110,7 @@ func TestConsumeTileColorsDirty(t *testing.T) {
 
 func TestStartingPosition_Rooms(t *testing.T) {
 	gm := newTestMap(t, 20, 15)
-	gm.Rooms = []Rect{NewRect(2, 2, 6, 6)}
+	gm.rooms = []Rect{NewRect(2, 2, 6, 6)}
 
 	got := gm.StartingPosition()
 	want := coords.LogicalPosition{X: 5, Y: 5} // center of NewRect(2,2,6,6)
@@ -134,7 +134,7 @@ func TestStartingPosition_ValidPositionsFallback(t *testing.T) {
 	gm := newTestMap(t, 20, 15)
 	// Center stays blocked; record a valid position without carving via the
 	// helper so the center-walkable branch is skipped.
-	gm.ValidPositions = []coords.LogicalPosition{{X: 3, Y: 3}}
+	gm.validPositions = []coords.LogicalPosition{{X: 3, Y: 3}}
 
 	got := gm.StartingPosition()
 	want := coords.LogicalPosition{X: 3, Y: 3}
@@ -158,7 +158,7 @@ func TestStartingPosition_FinalFallback(t *testing.T) {
 func TestPlaceStairs_RoomBranch(t *testing.T) {
 	common.SetRNGSeed(1, 2)
 	gm := newTestMap(t, 20, 15)
-	gm.Rooms = []Rect{
+	gm.rooms = []Rect{
 		NewRect(1, 1, 5, 5), // starting room — stairs must NOT be here
 		NewRect(8, 8, 5, 5),
 		NewRect(1, 8, 5, 5),
@@ -172,12 +172,12 @@ func TestPlaceStairs_RoomBranch(t *testing.T) {
 
 	// The stairs must be at the center of a non-starting room (index >= 1).
 	eligible := map[coords.LogicalPosition]bool{}
-	for _, room := range gm.Rooms[1:] {
+	for _, room := range gm.rooms[1:] {
 		x, y := room.Center()
 		eligible[coords.LogicalPosition{X: x, Y: y}] = true
 	}
 	found := false
-	for _, tile := range gm.Tiles {
+	for _, tile := range gm.tiles {
 		if tile.TileType == STAIRS_DOWN && eligible[tile.TileCords] {
 			found = true
 		}
@@ -202,7 +202,7 @@ func TestPlaceStairs_ValidPositionsBranch(t *testing.T) {
 	carved := map[coords.LogicalPosition]bool{
 		{X: 2, Y: 2}: true, {X: 3, Y: 3}: true, {X: 4, Y: 4}: true,
 	}
-	for _, tile := range gm.Tiles {
+	for _, tile := range gm.tiles {
 		if tile.TileType == STAIRS_DOWN && !carved[tile.TileCords] {
 			t.Errorf("stairs at %+v, want one of the carved positions", tile.TileCords)
 		}
@@ -227,9 +227,9 @@ func TestGetBiomeAt(t *testing.T) {
 		t.Errorf("GetBiomeAt with nil BiomeMap = %v, want BiomeGrassland", got)
 	}
 
-	gm.BiomeMap = make([]Biome, gm.NumTiles)
+	gm.biomeMap = make([]Biome, gm.TileCount())
 	idx := coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: 4, Y: 5})
-	gm.BiomeMap[idx] = BiomeDesert
+	gm.biomeMap[idx] = BiomeDesert
 
 	if got := gm.GetBiomeAt(coords.LogicalPosition{X: 4, Y: 5}); got != BiomeDesert {
 		t.Errorf("GetBiomeAt = %v, want BiomeDesert", got)
@@ -268,17 +268,17 @@ func TestApplyColorMatrix_DirtyFlag(t *testing.T) {
 	idx := coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: 3, Y: 4})
 	gm.ApplyColorMatrix([]int{idx}, m)
 
-	if got := gm.Tiles[idx].GetColorMatrix(); got != m {
+	if got := gm.tiles[idx].GetColorMatrix(); got != m {
 		t.Errorf("tile color matrix = %+v, want %+v", got, m)
 	}
-	if !gm.TileColorsDirty {
+	if !gm.tileColorsDirty {
 		t.Error("TileColorsDirty = false after ApplyColorMatrix, want true")
 	}
 
 	// Out-of-range index is silently skipped but the flag is still set (pinned).
-	gm.TileColorsDirty = false
-	gm.ApplyColorMatrix([]int{len(gm.Tiles)}, m)
-	if !gm.TileColorsDirty {
+	gm.tileColorsDirty = false
+	gm.ApplyColorMatrix([]int{gm.TileCount()}, m)
+	if !gm.tileColorsDirty {
 		t.Error("TileColorsDirty = false after out-of-range ApplyColorMatrix, want true (pinned)")
 	}
 }
@@ -290,24 +290,24 @@ func TestApplyColorMatrixToIndex(t *testing.T) {
 	idx := coords.CoordManager.LogicalToIndex(coords.LogicalPosition{X: 7, Y: 2})
 	gm.ApplyColorMatrixToIndex(idx, m)
 
-	if got := gm.Tiles[idx].GetColorMatrix(); got != m {
+	if got := gm.tiles[idx].GetColorMatrix(); got != m {
 		t.Errorf("tile color matrix = %+v, want %+v", got, m)
 	}
-	if !gm.TileColorsDirty {
+	if !gm.tileColorsDirty {
 		t.Error("TileColorsDirty = false after ApplyColorMatrixToIndex, want true")
 	}
 
 	// index == TileCount() is skipped but the flag is still set (pinned).
-	gm.TileColorsDirty = false
+	gm.tileColorsDirty = false
 	gm.ApplyColorMatrixToIndex(gm.TileCount(), m)
-	if !gm.TileColorsDirty {
+	if !gm.tileColorsDirty {
 		t.Error("TileColorsDirty = false after out-of-range index, want true (pinned)")
 	}
 
 	// Negative indices are skipped without panicking.
-	gm.TileColorsDirty = false
+	gm.tileColorsDirty = false
 	gm.ApplyColorMatrixToIndex(-1, m)
-	if !gm.TileColorsDirty {
+	if !gm.tileColorsDirty {
 		t.Error("TileColorsDirty = false after negative index, want true")
 	}
 }

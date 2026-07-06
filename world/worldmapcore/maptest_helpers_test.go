@@ -49,10 +49,9 @@ func newTestMap(t *testing.T, w, h int) *GameMap {
 	}
 
 	return &GameMap{
-		Tiles:    tiles,
-		NumTiles: numTiles,
-		Width:    w,
-		Height:   h,
+		tiles:  tiles,
+		width:  w,
+		height: h,
 	}
 }
 
@@ -61,15 +60,15 @@ func newTestMap(t *testing.T, w, h int) *GameMap {
 func carveFloor(gm *GameMap, x, y int) {
 	pos := coords.LogicalPosition{X: x, Y: y}
 	idx := coords.CoordManager.LogicalToIndex(pos)
-	gm.Tiles[idx].Blocked = false
-	gm.Tiles[idx].TileType = FLOOR
-	gm.ValidPositions = append(gm.ValidPositions, pos)
+	gm.tiles[idx].Blocked = false
+	gm.tiles[idx].TileType = FLOOR
+	gm.validPositions = append(gm.validPositions, pos)
 }
 
 // tileTypeCount counts tiles of the given type across the whole map.
 func tileTypeCount(gm *GameMap, tt TileType) int {
 	count := 0
-	for _, tile := range gm.Tiles {
+	for _, tile := range gm.tiles {
 		if tile.TileType == tt {
 			count++
 		}
