@@ -192,12 +192,11 @@ func (h *SpellCastingHandler) HandleAoETargetingFrame(mouseX, mouseY int) {
 	h.activeShape.UpdatePosition(pixelPos.X, pixelPos.Y)
 	indices := h.activeShape.GetIndices()
 
-	// Apply spell overlay color to each tile
+	// Apply spell overlay color to each tile (ApplyColorMatrixToIndex
+	// bounds-checks internally).
 	spellOverlay := graphics.ColorMatrix{R: 0.8, G: 0.2, B: 0.8, A: 0.4}
 	for _, idx := range indices {
-		if idx >= 0 && idx < h.deps.GameMap.NumTiles {
-			h.deps.GameMap.ApplyColorMatrixToIndex(idx, spellOverlay)
-		}
+		h.deps.GameMap.ApplyColorMatrixToIndex(idx, spellOverlay)
 	}
 
 	h.prevIndices = indices

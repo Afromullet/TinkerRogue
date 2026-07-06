@@ -36,7 +36,10 @@ func TestTileIndexing(t *testing.T) {
 	carveFloor(gm, 5, 7)
 
 	pos := coords.LogicalPosition{X: 5, Y: 7}
-	tile := gm.Tiles[coords.CoordManager.LogicalToIndex(pos)]
+	tile := gm.TileAt(pos)
+	if tile == nil {
+		t.Fatal("TileAt returned nil for in-bounds position")
+	}
 
 	if tile.TileCords != pos {
 		t.Errorf("tile.TileCords = %+v, want %+v", tile.TileCords, pos)
@@ -46,6 +49,62 @@ func TestTileIndexing(t *testing.T) {
 	}
 	if tile.Blocked || tile.TileType != FLOOR {
 		t.Errorf("carved tile Blocked=%v TileType=%v, want unblocked FLOOR", tile.Blocked, tile.TileType)
+	}
+
+	if gm.TileAtIndex(coords.CoordManager.LogicalToIndex(pos)) != tile {
+		t.Error("TileAtIndex disagrees with TileAt for the same position")
+	}
+	if got := gm.TileAtIndex(-1); got != nil {
+		t.Errorf("TileAtIndex(-1) = %v, want nil", got)
+	}
+	if got := gm.TileAtIndex(gm.TileCount()); got != nil {
+		t.Errorf("TileAtIndex(TileCount()) = %v, want nil", got)
+	}
+	if got := gm.TileCount(); got != 20*15 {
+		t.Errorf("TileCount() = %d, want %d", got, 20*15)
+	}
+}
+
+func TestNewGameMapFromParts(t *testing.T) {
+	gm := newTestMap(t, 20, 15)
+	carveFloor(gm, 4, 4)
+	parts := GenerationResult{
+		Tiles:          gm.Tiles,
+		Rooms:          []Rect{NewRect(1, 1, 5, 5)},
+		ValidPositions: gm.ValidPositions,
+		BiomeMap:       make([]Biome, len(gm.Tiles)),
+	}
+
+	built := NewGameMapFromParts(20, 15, parts)
+
+	if built.TileCount() != len(parts.Tiles) {
+		t.Errorf("TileCount() = %d, want %d", built.TileCount(), len(parts.Tiles))
+	}
+	if built.Width != 20 || built.Height != 15 {
+		t.Errorf("dimensions = %dx%d, want 20x15", built.Width, built.Height)
+	}
+	if len(built.Rooms) != 1 || len(built.ValidPositions) != 1 {
+		t.Errorf("Rooms/ValidPositions not carried over: %d rooms, %d positions",
+			len(built.Rooms), len(built.ValidPositions))
+	}
+	if built.TileAt(coords.LogicalPosition{X: 4, Y: 4}) == nil {
+		t.Error("TileAt on built map returned nil for carved position")
+	}
+}
+
+func TestConsumeTileColorsDirty(t *testing.T) {
+	gm := newTestMap(t, 20, 15)
+
+	if gm.ConsumeTileColorsDirty() {
+		t.Error("ConsumeTileColorsDirty() = true on fresh map, want false")
+	}
+
+	gm.MarkTileColorsDirty()
+	if !gm.ConsumeTileColorsDirty() {
+		t.Error("ConsumeTileColorsDirty() = false after MarkTileColorsDirty, want true")
+	}
+	if gm.ConsumeTileColorsDirty() {
+		t.Error("second ConsumeTileColorsDirty() = true, want false (flag consumed)")
 	}
 }
 
@@ -238,12 +297,17 @@ func TestApplyColorMatrixToIndex(t *testing.T) {
 		t.Error("TileColorsDirty = false after ApplyColorMatrixToIndex, want true")
 	}
 
-	// index == NumTiles is skipped but the flag is still set (pinned).
+	// index == TileCount() is skipped but the flag is still set (pinned).
 	gm.TileColorsDirty = false
-	gm.ApplyColorMatrixToIndex(gm.NumTiles, m)
+	gm.ApplyColorMatrixToIndex(gm.TileCount(), m)
 	if !gm.TileColorsDirty {
 		t.Error("TileColorsDirty = false after out-of-range index, want true (pinned)")
 	}
-	// NOTE: negative indices currently panic; a guard is added in the
-	// encapsulation phase, which is when the negative-index test lands.
+
+	// Negative indices are skipped without panicking.
+	gm.TileColorsDirty = false
+	gm.ApplyColorMatrixToIndex(-1, m)
+	if !gm.TileColorsDirty {
+		t.Error("TileColorsDirty = false after negative index, want true")
+	}
 }

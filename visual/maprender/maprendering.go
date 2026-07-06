@@ -46,9 +46,8 @@ func DrawMap(screen *ebiten.Image, gameMap *worldmapcore.GameMap, revealAll bool
 		RevealAll:       revealAll,
 		CenterOn:        nil, // Full map
 		Screen:          screen,
-		TileColorsDirty: gameMap.TileColorsDirty,
+		TileColorsDirty: gameMap.ConsumeTileColorsDirty(),
 	})
-	gameMap.TileColorsDirty = false
 }
 
 // DrawMapCentered renders map centered on a position with viewport
@@ -67,8 +66,7 @@ func DrawMapCentered(screen *ebiten.Image, gameMap *worldmapcore.GameMap,
 		CenterOn:        centerPos,
 		ViewportSize:    viewportSize,
 		Screen:          screen,
-		TileColorsDirty: gameMap.TileColorsDirty,
+		TileColorsDirty: gameMap.ConsumeTileColorsDirty(),
 	})
-	gameMap.TileColorsDirty = false
 	return bounds
 }

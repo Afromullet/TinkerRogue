@@ -57,10 +57,11 @@ func regenerateMap(em *ExplorationMode, generatorName string) {
 	*em.Context.GameMap = newMap
 
 	// 2. Rebuild walkable grid
-	core.InitWalkableGrid(templates.GameConfig.Display.MapWidth, templates.GameConfig.Display.MapHeight)
-	for _, pos := range em.Context.GameMap.ValidPositions {
-		core.SetTileWalkable(pos, true)
-	}
+	core.InitWalkableGridFromPositions(
+		templates.GameConfig.Display.MapWidth,
+		templates.GameConfig.Display.MapHeight,
+		em.Context.GameMap.ValidPositions,
+	)
 
 	// 3. Reposition player
 	startPos := em.Context.GameMap.StartingPosition()
@@ -72,7 +73,7 @@ func regenerateMap(em *ExplorationMode, generatorName string) {
 	common.GlobalPositionSystem.MoveEntity(em.Context.PlayerData.PlayerEntityID, oldPos, startPos)
 
 	// 5. Force tile re-render
-	em.Context.GameMap.TileColorsDirty = true
+	em.Context.GameMap.MarkTileColorsDirty()
 
 	fmt.Printf("DEBUG: Regenerated map with generator '%s'\n", generatorName)
 }

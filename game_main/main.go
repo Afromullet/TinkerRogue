@@ -126,13 +126,11 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	// Phase 1: Render tactical map only when in tactical context
 	if g.gameModeCoordinator.GetCurrentContext() == framework.ContextTactical {
 		if coords.MAP_SCROLLING_ENABLED {
-			bounds := maprender.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
-			g.gameMap.RightEdgeX = bounds.RightEdgeX
-			g.gameMap.TopEdgeY = bounds.TopEdgeY
-			rendering.ProcessRenderablesInSquare(g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
+			maprender.DrawMapCentered(screen, &g.gameMap, g.playerData.Pos, config.DefaultZoomNumberOfSquare, config.DEBUG_MODE)
+			rendering.ProcessRenderablesInSquare(&g.gameMap, screen, g.playerData.Pos, config.DefaultZoomNumberOfSquare, g.renderingCache)
 		} else {
 			maprender.DrawMap(screen, &g.gameMap, config.DEBUG_MODE)
-			rendering.ProcessRenderables(g.gameMap, screen, g.renderingCache)
+			rendering.ProcessRenderables(&g.gameMap, screen, g.renderingCache)
 		}
 
 		vfx.VXHandler.DrawVisualEffects(screen)

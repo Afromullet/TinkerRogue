@@ -176,7 +176,7 @@ func (tv *ThreatVisualizer) GetMode() VisualizerMode {
 }
 
 func (tv *ThreatVisualizer) ClearVisualization() {
-	for i := 0; i < tv.gameMap.NumTiles; i++ {
+	for i := 0; i < tv.gameMap.TileCount(); i++ {
 		tv.gameMap.ApplyColorMatrixToIndex(i, graphics.NewEmptyMatrix())
 	}
 	tv.dirty = true

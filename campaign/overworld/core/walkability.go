@@ -13,6 +13,16 @@ func InitWalkableGrid(width, height int) {
 	WalkableGrid = make([]bool, width*height)
 }
 
+// InitWalkableGridFromPositions rebuilds the walkable grid at the given size
+// and marks the provided positions walkable. Single path for map setup,
+// save-load, and map regeneration.
+func InitWalkableGridFromPositions(width, height int, positions []coords.LogicalPosition) {
+	InitWalkableGrid(width, height)
+	for _, pos := range positions {
+		SetTileWalkable(pos, true)
+	}
+}
+
 // SetTileWalkable marks a tile as walkable or not
 func SetTileWalkable(pos coords.LogicalPosition, walkable bool) {
 	idx := coords.CoordManager.LogicalToIndex(pos)

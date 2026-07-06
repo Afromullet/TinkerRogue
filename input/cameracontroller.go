@@ -100,12 +100,14 @@ func (mc *CameraController) movePlayer(xOffset, yOffset int) {
 	}
 
 	nextLogicalPos := coords.LogicalPosition{X: nextPosition.X, Y: nextPosition.Y}
-	index := coords.CoordManager.LogicalToIndex(nextLogicalPos)
-	nextTile := mc.gameMap.Tiles[index]
+	nextTile := mc.gameMap.TileAt(nextLogicalPos)
 
 	currentLogicalPos := coords.LogicalPosition{X: mc.playerData.Pos.X, Y: mc.playerData.Pos.Y}
-	index = coords.CoordManager.LogicalToIndex(currentLogicalPos)
-	oldTile := mc.gameMap.Tiles[index]
+	oldTile := mc.gameMap.TileAt(currentLogicalPos)
+
+	if nextTile == nil || oldTile == nil {
+		return
+	}
 
 	if !nextTile.Blocked {
 		// Update PositionSystem before moving player

@@ -15,10 +15,11 @@ import (
 // InitWalkableGridFromMap initializes the walkable grid and marks valid positions.
 // Used by overworld, roguelike, and save-load initialization paths.
 func InitWalkableGridFromMap(gm *worldmapcore.GameMap) {
-	core.InitWalkableGrid(templates.GameConfig.Display.MapWidth, templates.GameConfig.Display.MapHeight)
-	for _, pos := range gm.ValidPositions {
-		core.SetTileWalkable(pos, true)
-	}
+	core.InitWalkableGridFromPositions(
+		templates.GameConfig.Display.MapWidth,
+		templates.GameConfig.Display.MapHeight,
+		gm.ValidPositions,
+	)
 }
 
 // SetupBenchmarking initializes performance profiling tools when enabled.

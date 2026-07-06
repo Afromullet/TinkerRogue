@@ -67,29 +67,11 @@ func NewGameMap(gen MapGenerator, ctx GenContext) GameMap {
 
 	result := gen.Generate(ctx, images)
 
-	dungeonMap := GameMap{
-		Tiles:                 result.Tiles,
-		Rooms:                 result.Rooms,
-		NumTiles:              len(result.Tiles),
-		Width:                 ctx.Width,
-		Height:                ctx.Height,
-		ValidPositions:        result.ValidPositions,
-		BiomeMap:              result.BiomeMap,
-		POIs:                  result.POIs,
-		FactionStartPositions: result.FactionStartPositions,
-	}
+	dungeonMap := NewGameMapFromParts(ctx.Width, ctx.Height, result)
 
 	dungeonMap.PlaceStairs(images)
 
 	return dungeonMap
-}
-
-func (gameMap *GameMap) Tile(pos *coords.LogicalPosition) *Tile {
-
-	logicalPos := coords.LogicalPosition{X: pos.X, Y: pos.Y}
-	index := coords.CoordManager.LogicalToIndex(logicalPos)
-	return gameMap.Tiles[index]
-
 }
 
 func (gameMap *GameMap) StartingPosition() coords.LogicalPosition {
@@ -167,7 +149,7 @@ func (gameMap *GameMap) ApplyColorMatrix(indices []int, m graphics.ColorMatrix) 
 // Applies the scaling ColorMatrix to the tiles at the Indices
 func (gameMap *GameMap) ApplyColorMatrixToIndex(index int, m graphics.ColorMatrix) {
 
-	if index < gameMap.NumTiles {
+	if index >= 0 && index < len(gameMap.Tiles) {
 		gameMap.Tiles[index].SetColorMatrix(m)
 	}
 	gameMap.TileColorsDirty = true
