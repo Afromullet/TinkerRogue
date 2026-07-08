@@ -1,6 +1,6 @@
 # TinkerRogue Project Layout
 
-**Last Updated:** 2026-04-22
+**Last Updated:** 2026-07-02
 
 Annotated package tree with file-level descriptions for key files. The project is organized into top-level domains: `core/` (ECS primitives), `tactical/` (in-battle systems), `campaign/` (overworld/raid strategic layer), `mind/` (AI and encounters), `world/` (map generation), `visual/` (rendering), `gui/` (UI modes and panels), plus supporting `templates/`, `setup/`, `testing/`, and `tools/` trees.
 
@@ -11,6 +11,7 @@ TinkerRogue/
 │   │   ├── ecsutil.go              # EntityManager, component access helpers (GetComponentType, GetComponentTypeByID)
 │   │   ├── commoncomponents.go     # PositionComponent, AttributesComponent, NameComponent
 │   │   ├── positionsystem.go       # GlobalPositionSystem (O(1) spatial grid, value-based map keys)
+│   │   ├── grid_movement.go        # Shared Chebyshev flood-fill (used by commander + combat movement)
 │   │   ├── playerdata.go           # Player state
 │   │   ├── randnumgen.go           # Seeded RNG
 │   │   └── resources.go            # Shared resource registration / subsystem init hooks
@@ -22,12 +23,11 @@ TinkerRogue/
 │
 ├── tactical/               # In-battle tactical gameplay systems
 │   ├── squads/             # Squad system (REFERENCE ECS IMPLEMENTATION)
-│   │   ├── squadcore/              # Squad components, queries, creation, abilities
+│   │   ├── squadcore/              # Squad components, queries, creation
 │   │   │   ├── squadcomponents.go  # Pure data components (SquadData, SquadMemberData, ...)
 │   │   │   ├── squadqueries.go     # Query functions (use package-level ECS Views)
 │   │   │   ├── squadcreation.go    # Squad/unit instantiation
 │   │   │   ├── squadmanager.go     # Manager helpers + ECS View singletons (init())
-│   │   │   ├── squadabilities.go   # Leader ability definitions
 │   │   │   └── units.go            # Unit helpers
 │   │   ├── squadservices/          # Higher-level orchestration
 │   │   │   ├── squad_deployment_service.go
@@ -38,23 +38,26 @@ TinkerRogue/
 │   │   │   ├── purchase_unit_command.go, change_leader_command.go
 │   │   │   ├── move_squad_command.go, rename_squad_command.go, reorder_squads_command.go
 │   │   ├── roster/                 # Squad + unit rosters (persistent player-owned collections)
-│   │   │   ├── squadroster.go, unitroster.go
+│   │   │   ├── squadroster.go, unitroster.go, init.go
 │   │   ├── unitdefs/               # Unit template data (enums, filters, templates)
 │   │   │   ├── enums.go, filters.go, templates.go
 │   │   └── unitprogression/        # Per-unit experience and leveling
 │   │       ├── components.go, experience.go
 │   │
 │   ├── combat/             # Turn-based combat management
-│   │   ├── combatcore/             # Combat loop, actions, movement, balance config
-│   │   │   ├── turnmanager.go, combatactionsystem.go, combatmovementsystem.go
-│   │   │   ├── combatabilities.go, combatprocessing.go, balanceconfig.go
+│   │   ├── combatcore/             # Combat loop, actions, movement
+│   │   │   ├── turnmanager.go, combatactionsystem.go
+│   │   │   ├── combatmovementsystem.go, combatprocessing.go
 │   │   ├── combatstate/            # Combat ECS components and query cache
 │   │   │   ├── combatcomponents.go, combatqueries.go, combatqueriescache.go
-│   │   │   └── combatfactionmanager.go
-│   │   ├── combatmath/             # Damage math, cover, targeting
-│   │   │   ├── combatcalculation.go, combatcover.go, combattargeting.go
+│   │   │   ├── combatfactionmanager.go, logging.go
+│   │   ├── combatmath/             # Damage math, cover, targeting, balance config
+│   │   │   ├── combatcalculation.go, combatcover.go, combattargeting.go, balanceconfig.go
+│   │   ├── combatdisposal/         # Squad removal/disposal during combat (shared by combatcore + spells)
+│   │   │   └── squad_removal.go
 │   │   ├── combatservices/         # Combat service layer, power dispatch, AI interfaces
-│   │   │   ├── combat_service.go, combat_power_dispatch.go, ai_interfaces.go
+│   │   │   ├── combat_service.go, combat_power_dispatch.go, power_orchestrator.go
+│   │   │   ├── combat_exit_controller.go, ai_interfaces.go, ai_coordinator.go
 │   │   ├── combattypes/            # Shared combat types, perk callback hooks
 │   │   │   ├── combattypes.go, perk_callbacks.go
 │   │   └── battlelog/              # Battle recording and export
@@ -66,7 +69,6 @@ TinkerRogue/
 │   │   ├── queries.go              # Commander lookups
 │   │   ├── roster.go               # Squad roster management
 │   │   ├── turnstate.go            # Overworld turn tracking
-│   │   ├── starters.go             # Starting commander creation
 │   │   ├── system.go               # Commander system logic
 │   │   └── init.go                 # Subsystem registration
 │   │
@@ -84,8 +86,9 @@ TinkerRogue/
 │       │   ├── context.go, pending_effects.go, balanceconfig.go
 │       ├── perks/                  # Perk registry, behaviors, hooks, dispatcher
 │       │   ├── components.go, system.go, queries.go, init.go
-│       │   ├── behaviors.go, dispatcher.go, hooks.go, registry.go
-│       │   ├── perkids.go, unithelpers.go, balanceconfig.go
+│       │   ├── behaviors_stateless.go, behaviors_per_round.go, behaviors_per_battle.go
+│       │   ├── dispatcher.go, hooks.go, registry.go
+│       │   ├── perkids.go, unithelpers.go, format.go, balanceconfig.go
 │       └── progression/            # Commander-level progression library (perks/spells unlock pool)
 │           ├── components.go, library.go, init.go
 │
@@ -93,9 +96,12 @@ TinkerRogue/
 │   ├── overworld/          # Strategic overworld layer (tick-based)
 │   │   ├── core/                   # Shared components, types, registry, walkability
 │   │   │   ├── components.go, types.go, events.go, resources.go
-│   │   │   ├── node_registry.go, walkability.go, config.go, utils.go, init.go
+│   │   │   ├── node_registry.go, walkability.go, config.go, utils.go
+│   │   │   ├── logger.go, init.go
+│   │   ├── ids/                    # Leaf sub-package: typed string IDs (FactionID, EncounterTypeID, ...)
+│   │   │   └── ids.go              # (no deps on core or templates — breaks import cycles)
 │   │   ├── tick/                   # Strategic turn clock (AdvanceTick)
-│   │   │   └── tickmanager.go
+│   │   │   ├── tickmanager.go, endturn.go
 │   │   ├── faction/                # NPC faction AI
 │   │   │   ├── system.go, archetype.go, scoring.go
 │   │   ├── threat/                 # Threat node growth
@@ -138,31 +144,35 @@ TinkerRogue/
 │   │   ├── encounter_service.go    # Core service
 │   │   ├── encounter_trigger.go    # Trigger conditions
 │   │   ├── encounter_setup.go      # Enemy squad generation
+│   │   ├── exit_hooks.go           # Combat-exit hook wiring
 │   │   ├── resolvers.go, rewards.go, starters.go, types.go, validators.go
-│   ├── combatlifecycle/    # Combat setup, cleanup, rewards, casualties
-│   │   ├── contracts.go, pipeline.go, starter.go, enrollment.go
-│   │   ├── casualties.go, cleanup.go, reward.go
+│   ├── combatlifecycle/    # Combat setup, teardown, rewards, casualties
+│   │   ├── start.go, teardown.go, exit.go, setup_constructors.go
+│   │   ├── enrollment.go, casualties.go, reward.go
 │   └── spawning/           # Automatic squad creation and composition
 │       ├── squadscreation.go, composition.go, types.go, util.go
 │
 ├── world/                  # Map generation and tile/biome infrastructure
 │   ├── worldmapcore/       # Tile types, biome definitions, generator interface
 │   │   ├── dungeongen.go, dungeontile.go, tileconfig.go
+│   │   ├── gamemap_accessors.go    # GameMap accessor API (fields are unexported)
 │   │   ├── biome.go, generator.go, GameMapUtil.go
+│   │   └── *_test.go               # Headless GameMap/Rect/biome tests + helpers
 │   ├── worldgen/           # Map generator algorithms and registry
 │   │   ├── registry.go             # Generator registry (self-register via init())
 │   │   ├── gen_cavern.go           # Cellular automata cavern generator
 │   │   ├── gen_rooms_corridors.go  # BSP rooms + corridors
 │   │   ├── gen_overworld.go        # Overworld map generator
-│   │   └── gen_helpers.go          # Shared generator helpers
+│   │   ├── gen_helpers.go          # Shared generator helpers
+│   │   └── generator_smoke_test.go # Generator invariants + determinism tests
 │   └── garrisongen/        # Garrison-specific map generation (multi-floor DAG)
-│       ├── generator.go, dag.go, terrain.go, meta.go
+│       ├── generator.go, dag.go, terrain.go
 │       └── roomtypes/      # Leaf sub-package: shared room-type ID constants
 │                           # (imported by templates/ to avoid worldmap deps)
 │
 ├── visual/                 # Rendering pipeline
-│   ├── graphics/           # Graphics primitives (color matrices, shapes, types)
-│   │   ├── colormatrix.go, drawableshapes.go, graphictypes.go
+│   ├── graphics/           # Graphics primitives (color matrices, shapes)
+│   │   ├── colormatrix.go, drawableshapes.go
 │   ├── rendering/          # Batch rendering, viewport, caching
 │   │   ├── rendering.go, quadbatch.go, renderingcache.go, viewport.go
 │   ├── maprender/          # Map and tile rendering
@@ -190,10 +200,11 @@ TinkerRogue/
 │   │   └── commandhistory.go       # Undo/redo system
 │   ├── builders/           # UI construction helpers
 │   │   ├── panels.go, panelspecs.go, layout.go
-│   │   ├── dialogs.go, lists.go, widgets.go
+│   │   ├── dialogs.go, lists.go, widgets.go, selection_panel.go
 │   ├── widgets/            # Widget wrappers & utilities
 │   │   ├── cached_list.go          # Cached list (90% CPU reduction)
 │   │   ├── cached_textarea.go      # Cached text area
+│   │   ├── selection_panel_core.go # Selection panel core widget
 │   │   └── textdisplay.go          # Text display widget
 │   ├── specs/              # Layout specifications
 │   │   └── layout.go               # Responsive layout configuration
@@ -201,11 +212,17 @@ TinkerRogue/
 │   │   ├── guiresources.go         # Fonts, images, colors
 │   │   └── cachedbackground.go     # Cached background rendering
 │   │
-│   ├── guicombat/          # Combat + combat animation modes
-│   │   ├── combatmode.go, combat_animation_mode.go
-│   │   ├── combat_panels_registry.go, combat_animation_panels_registry.go
-│   │   ├── combat_input_handler.go, combat_action_handler.go, combat_turn_flow.go
-│   │   ├── combatvisualization.go, threatvisualizer.go, combatdeps.go
+│   ├── guicombat/          # Combat mode (root) + combat subpackages
+│   │   ├── combatmode.go, combat_mode_init.go, combat_mode_panels.go
+│   │   ├── combat_panels_registry.go, combat_turn_flow.go
+│   │   ├── combatanimation/        # Combat animation mode (attack playback)
+│   │   │   ├── mode.go, registry.go, render.go, colors.go
+│   │   ├── combatbase/             # Shared combat-mode deps, handlers, panel helpers
+│   │   │   ├── deps.go, handler.go, panels.go
+│   │   ├── combatinput/            # Combat input handling (movement, inspect, viz, debug)
+│   │   │   ├── handler.go, inspect.go, viz.go, debug.go
+│   │   └── combatvisualization/    # Threat/highlight visualization manager
+│   │       ├── manager.go, threat.go
 │   ├── guioverworld/       # Overworld mode
 │   │   ├── overworldmode.go, overworld_panels_registry.go
 │   │   ├── overworld_input_handler.go, overworld_action_handler.go
@@ -254,6 +271,7 @@ TinkerRogue/
 │   ├── unitspelldefinitions.go     # Unit-to-spell mapping loader
 │   ├── initialsetup.go             # Initial commanders/squads/factions schema + validator
 │   ├── entity_factory.go           # CreateCreatureEntity / CreateUnit
+│   ├── format.go                   # Display formatting helpers (FormatSpellDetail, ...)
 │   ├── schema_monster.go           # Monster + util + name DTOs
 │   ├── schema_combat.go            # AI + power tuning DTOs
 │   ├── schema_overworld.go         # Overworld + influence + node/encounter DTOs
@@ -282,17 +300,19 @@ TinkerRogue/
 │           └── shared_types.go
 │
 ├── testing/                # Test fixtures and bootstrapping
-│   ├── testingdata.go              # Test item creation (CreateTestItems)
-│   ├── fixtures.go                 # Test fixtures (NewTestEntityManager, InitTestActionManager)
+│   ├── fixtures.go                 # Test fixtures (NewTestEntityManager, ...)
 │   └── bootstrap/                  # Debug-only entity seeding (artifacts only — used under DEBUG_MODE)
 │       └── initial_artifacts.go    # SeedAllArtifacts, EquipPlayerActivatedArtifacts
 │
-├── tools/                  # Development/analysis tools (separate binaries)
-│   ├── combat_balance/             # Combat balance analysis
-│   ├── combat_simulator/           # Combat simulation suites
-│   ├── combat_visualizer/          # Battle visualization
-│   ├── benchmark_compare/          # Benchmark diffing
-│   ├── report_compressor/          # Report compression
+├── tools/                  # Development/analysis tools
+│   ├── main.go                     # Unified tool launcher (dispatches to combat_analysis tools)
+│   ├── combat_analysis/            # Combat analysis tool suite
+│   │   ├── combat_balance/         # Combat balance analysis (CSV aggregation)
+│   │   ├── combat_simulator/       # Combat simulation suites (duels, compositions, encounters, stress)
+│   │   ├── combat_visualizer/      # Battle visualization
+│   │   ├── report_compressor/      # Report compression
+│   │   └── shared/                 # Shared battle-report types, loaders, math helpers
+│   ├── benchmark_compare/          # Benchmark/profile diffing (Python script)
 │   └── scripts/                    # Misc build/analysis scripts
 │
 └── game_main/              # Entry point
@@ -302,14 +322,17 @@ TinkerRogue/
 
 ## Notes on Reorganization
 
-- `common/`, `config/`, `coords/` now live under `core/`.
+- `common/`, `config/`, `coords/` now live under `core/`. `core/common/` gained `grid_movement.go` (shared flood-fill extracted from commander + combat movement).
 - `overworld/` and `raid/` are now under `campaign/` (strategic layer split from tactical).
-- `tactical/spells/`, `tactical/effects/` moved under `tactical/powers/` alongside `artifacts/`, `perks/`, `progression/`, and the shared `powercore/` pipeline.
-- `tactical/combat/` was split into domain subpackages (`combatcore`, `combatstate`, `combatmath`, `combatservices`, `combattypes`, `battlelog`).
+- `campaign/overworld/ids/` is a new leaf package of typed string IDs (FactionID, EncounterTypeID, ...) imported by both `campaign/overworld/core` and `templates` to break import cycles.
+- `tactical/spells/`, `tactical/effects/` moved under `tactical/powers/` alongside `artifacts/`, `perks/`, `progression/`, and the shared `powercore/` pipeline. Perk behaviors are split by lifetime (`behaviors_stateless.go`, `behaviors_per_round.go`, `behaviors_per_battle.go`).
+- `tactical/combat/` was split into domain subpackages (`combatcore`, `combatstate`, `combatmath`, `combatdisposal`, `combatservices`, `combattypes`, `battlelog`). `combatdisposal/` is a new leaf for squad removal, shared by `combatcore` and `powers/spells`. `balanceconfig.go` moved from `combatcore` to `combatmath`.
 - `tactical/squads/` was split into `squadcore`, `squadservices`, `squadcommands`, `roster`, `unitdefs`, `unitprogression`.
 - `world/worldmap/` was split into `worldmapcore/` (types), `worldgen/` (generators), and `garrisongen/` (garrison-specific pipelines).
 - `visual/` gained `maprender/`, `combatrender/`, and `vfx/` subpackages.
+- `gui/guicombat/` was split into subpackages: `combatanimation/`, `combatbase/`, `combatinput/`, `combatvisualization/`, with the mode shell remaining at the package root.
 - `gui/` added `guiprogression/` (commander progression mode) and reorganized around per-mode `*_panels_registry.go` files driven by the shared `PanelRegistry`.
-- `mind/` gained `combatlifecycle/` (setup/cleanup pipeline) and `spawning/` (auto squad creation) alongside existing `ai/`, `behavior/`, `evaluation/`, `encounter/`.
+- `mind/` gained `combatlifecycle/` (start/teardown/exit pipeline) and `spawning/` (auto squad creation) alongside existing `ai/`, `behavior/`, `evaluation/`, `encounter/`.
 - `savesystem/` moved under `setup/` and is fully chunk-based.
 - `gamesetup/` moved under `setup/`.
+- `tools/` was consolidated: the Go analysis tools live under `tools/combat_analysis/` (with a `shared/` helper package) behind a single launcher `tools/main.go`.

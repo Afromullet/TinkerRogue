@@ -1,8 +1,8 @@
 # Package Dependencies
 
-**Generated:** 2026-04-22
+**Generated:** 2026-07-02
 **Module:** `game_main` (see `go.mod`)
-**Total packages:** 77
+**Total packages:** 86
 
 Lists every internal Go package in the module and the other internal packages it imports. Third-party imports (`github.com/...`, `golang.org/...`) and the Go standard library are excluded. Paths are shown relative to the module root.
 
@@ -13,6 +13,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ---
 
 ## campaign/overworld/core
+- campaign/overworld/ids
 - campaign/overworld/overworldlog
 - core/common
 - core/config
@@ -29,20 +30,26 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## campaign/overworld/garrison
 - campaign/overworld/core
+- campaign/overworld/ids
 - core/common
 - core/coords
 - tactical/squads/roster
 - tactical/squads/squadcore
 - tactical/squads/unitdefs
 
+## campaign/overworld/ids
+*(no internal dependencies)*
+
 ## campaign/overworld/influence
 - campaign/overworld/core
+- campaign/overworld/ids
 - core/common
 - core/coords
 - templates
 
 ## campaign/overworld/node
 - campaign/overworld/core
+- campaign/overworld/ids
 - core/common
 - core/coords
 - templates
@@ -52,6 +59,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## campaign/overworld/threat
 - campaign/overworld/core
+- campaign/overworld/ids
 - campaign/overworld/node
 - core/common
 - core/coords
@@ -63,6 +71,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - campaign/overworld/influence
 - campaign/overworld/threat
 - core/common
+- tactical/commander
 
 ## campaign/overworld/victory
 - campaign/overworld/core
@@ -77,6 +86,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - mind/encounter
 - mind/evaluation
 - tactical/combat/combatstate
+- tactical/commander
 - tactical/squads/squadcore
 - tactical/squads/unitdefs
 - world/garrisongen
@@ -111,7 +121,6 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - setup/savesystem/chunks
 - tactical/commander
 - tactical/squads/unitdefs
-- visual/graphics
 - visual/maprender
 - visual/rendering
 - visual/vfx
@@ -140,20 +149,22 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - core/coords
 - gui/framework
 - gui/widgets
-- mind/combatlifecycle
+- mind/encounter
 - tactical/combat/combatservices
 - tactical/combat/combatstate
 - tactical/powers/artifacts
 - tactical/powers/powercore
-- visual/graphics
 
 ## gui/guicombat
 - core/common
 - core/config
-- core/coords
 - gui/builders
 - gui/framework
 - gui/guiartifacts
+- gui/guicombat/combatanimation
+- gui/guicombat/combatbase
+- gui/guicombat/combatinput
+- gui/guicombat/combatvisualization
 - gui/guiinspect
 - gui/guispells
 - gui/guisquads
@@ -161,16 +172,48 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - gui/widgetresources
 - gui/widgets
 - mind/combatlifecycle
+- mind/encounter
 - tactical/combat/battlelog
-- tactical/combat/combatcore
-- tactical/combat/combatmath
 - tactical/combat/combatservices
-- tactical/combat/combatstate
 - tactical/combat/combattypes
 - tactical/powers/spells
-- tactical/squads/squadcommands
-- tactical/squads/squadcore
 - templates
+
+## gui/guicombat/combatanimation
+- gui/builders
+- gui/framework
+- tactical/combat/combatcore
+- tactical/combat/combatmath
+- tactical/squads/squadcore
+- visual/combatrender
+
+## gui/guicombat/combatbase
+- core/coords
+- gui/framework
+- gui/guicombat/combatanimation
+- mind/encounter
+- tactical/combat/combatdisposal
+- tactical/combat/combatservices
+- tactical/squads/squadcommands
+
+## gui/guicombat/combatinput
+- core/common
+- core/coords
+- gui/framework
+- gui/guiartifacts
+- gui/guicombat/combatbase
+- gui/guicombat/combatvisualization
+- gui/guiinspect
+- gui/guispells
+- tactical/combat/combatstate
+- tactical/squads/squadcore
+
+## gui/guicombat/combatvisualization
+- core/common
+- core/coords
+- gui/framework
+- tactical/combat/combatservices
+- tactical/combat/combatstate
 - visual/combatrender
 - visual/graphics
 - world/worldmapcore
@@ -178,6 +221,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## gui/guiexploration
 - campaign/overworld/core
 - core/common
+- core/coords
 - gui/builders
 - gui/framework
 - gui/specs
@@ -193,6 +237,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## gui/guinodeplacement
 - campaign/overworld/core
+- campaign/overworld/ids
 - campaign/overworld/node
 - core/common
 - core/coords
@@ -206,6 +251,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## gui/guioverworld
 - campaign/overworld/core
 - campaign/overworld/garrison
+- campaign/overworld/ids
 - campaign/overworld/threat
 - campaign/overworld/tick
 - core/common
@@ -224,6 +270,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## gui/guiprogression
 - core/common
+- core/config
 - gui/builders
 - gui/framework
 - gui/specs
@@ -248,7 +295,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - core/coords
 - gui/framework
 - gui/widgets
-- mind/combatlifecycle
+- mind/encounter
 - tactical/combat/combatstate
 - tactical/powers/spells
 - templates
@@ -278,7 +325,6 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/squads/unitdefs
 - templates
 - visual/combatrender
-- visual/graphics
 
 ## gui/guistartmenu
 - gui/builders
@@ -331,9 +377,9 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## mind/combatlifecycle
 - core/common
+- core/config
 - core/coords
 - tactical/combat/combatstate
-- tactical/commander
 - tactical/powers/perks
 - tactical/powers/progression
 - tactical/powers/spells
@@ -343,13 +389,16 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## mind/encounter
 - campaign/overworld/core
 - campaign/overworld/garrison
+- campaign/overworld/ids
 - campaign/overworld/threat
 - core/common
 - core/coords
 - mind/combatlifecycle
 - mind/spawning
+- tactical/commander
 - tactical/squads/roster
 - tactical/squads/squadcore
+- templates
 
 ## mind/evaluation
 - core/common
@@ -359,6 +408,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## mind/spawning
 - campaign/overworld/core
+- campaign/overworld/ids
 - core/common
 - core/coords
 - mind/evaluation
@@ -372,6 +422,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## setup/gamesetup
 - campaign/overworld/core
 - campaign/overworld/faction
+- campaign/overworld/ids
 - campaign/overworld/node
 - campaign/overworld/tick
 - core/common
@@ -379,6 +430,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - core/coords
 - gui/framework
 - gui/guicombat
+- gui/guicombat/combatanimation
 - gui/guiexploration
 - gui/guinodeplacement
 - gui/guioverworld
@@ -391,7 +443,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - mind/encounter
 - setup/savesystem
 - setup/savesystem/chunks
-- tactical/combat/combatcore
+- tactical/combat/combatmath
 - tactical/combat/combatservices
 - tactical/commander
 - tactical/powers/artifacts
@@ -402,9 +454,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/squads/squadcore
 - tactical/squads/unitdefs
 - templates
-- testing
 - testing/bootstrap
-- visual/graphics
 - world/garrisongen
 - world/worldgen
 - world/worldmapcore
@@ -415,6 +465,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 ## setup/savesystem/chunks
 - campaign/raid
 - core/common
+- core/config
 - core/coords
 - setup/savesystem
 - tactical/commander
@@ -426,7 +477,6 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/squads/unitdefs
 - tactical/squads/unitprogression
 - templates
-- visual/graphics
 - world/worldmapcore
 
 ## tactical/combat/battlelog
@@ -437,17 +487,24 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## tactical/combat/combatcore
 - core/common
-- core/config
 - core/coords
 - tactical/combat/battlelog
+- tactical/combat/combatdisposal
 - tactical/combat/combatmath
 - tactical/combat/combatstate
 - tactical/combat/combattypes
 - tactical/powers/effects
 - tactical/squads/squadcore
 
+## tactical/combat/combatdisposal
+- core/common
+- core/coords
+- tactical/combat/combatstate
+- tactical/squads/squadcore
+
 ## tactical/combat/combatmath
 - core/common
+- core/config
 - tactical/combat/combattypes
 - tactical/squads/squadcore
 - tactical/squads/unitdefs
@@ -475,11 +532,11 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## tactical/commander
 - campaign/overworld/core
-- campaign/overworld/tick
 - core/common
 - core/coords
 - tactical/powers/progression
 - tactical/squads/roster
+- templates
 
 ## tactical/powers/artifacts
 - core/common
@@ -516,6 +573,7 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## tactical/powers/spells
 - core/common
+- tactical/combat/combatdisposal
 - tactical/combat/combatstate
 - tactical/commander
 - tactical/powers/effects
@@ -570,9 +628,6 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## testing
 - core/common
-- visual/graphics
-- visual/vfx
-- world/worldmapcore
 
 ## testing/bootstrap
 - core/common
@@ -581,10 +636,16 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/squads/roster
 - templates
 
-## tools/combat_balance
-*(no internal dependencies)*
+## tools
+- tools/combat_analysis/combat_balance
+- tools/combat_analysis/combat_simulator
+- tools/combat_analysis/combat_visualizer
+- tools/combat_analysis/report_compressor
 
-## tools/combat_simulator
+## tools/combat_analysis/combat_balance
+- tools/combat_analysis/shared
+
+## tools/combat_analysis/combat_simulator
 - core/common
 - core/coords
 - tactical/combat/battlelog
@@ -594,10 +655,13 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - tactical/squads/unitdefs
 - templates
 
-## tools/combat_visualizer
-*(no internal dependencies)*
+## tools/combat_analysis/combat_visualizer
+- tools/combat_analysis/shared
 
-## tools/report_compressor
+## tools/combat_analysis/report_compressor
+- tools/combat_analysis/shared
+
+## tools/combat_analysis/shared
 *(no internal dependencies)*
 
 ## visual/combatrender
@@ -610,21 +674,18 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 
 ## visual/maprender
 - core/coords
-- visual/graphics
 - visual/rendering
 - world/worldmapcore
 
 ## visual/rendering
 - core/common
 - core/coords
-- visual/graphics
 - world/worldmapcore
 
 ## visual/vfx
 - core/common
 - core/config
 - core/coords
-- visual/graphics
 
 ## world/garrisongen
 - core/common
@@ -634,12 +695,11 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - world/worldmapcore
 
 ## world/garrisongen/roomtypes
-- (leaf — no game_main imports; provides shared room-type ID constants)
+*(no internal dependencies)*
 
 ## world/worldgen
 - core/common
 - core/coords
-- visual/graphics
 - world/worldmapcore
 
 ## world/worldmapcore
@@ -647,3 +707,4 @@ Sorted alphabetically by package path. Packages listed with *(no internal depend
 - core/config
 - core/coords
 - visual/graphics
+
