@@ -10,15 +10,15 @@ import (
 	"math"
 	"math/rand"
 	"strings"
-	"time"
 
 	"github.com/bytearena/ecs"
 )
 
-// xpRNG is the random source for XP/stat-growth rolls. Tests should call
-// SetXPRNG with a deterministically seeded *rand.Rand to make level-up
-// stat rolls reproducible.
-var xpRNG = rand.New(rand.NewSource(time.Now().UnixNano()))
+// xpRNG is the random source for XP/stat-growth rolls. It defaults to a seed
+// drawn from the shared deterministic PCG (common.NextSeed) so rolls are
+// reproducible out of the box. Tests and the combat simulator call SetXPRNG
+// with a deterministically seeded *rand.Rand to control level-up stat rolls.
+var xpRNG = rand.New(rand.NewSource(common.NextSeed()))
 
 // SetXPRNG overrides the package's XP RNG. Intended for tests only.
 func SetXPRNG(rng *rand.Rand) { xpRNG = rng }

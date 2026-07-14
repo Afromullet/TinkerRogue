@@ -12,6 +12,11 @@ func SetRNGSeed(seed1, seed2 uint64) {
 	rng = rand.New(rand.NewPCG(seed1, seed2))
 }
 
+// NextSeed returns a deterministic int64 drawn from the shared RNG, for seeding
+// satellite RNGs (e.g. math/rand v1 sources) so they inherit the shared PCG's
+// reproducibility instead of wall-clock time. Advances the shared RNG by one draw.
+func NextSeed() int64 { return int64(rng.Uint64()) }
+
 // GetDiceRoll returns a random number between 1 and num (inclusive)
 // If num <= 0, returns 1
 func GetDiceRoll(num int) int {

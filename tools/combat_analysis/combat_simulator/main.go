@@ -3,7 +3,10 @@ package simulator
 import (
 	"flag"
 	"fmt"
+	"game_main/core/common"
+	"game_main/mind/combatlifecycle"
 	"game_main/tactical/combat/battlelog"
+	"math/rand"
 	"os"
 )
 
@@ -13,10 +16,18 @@ func Run(args []string) {
 	fs := flag.NewFlagSet("simulate", flag.ExitOnError)
 	suiteName := fs.String("suite", "", "Run only a specific suite (duels, compositions, encounters, stress, legacy)")
 	listSuites := fs.Bool("list", false, "List available suites and scenario counts")
+	seed := fs.Uint64("seed", 1, "RNG seed for reproducible runs")
 	fs.Parse(args)
 
 	fmt.Println("=== Combat Simulator ===")
 	fmt.Println()
+
+	// 0. Seed both RNGs from a single value so every run is reproducible.
+	// The shared PCG drives combat math (common.GetDiceRoll); xpRNG drives
+	// XP/stat-growth rolls. Vary --seed to sample a distribution.
+	common.SetRNGSeed(*seed, *seed)
+	combatlifecycle.SetXPRNG(rand.New(rand.NewSource(int64(*seed))))
+	fmt.Printf("RNG seed: %d\n\n", *seed)
 
 	// 1. Bootstrap: load game data and unit templates (once)
 	bootstrapECS()
