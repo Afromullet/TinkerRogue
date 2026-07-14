@@ -30,7 +30,7 @@ const (
 	LineDiagonalDownRight
 	LineDiagonalUpLeft
 	LineDiagonalDownLeft
-	NoDirection // Returned by BaseShape.GetDirection when Direction is nil. Callers should prefer CanRotate() to detect direction-less shapes.
+	NoDirection // Returned by BaseShape.GetDirection when Direction is nil.
 )
 
 // allDirections is an iteration order for rotation helpers. Internal to this
@@ -166,19 +166,11 @@ func (s *BaseShape) UpdatePosition(pixelX, pixelY int) {
 	s.Position = coords.PixelPosition{X: pixelX, Y: pixelY}
 }
 
-func (s *BaseShape) StartPositionPixels() (int, int) {
-	return s.Position.X, s.Position.Y
-}
-
 func (s *BaseShape) GetDirection() ShapeDirection {
 	if s.Direction != nil {
 		return *s.Direction
 	}
 	return NoDirection
-}
-
-func (s *BaseShape) CanRotate() bool {
-	return s.Direction != nil
 }
 
 // ============================================================================
@@ -271,12 +263,6 @@ func (s *BaseShape) UpdateDimensions(width, height int) {
 func (s *BaseShape) Rotate() {
 	if s.Direction != nil {
 		*s.Direction = RotateRight(*s.Direction)
-	}
-}
-
-func (s *BaseShape) SetDirection(direction ShapeDirection) {
-	if s.Direction != nil {
-		*s.Direction = direction
 	}
 }
 

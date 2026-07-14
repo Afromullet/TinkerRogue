@@ -23,18 +23,6 @@ func (r *CommanderRosterData) AddCommander(commanderID ecs.EntityID) error {
 	return nil
 }
 
-// RemoveCommander removes a commander from the roster
-func (r *CommanderRosterData) RemoveCommander(commanderID ecs.EntityID) bool {
-	for i, id := range r.CommanderIDs {
-		if id == commanderID {
-			r.CommanderIDs[i] = r.CommanderIDs[len(r.CommanderIDs)-1]
-			r.CommanderIDs = r.CommanderIDs[:len(r.CommanderIDs)-1]
-			return true
-		}
-	}
-	return false
-}
-
 // GetCommanderCount returns current/max commander counts
 func (r *CommanderRosterData) GetCommanderCount() (int, int) {
 	return len(r.CommanderIDs), r.MaxCommanders

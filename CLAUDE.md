@@ -20,9 +20,15 @@ go test -cover ./...            # With coverage
 
 # Maintenance
 go mod tidy                     # Update dependencies
-go fmt ./...                    # Format code
+gofmt -w <files-you-changed>    # Format code (see warning below — do NOT use `go fmt ./...`)
 go vet ./...                    # Check for mistakes
+staticcheck ./...               # Lint (config in staticcheck.conf; should report zero findings)
 ```
+
+⚠️ **Never run `go fmt ./...` repo-wide.** 86 files are not gofmt-clean, so a repo-wide run
+rewrites them all and buries your actual change in formatting noise. Format only the files you
+touched. A deliberate one-off repo-wide pass is tracked as item 16 in
+`resources/docs/To_Review/Tech_Debt_Documentation/tech_debt_worth_doing.md`.
 
 ---
 
@@ -283,7 +289,7 @@ When adding a new gamedata JSON file, follow the recipe in `resources/docs/proje
 ### Go Conventions
 - `camelCase` for private, `PascalCase` for public
 - Package names: lowercase, single word
-- Run `go fmt ./...` before committing
+- Run `gofmt -w` on the files you changed before committing — **not** `go fmt ./...` (see the warning under Quick Commands)
 
 ### ECS Conventions
 - Components: Pure data, no methods

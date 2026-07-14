@@ -1,7 +1,7 @@
 package combatbase
 
 import (
-	"fmt"
+	"errors"
 
 	"game_main/core/coords"
 	"game_main/gui/guicombat/combatanimation"
@@ -130,7 +130,7 @@ func (cah *CombatActionHandler) MoveSquad(squadID ecs.EntityID, newPos coords.Lo
 
 	result := cah.commandExecutor.Execute(cmd)
 	if !result.Success {
-		return fmt.Errorf(result.Error)
+		return errors.New(result.Error)
 	}
 
 	cah.deps.BattleState.InMoveMode = false

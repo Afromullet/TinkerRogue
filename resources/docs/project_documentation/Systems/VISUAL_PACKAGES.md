@@ -203,9 +203,8 @@ Key methods:
 
 - `GetIndices() []int` — returns flat tile-array indices (via `coords.CoordManager.LogicalToIndex`) for all tiles covered by the shape at its current position. Used both for visual effect placement and for applying `ColorMatrix` overlays to map tiles.
 - `UpdatePosition(pixelX, pixelY int)` — moves the shape's pixel-space center.
-- `StartPositionPixels() (int, int)` — returns the current pixel-space center.
-- `GetDirection() ShapeDirection` — returns the direction of a linear shape (or `NoDirection` if the shape has no direction; use `CanRotate()` to test).
-- `CanRotate() bool` — reports whether the shape has a direction.
+- `GetDirection() ShapeDirection` — returns the direction of a linear shape, or `NoDirection` if the shape has no direction (and therefore cannot rotate).
+- `Rotate()` — advances a directional shape's direction one step clockwise; a no-op on direction-less shapes.
 
 Factory functions create `BaseShape` values with size randomized within a `ShapeSize` category. Currently only `SmallShape` is used at any call site; the type is preserved for future expansion. This randomization happens at construction time, not per-frame, so the shape is stable once created.
 

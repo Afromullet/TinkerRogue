@@ -2359,16 +2359,24 @@ const (
 
 Manages mutually exclusive sub-menu visibility. Used by combat mode for spell and artifact panels.
 
+Always pass the mode's `RootContainer`. The parent is what lets the controller
+`AddChild`/`RemoveChild` panels from the widget tree; without it, hidden panels are
+only flagged invisible and stay in the tree. A hidden container still registers input
+layers (and a `ScrollContainer` registers a `BlockLower` layer), so a hidden panel can
+swallow clicks meant for visible widgets underneath it.
+
 ```go
-subMenus := framework.NewSubMenuController()
+// Pass RootContainer — it exists once ModeBuilder.Build(ctx) has run.
+subMenus := framework.NewSubMenuController(mode.RootContainer)
 subMenus.Register("spell", spellPanelContainer)
 subMenus.Register("artifact", artifactPanelContainer)
 
+// BuildPanels adds every panel to RootContainer, including the sub-menus,
+// so evict the hidden ones once panels are built.
+subMenus.CloseAll()
+
 // Toggle shows one and hides others
 spellButton.OnClick = subMenus.Toggle("spell")
-
-// Close all
-subMenus.CloseAll()
 ```
 
 **Rules**:

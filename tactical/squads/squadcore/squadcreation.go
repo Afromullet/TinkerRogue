@@ -357,7 +357,11 @@ func placeTemplateUnit(
 		}
 	}
 
-	unitEntity := templates.CreateCreatureEntity(ecsmanager, template.EntityConfig, template.EntityData)
+	unitEntity, err := templates.CreateCreatureEntity(ecsmanager, template.EntityConfig, template.EntityData)
+	if err != nil {
+		fmt.Printf("Warning: %v, skipping\n", err)
+		return
+	}
 	unitEntity.AddComponent(common.NameComponent, &common.Name{
 		NameStr: templates.GenerateName("default", template.UnitType),
 	})

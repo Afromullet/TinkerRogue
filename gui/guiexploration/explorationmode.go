@@ -55,8 +55,11 @@ func (em *ExplorationMode) Initialize(ctx *framework.UIContext) error {
 	// Initialize action map: merge camera bindings for exploration mode
 	em.actionMap = framework.DefaultCameraBindings()
 
-	// Initialize sub-menu controller before building panels (panels register with it)
-	em.subMenus = framework.NewSubMenuController()
+	// Initialize sub-menu controller before building panels (panels register with it).
+	// Pass RootContainer so hidden sub-menus are removed from the widget tree rather
+	// than only visibility-toggled — otherwise their ScrollContainers create stale
+	// BlockLower input layers that swallow clicks on overlapping visible panels.
+	em.subMenus = framework.NewSubMenuController(em.RootContainer)
 
 	// Build panels from registry (debug menu must be built before action buttons)
 	if err := em.BuildPanels(

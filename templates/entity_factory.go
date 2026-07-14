@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"log"
+	"fmt"
 	"path/filepath"
 
 	"game_main/core/common"
@@ -30,11 +30,12 @@ type EntityConfig struct {
 
 // CreateCreatureEntity creates a creature entity from a JSONMonster template with
 // the components required for combat (Name, Renderable, Position, Attribute).
-func CreateCreatureEntity(manager *common.EntityManager, config EntityConfig, m JSONMonster) *ecs.Entity {
+// Returns an error (never panics) if the creature image asset cannot be loaded.
+func CreateCreatureEntity(manager *common.EntityManager, config EntityConfig, m JSONMonster) (*ecs.Entity, error) {
 	fpath := filepath.Join(config.AssetDir, config.ImagePath)
 	img, _, err := ebitenutil.NewImageFromFile(fpath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("failed to load creature image %q: %w", fpath, err)
 	}
 
 	entity := manager.World.NewEntity()
@@ -54,7 +55,7 @@ func CreateCreatureEntity(manager *common.EntityManager, config EntityConfig, m 
 	attr := m.Attributes.NewAttributesFromJson()
 	entity.AddComponent(common.AttributeComponent, &attr)
 
-	return entity
+	return entity, nil
 }
 
 // CreateUnit creates a unit entity with base components only. Squad packages

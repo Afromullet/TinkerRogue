@@ -90,8 +90,11 @@ func (om *OverworldMode) Initialize(ctx *framework.UIContext) error {
 	// Initialize action map for semantic keybindings
 	om.actionMap = framework.DefaultOverworldBindings()
 
-	// Initialize sub-menu controller before building panels (panels register with it)
-	om.subMenus = framework.NewSubMenuController()
+	// Initialize sub-menu controller before building panels (panels register with it).
+	// Pass RootContainer so hidden sub-menus are removed from the widget tree rather
+	// than only visibility-toggled — otherwise their ScrollContainers create stale
+	// BlockLower input layers that swallow clicks on overlapping visible panels.
+	om.subMenus = framework.NewSubMenuController(om.RootContainer)
 
 	// Build panels from registry (sub-menu panels must be built before tick controls)
 	if err := om.BuildPanels(

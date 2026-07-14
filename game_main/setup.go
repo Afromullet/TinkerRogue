@@ -199,7 +199,7 @@ func SetupRoguelikeFromSave(g *Game) error {
 	SetupInputCoordinator(g)
 
 	if err := coordinator.EnterTactical("exploration"); err != nil {
-		log.Fatalf("Failed to enter exploration mode: %v", err)
+		return fmt.Errorf("failed to enter exploration mode: %w", err)
 	}
 
 	fmt.Println("Roguelike game loaded from save")
