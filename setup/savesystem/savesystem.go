@@ -35,10 +35,19 @@ type SaveChunk interface {
 
 // SaveEnvelope is the top-level save file structure.
 type SaveEnvelope struct {
-	Version   int                        `json:"version"`
-	Timestamp string                     `json:"timestamp"`
-	Checksum  string                     `json:"checksum,omitempty"`
-	Chunks    map[string]json.RawMessage `json:"chunks"`
+	Version   int                      `json:"version"`
+	Timestamp string                   `json:"timestamp"`
+	Checksum  string                   `json:"checksum,omitempty"`
+	Chunks    map[string]chunkEnvelope `json:"chunks"`
+}
+
+// chunkEnvelope wraps one chunk's serialized data with the schema version that
+// produced it. Storing the version alongside the data lets LoadGame detect a
+// schema change (e.g. progression's v1->v2 move) instead of silently mis-loading,
+// and the version is covered by the envelope checksum for free.
+type chunkEnvelope struct {
+	Version int             `json:"version"`
+	Data    json.RawMessage `json:"data"`
 }
 
 // Validatable is an optional interface that chunks can implement
@@ -48,9 +57,14 @@ type Validatable interface {
 }
 
 const (
-	CurrentSaveVersion = 1
-	SaveDirectory      = "saves"
-	SaveFileName       = "roguelike_save.json"
+	// CurrentSaveVersion is the envelope format version. Bumped to 2 when per-chunk
+	// versions were wired into the chunk map; pre-v2 saves store raw chunk data with
+	// no version and are no longer loadable.
+	CurrentSaveVersion = 2
+	// MinLoadableSaveVersion is the oldest envelope format LoadGame can read.
+	MinLoadableSaveVersion = 2
+	SaveDirectory          = "saves"
+	SaveFileName           = "roguelike_save.json"
 )
 
 // registeredChunks holds all chunks registered via init().
@@ -85,7 +99,7 @@ func SaveGame(em *common.EntityManager) error {
 	envelope := SaveEnvelope{
 		Version:   CurrentSaveVersion,
 		Timestamp: time.Now().Format(time.RFC3339),
-		Chunks:    make(map[string]json.RawMessage),
+		Chunks:    make(map[string]chunkEnvelope),
 	}
 
 	for _, chunk := range registeredChunks {
@@ -94,7 +108,10 @@ func SaveGame(em *common.EntityManager) error {
 			return fmt.Errorf("failed to save chunk %q: %w", chunk.ChunkID(), err)
 		}
 		if data != nil {
-			envelope.Chunks[chunk.ChunkID()] = data
+			envelope.Chunks[chunk.ChunkID()] = chunkEnvelope{
+				Version: chunk.ChunkVersion(),
+				Data:    data,
+			}
 		}
 	}
 
@@ -143,50 +160,101 @@ func SaveGame(em *common.EntityManager) error {
 	return nil
 }
 
-// LoadGame deserializes a save file and rebuilds ECS state.
-// The EntityManager should already have its components/tags initialized
-// (i.e., InitializeSubsystems has been called) but no game entities created yet.
-func LoadGame(em *common.EntityManager) error {
+// readAndValidateEnvelope reads the save file and validates it (unmarshal + version
+// + checksum) WITHOUT mutating the world. It performs every check that must pass
+// before LoadGame starts creating entities, so callers can verify a save is loadable
+// before tearing down a running world.
+func readAndValidateEnvelope() (SaveEnvelope, error) {
 	savePath := filepath.Join(SaveDirectory, SaveFileName)
+
+	var envelope SaveEnvelope
 
 	bytes, err := os.ReadFile(savePath)
 	if err != nil {
-		return fmt.Errorf("failed to read save file: %w", err)
+		return envelope, fmt.Errorf("failed to read save file: %w", err)
 	}
 
-	var envelope SaveEnvelope
 	if err := json.Unmarshal(bytes, &envelope); err != nil {
-		return fmt.Errorf("failed to unmarshal save data: %w", err)
+		return envelope, fmt.Errorf("failed to unmarshal save data: %w", err)
 	}
 
 	// Version check (future: migration logic)
 	if envelope.Version > CurrentSaveVersion {
-		return fmt.Errorf("save file version %d is newer than supported version %d", envelope.Version, CurrentSaveVersion)
+		return envelope, fmt.Errorf("save file version %d is newer than supported version %d", envelope.Version, CurrentSaveVersion)
+	}
+	if envelope.Version < MinLoadableSaveVersion {
+		return envelope, fmt.Errorf("save file version %d predates the versioned-chunk format (v%d); start a new game", envelope.Version, MinLoadableSaveVersion)
 	}
 
 	// Verify checksum if present
 	if envelope.Checksum != "" {
 		chunksBytes, err := json.Marshal(envelope.Chunks)
 		if err != nil {
-			return fmt.Errorf("failed to marshal chunks for checksum verification: %w", err)
+			return envelope, fmt.Errorf("failed to marshal chunks for checksum verification: %w", err)
 		}
 		hash := sha256.Sum256(chunksBytes)
 		expected := hex.EncodeToString(hash[:])
 		if envelope.Checksum != expected {
-			return fmt.Errorf("save file checksum mismatch: file may be corrupted")
+			return envelope, fmt.Errorf("save file checksum mismatch: file may be corrupted")
 		}
+	}
+
+	// Per-chunk version check: reject a save whose stored chunk version differs from
+	// what the current code expects, so a schema change fails loudly instead of
+	// silently mis-loading. Runs here (not just in LoadGame) so ValidateSaveFile —
+	// the in-session-load pre-flight — rejects an incompatible save before the world
+	// is reset.
+	if err := checkChunkVersions(envelope, registeredChunks); err != nil {
+		return envelope, err
+	}
+
+	return envelope, nil
+}
+
+// checkChunkVersions returns an error if any chunk present in the envelope was
+// saved with a schema version different from what the corresponding registered
+// chunk currently expects. Chunks absent from the save are skipped (a chunk added
+// after the save was written is simply not restored).
+func checkChunkVersions(envelope SaveEnvelope, chunks []SaveChunk) error {
+	for _, chunk := range chunks {
+		stored, exists := envelope.Chunks[chunk.ChunkID()]
+		if !exists {
+			continue
+		}
+		if stored.Version != chunk.ChunkVersion() {
+			return fmt.Errorf("chunk %q version mismatch: save has v%d, code expects v%d", chunk.ChunkID(), stored.Version, chunk.ChunkVersion())
+		}
+	}
+	return nil
+}
+
+// ValidateSaveFile checks that the save file exists, parses, and is a supported,
+// uncorrupted version — WITHOUT mutating the world. Safe to call before a world
+// reset so a bad save doesn't tear down a running game.
+func ValidateSaveFile() error {
+	_, err := readAndValidateEnvelope()
+	return err
+}
+
+// LoadGame deserializes a save file and rebuilds ECS state.
+// The EntityManager should already have its components/tags initialized
+// (i.e., InitializeSubsystems has been called) but no game entities created yet.
+func LoadGame(em *common.EntityManager) error {
+	envelope, err := readAndValidateEnvelope()
+	if err != nil {
+		return err
 	}
 
 	idMap := NewEntityIDMap()
 
 	// Phase 1: Create entities from each chunk
 	for _, chunk := range registeredChunks {
-		data, exists := envelope.Chunks[chunk.ChunkID()]
+		ce, exists := envelope.Chunks[chunk.ChunkID()]
 		if !exists {
 			// Chunk not in save file — skip (backward compatibility)
 			continue
 		}
-		if err := chunk.Load(em, data, idMap); err != nil {
+		if err := chunk.Load(em, ce.Data, idMap); err != nil {
 			return fmt.Errorf("failed to load chunk %q: %w", chunk.ChunkID(), err)
 		}
 	}

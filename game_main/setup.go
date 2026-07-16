@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"log"
 
+	"game_main/campaign/raid"
 	"game_main/core/config"
-	"game_main/setup/gamesetup"
+	"game_main/core/coords"
 	"game_main/gui/framework"
 	"game_main/gui/widgetresources"
 	"game_main/input"
 	"game_main/mind/encounter"
-	"game_main/campaign/raid"
+	"game_main/setup/gamesetup"
 	"game_main/setup/savesystem"
 	"game_main/tactical/commander"
-	"game_main/core/coords"
 	"game_main/tactical/squads/unitdefs"
+	"game_main/visual/maprender"
 	"game_main/visual/rendering"
+	"game_main/visual/vfx"
 )
 
 // ---------------------------------------------------------------------------
@@ -142,10 +144,36 @@ func SetupRoguelikeMode(g *Game) {
 	}
 }
 
+// ResetWorld tears the ECS world back down to a clean, entity-free state so a save
+// can be loaded into a running session without duplicating entities. It reuses the
+// same idempotent sequence the game boots with: a fresh ECS manager, re-registration
+// of every component/tag/view, and a freshly recreated GlobalPositionSystem (the
+// spatial grid caches the old manager pointer, so it must be recreated, not just
+// cleared). Static JSON content registries loaded once at boot are untouched.
+func ResetWorld(g *Game) {
+	bootstrap := gamesetup.NewGameBootstrap()
+	bootstrap.InitializeCoreECS(&g.em)
+
+	// Drop transient render/effect globals that outlive the manager swap and would
+	// otherwise reference disposed entities.
+	vfx.VXHandler = vfx.VisualEffectHandler{}
+	maprender.ResetMapRenderers()
+}
+
 // SetupRoguelikeFromSave loads a saved roguelike game from disk.
 // It restores the map, player, squads, commanders, gear, and raid state,
 // then wires up the UI and systems just like SetupRoguelikeMode.
 func SetupRoguelikeFromSave(g *Game) error {
+	// Validate the save is loadable BEFORE tearing down the world, so a missing or
+	// corrupt save can't destroy a running in-session game.
+	if err := savesystem.ValidateSaveFile(); err != nil {
+		return fmt.Errorf("save file not loadable: %w", err)
+	}
+
+	// Reset the world to a clean state so an in-session load doesn't stack the saved
+	// entities on top of the live ones (harmless no-op on the empty start-menu path).
+	ResetWorld(g)
+
 	// Configure the MapChunk with a pointer to GameMap before loading
 	gamesetup.ConfigureMapChunk(&g.gameMap)
 

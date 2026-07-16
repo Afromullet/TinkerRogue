@@ -2,7 +2,10 @@ package savesystem
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
+
+	"game_main/core/common"
 
 	"github.com/bytearena/ecs"
 )
@@ -135,19 +138,93 @@ func TestEntityIDMap_LoadContext(t *testing.T) {
 	}
 }
 
+// --- ValidateSaveFile tests ---
+
+// TestValidateSaveFile_MissingFile guards the failure-safety invariant behind the
+// in-session load: ValidateSaveFile must return an error (never panic, never nil) when
+// no save exists, so SetupRoguelikeFromSave bails out BEFORE ResetWorld tears down a
+// running game. The test's working directory (the package dir) has no "saves/" folder,
+// so this exercises the missing-file path without touching any real save.
+func TestValidateSaveFile_MissingFile(t *testing.T) {
+	if HasSaveFile() {
+		t.Skip("a save file exists in the test working directory; skipping missing-file check")
+	}
+
+	if err := ValidateSaveFile(); err == nil {
+		t.Error("ValidateSaveFile() = nil, want error when no save file exists")
+	}
+}
+
+// --- Chunk version detection tests ---
+
+// fakeChunk is a minimal SaveChunk for exercising the version-mismatch check in
+// isolation, without registering into the global chunk list (which is shared with
+// the external round-trip tests in the same test binary).
+type fakeChunk struct {
+	id      string
+	version int
+}
+
+func (c fakeChunk) ChunkID() string                                                 { return c.id }
+func (c fakeChunk) ChunkVersion() int                                               { return c.version }
+func (c fakeChunk) Save(*common.EntityManager) (json.RawMessage, error)             { return nil, nil }
+func (c fakeChunk) Load(*common.EntityManager, json.RawMessage, *EntityIDMap) error { return nil }
+func (c fakeChunk) RemapIDs(*common.EntityManager, *EntityIDMap) error              { return nil }
+
+func TestCheckChunkVersions_Mismatch(t *testing.T) {
+	chunks := []SaveChunk{fakeChunk{id: "x", version: 1}}
+	envelope := SaveEnvelope{
+		Chunks: map[string]chunkEnvelope{
+			"x": {Version: 2, Data: json.RawMessage(`{}`)},
+		},
+	}
+
+	err := checkChunkVersions(envelope, chunks)
+	if err == nil {
+		t.Fatal("checkChunkVersions() = nil, want version-mismatch error")
+	}
+	if !strings.Contains(err.Error(), "version mismatch") {
+		t.Errorf("error = %q, want it to mention 'version mismatch'", err.Error())
+	}
+}
+
+func TestCheckChunkVersions_Match(t *testing.T) {
+	chunks := []SaveChunk{fakeChunk{id: "x", version: 2}}
+	envelope := SaveEnvelope{
+		Chunks: map[string]chunkEnvelope{
+			"x": {Version: 2, Data: json.RawMessage(`{}`)},
+		},
+	}
+
+	if err := checkChunkVersions(envelope, chunks); err != nil {
+		t.Errorf("checkChunkVersions() = %v, want nil for matching versions", err)
+	}
+}
+
+func TestCheckChunkVersions_AbsentChunkSkipped(t *testing.T) {
+	// A chunk registered in code but not present in the save must not error —
+	// it is simply not restored.
+	chunks := []SaveChunk{fakeChunk{id: "x", version: 1}}
+	envelope := SaveEnvelope{Chunks: map[string]chunkEnvelope{}}
+
+	if err := checkChunkVersions(envelope, chunks); err != nil {
+		t.Errorf("checkChunkVersions() = %v, want nil when chunk absent from save", err)
+	}
+}
+
 // --- Checksum tests ---
 
 func TestSaveEnvelope_ChecksumRoundTrip(t *testing.T) {
 	envelope := SaveEnvelope{
-		Version:   1,
+		Version:   CurrentSaveVersion,
 		Timestamp: "2026-02-22T14:30:00Z",
 		Checksum:  "abc123",
-		Chunks:    make(map[string]json.RawMessage),
+		Chunks:    make(map[string]chunkEnvelope),
 	}
 
 	testData := map[string]string{"key": "value"}
 	raw, _ := json.Marshal(testData)
-	envelope.Chunks["test"] = raw
+	envelope.Chunks["test"] = chunkEnvelope{Version: 1, Data: raw}
 
 	bytes, err := json.Marshal(envelope)
 	if err != nil {
@@ -166,9 +243,9 @@ func TestSaveEnvelope_ChecksumRoundTrip(t *testing.T) {
 
 func TestSaveEnvelope_ChecksumOmittedWhenEmpty(t *testing.T) {
 	envelope := SaveEnvelope{
-		Version:   1,
+		Version:   CurrentSaveVersion,
 		Timestamp: "2026-02-22T14:30:00Z",
-		Chunks:    make(map[string]json.RawMessage),
+		Chunks:    make(map[string]chunkEnvelope),
 	}
 
 	bytes, err := json.Marshal(envelope)
@@ -188,14 +265,14 @@ func TestSaveEnvelope_ChecksumOmittedWhenEmpty(t *testing.T) {
 
 func TestSaveEnvelope_MarshalUnmarshal(t *testing.T) {
 	envelope := SaveEnvelope{
-		Version:   1,
+		Version:   CurrentSaveVersion,
 		Timestamp: "2026-02-22T14:30:00Z",
-		Chunks:    make(map[string]json.RawMessage),
+		Chunks:    make(map[string]chunkEnvelope),
 	}
 
 	testData := map[string]string{"key": "value"}
 	raw, _ := json.Marshal(testData)
-	envelope.Chunks["test"] = raw
+	envelope.Chunks["test"] = chunkEnvelope{Version: 3, Data: raw}
 
 	bytes, err := json.Marshal(envelope)
 	if err != nil {
@@ -207,24 +284,31 @@ func TestSaveEnvelope_MarshalUnmarshal(t *testing.T) {
 		t.Fatalf("Unmarshal failed: %v", err)
 	}
 
-	if loaded.Version != 1 {
-		t.Errorf("Version = %d, want 1", loaded.Version)
+	if loaded.Version != CurrentSaveVersion {
+		t.Errorf("Version = %d, want %d", loaded.Version, CurrentSaveVersion)
 	}
 	if loaded.Timestamp != "2026-02-22T14:30:00Z" {
 		t.Errorf("Timestamp = %s, want 2026-02-22T14:30:00Z", loaded.Timestamp)
 	}
-	if _, ok := loaded.Chunks["test"]; !ok {
-		t.Error("Expected 'test' chunk to exist")
+	ce, ok := loaded.Chunks["test"]
+	if !ok {
+		t.Fatal("Expected 'test' chunk to exist")
+	}
+	if ce.Version != 3 {
+		t.Errorf("chunk version = %d, want 3", ce.Version)
+	}
+	if string(ce.Data) != string(raw) {
+		t.Errorf("chunk data = %s, want %s", ce.Data, raw)
 	}
 }
 
 func TestSaveEnvelope_MissingChunksAreSkipped(t *testing.T) {
 	// Simulate loading a save file that has fewer chunks than registered
 	envelope := SaveEnvelope{
-		Version:   1,
+		Version:   CurrentSaveVersion,
 		Timestamp: "2026-02-22T14:30:00Z",
-		Chunks: map[string]json.RawMessage{
-			"player": json.RawMessage(`{}`),
+		Chunks: map[string]chunkEnvelope{
+			"player": {Version: 1, Data: json.RawMessage(`{}`)},
 			// "squads" chunk is missing
 		},
 	}
@@ -241,13 +325,14 @@ func TestSaveEnvelope_MissingChunksAreSkipped(t *testing.T) {
 }
 
 func TestSaveEnvelope_UnknownChunksPreserved(t *testing.T) {
-	// Simulate a save file with a chunk type we don't recognize
+	// Simulate a save file with a chunk type we don't recognize. Unknown chunk keys
+	// must be preserved (permissive decoding — forward-compat for future chunks).
 	rawJSON := `{
-		"version": 1,
+		"version": 2,
 		"timestamp": "2026-02-22T14:30:00Z",
 		"chunks": {
-			"player": {"entityID": 1},
-			"future_feature": {"data": "something"}
+			"player": {"version": 1, "data": {"entityID": 1}},
+			"future_feature": {"version": 1, "data": {"data": "something"}}
 		}
 	}`
 

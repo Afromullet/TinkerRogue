@@ -127,7 +127,7 @@ type SaveChunk interface {
 ```
 
 - `ChunkID()` returns the string key used to store this chunk's data in the `SaveEnvelope.Chunks` map (e.g., `"player"`, `"squads"`). This key is stable across versions because it appears in saved files on disk.
-- `ChunkVersion()` returns the serialization version for the chunk. Embedded in the chunk data and intended for future migration logic.
+- `ChunkVersion()` returns the serialization version for the chunk. It is serialized alongside the chunk's data (see `chunkEnvelope` below) and checked on load: if a save's stored chunk version differs from what the current code expects, the load is rejected with a version-mismatch error rather than silently mis-loading. This is the detection hook for a schema change (e.g. `progression` is at v2, all other chunks v1).
 - `Save()` extracts state from the ECS and returns a JSON blob. Returning `nil, nil` signals that there is nothing to save (e.g., no player entity exists).
 - `Load()` deserializes the JSON blob and creates new ECS entities, recording `old→new` ID mappings in the `EntityIDMap`. Cross-entity references should not be resolved here — they are stored with old IDs and fixed in `RemapIDs`.
 - `RemapIDs()` is called after all chunks have completed `Load`. At this point, the `EntityIDMap` is fully populated and cross-entity references can be translated to the new IDs.
@@ -150,14 +150,22 @@ Defined in `savesystem/savesystem.go:37`.
 
 ```go
 type SaveEnvelope struct {
-    Version   int                        `json:"version"`
-    Timestamp string                     `json:"timestamp"`
-    Checksum  string                     `json:"checksum,omitempty"`
-    Chunks    map[string]json.RawMessage `json:"chunks"`
+    Version   int                      `json:"version"`
+    Timestamp string                   `json:"timestamp"`
+    Checksum  string                   `json:"checksum,omitempty"`
+    Chunks    map[string]chunkEnvelope `json:"chunks"`
+}
+
+// chunkEnvelope wraps one chunk's serialized data with the schema version that
+// produced it, so a schema change is detected on load (and the version is covered
+// by the envelope checksum).
+type chunkEnvelope struct {
+    Version int             `json:"version"`
+    Data    json.RawMessage `json:"data"`
 }
 ```
 
-The envelope is the entire on-disk save file. `Chunks` maps chunk IDs to their raw JSON bytes. Using `json.RawMessage` for chunk data means the chunks map can hold heterogeneous JSON structures without the envelope needing to know the shape of any individual chunk's data. Unknown keys in `Chunks` are preserved as raw bytes when the file is read, supporting forward compatibility (a new chunk in a save file will simply be ignored by older code that does not have that chunk registered).
+The envelope is the entire on-disk save file. `Chunks` maps chunk IDs to a `chunkEnvelope` holding the chunk's schema version plus its raw JSON bytes. Using `json.RawMessage` for the chunk data means the chunks map can hold heterogeneous JSON structures without the envelope needing to know the shape of any individual chunk's data. Unknown keys in `Chunks` are preserved when the file is read, supporting forward compatibility (a new chunk in a save file will simply be ignored by older code that does not have that chunk registered).
 
 ---
 
@@ -442,25 +450,31 @@ The save file is located at `saves/roguelike_save.json` relative to the game's w
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "timestamp": "2026-02-27T14:30:00Z",
   "checksum": "abc123...",
   "chunks": {
-    "player":      { ... },
-    "squads":      { ... },
-    "commanders":  { ... },
-    "gear":        { ... },
-    "map":         { ... },
-    "raid":        { ... }
+    "player":       { "version": 1, "data": { ... } },
+    "squads":       { "version": 1, "data": { ... } },
+    "commanders":   { "version": 1, "data": { ... } },
+    "gear":         { "version": 1, "data": { ... } },
+    "progression":  { "version": 2, "data": { ... } },
+    "map":          { "version": 1, "data": { ... } },
+    "raid":         { "version": 1, "data": { ... } }
   }
 }
 ```
+
+Each chunk entry is a `chunkEnvelope` — the chunk's schema version plus its `data`. The
+envelope checksum is computed over the whole `chunks` value, so the per-chunk versions
+are covered by it.
 
 **Constants:**
 
 | Constant | Value | Purpose |
 |---|---|---|
-| `CurrentSaveVersion` | `1` | Envelope version; incremented on breaking format changes |
+| `CurrentSaveVersion` | `2` | Envelope version; incremented on breaking format changes (bumped to 2 when per-chunk versions were wired into the chunk map) |
+| `MinLoadableSaveVersion` | `2` | Oldest envelope format `LoadGame` can read; pre-v2 saves are rejected with a clear error |
 | `SaveDirectory` | `"saves"` | Relative directory for save files |
 | `SaveFileName` | `"roguelike_save.json"` | Primary save file name |
 
@@ -510,8 +524,9 @@ SetupRoguelikeFromSave(g)                [game_main/setup.go]
   │    │
   │    ├─ Read saves/roguelike_save.json
   │    ├─ Unmarshal into SaveEnvelope
-  │    ├─ Version check (error if envelope.Version > CurrentSaveVersion)
+  │    ├─ Version check (error if envelope.Version > CurrentSaveVersion or < MinLoadableSaveVersion)
   │    ├─ SHA-256 checksum verification (if checksum field present)
+  │    ├─ Per-chunk version check (error if any stored chunk version != chunk.ChunkVersion())
   │    ├─ idMap := NewEntityIDMap()
   │    │
   │    ├─ Phase 1: For each registeredChunk where chunk is in envelope:
@@ -695,11 +710,11 @@ The save system implements several forward and backward compatibility mechanisms
 
 **Missing chunks are skipped.** If a registered chunk has no corresponding entry in the save file's `Chunks` map, the chunk's `Load` and `RemapIDs` are not called. This means loading a save file that was created before a new chunk was added will simply leave that domain at its zero state. No error is produced.
 
-**Unknown chunks are preserved.** The `SaveEnvelope.Chunks` field is `map[string]json.RawMessage`. If a save file contains a chunk key that no registered chunk handles, the raw bytes are preserved in memory (and would be written back to disk if re-saved). This allows future versions of the game to add chunks without corrupting saves from that future version when loaded in an older build.
+**Unknown chunks are preserved.** The `SaveEnvelope.Chunks` field is `map[string]chunkEnvelope`. If a save file contains a chunk key that no registered chunk handles, its entry is preserved when the file is read (and would be written back to disk if re-saved). Decoding is permissive (no `DisallowUnknownFields`), so future additive fields do not break older builds. This allows future versions of the game to add chunks without corrupting saves when loaded in an older build.
 
-**Version gating.** The envelope `Version` field exists for future use. Currently, the only check is that `envelope.Version > CurrentSaveVersion` produces an error (cannot load a save from a newer version of the game). Equal or older versions are accepted.
+**Version gating.** The envelope `Version` field is checked on load: `envelope.Version > CurrentSaveVersion` is rejected (cannot load a save from a newer game), and `envelope.Version < MinLoadableSaveVersion` is rejected with a clear message (pre-v2 saves predate the versioned-chunk format and are not loadable).
 
-**`ChunkVersion()` is recorded.** Each chunk's version integer is stored on the chunk struct but is not yet included in the per-chunk JSON (it is accessible via the interface but not serialized into the chunk data). The field is provided as an extension point for implementing per-chunk migration logic in the future.
+**Per-chunk version checking.** Each chunk's `ChunkVersion()` is serialized into its `chunkEnvelope` on save. On load (in `readAndValidateEnvelope`, before any world mutation — so `ValidateSaveFile` inherits it), a stored chunk version that differs from what the current code expects rejects the load with a version-mismatch error rather than silently mis-loading. This is the detection mechanism for a chunk schema change; automated migration remains future work.
 
 **`omitempty` fields.** Optional components use `omitempty` JSON tags on their containing structs. If a component was not present on the entity at save time, the field is absent from JSON entirely (not `null`). On load, a nil pointer from JSON deserialization indicates the component was not present and should not be added.
 
@@ -782,10 +797,16 @@ type Validatable interface {
 ```go
 // SaveEnvelope is the top-level save file structure.
 type SaveEnvelope struct {
-    Version   int                        `json:"version"`
-    Timestamp string                     `json:"timestamp"`
-    Checksum  string                     `json:"checksum,omitempty"`
-    Chunks    map[string]json.RawMessage `json:"chunks"`
+    Version   int                      `json:"version"`
+    Timestamp string                   `json:"timestamp"`
+    Checksum  string                   `json:"checksum,omitempty"`
+    Chunks    map[string]chunkEnvelope `json:"chunks"`
+}
+
+// chunkEnvelope wraps a chunk's data with the schema version that produced it.
+type chunkEnvelope struct {
+    Version int             `json:"version"`
+    Data    json.RawMessage `json:"data"`
 }
 
 // EntityIDMap tracks old (saved) -> new (loaded) entity ID mappings.
