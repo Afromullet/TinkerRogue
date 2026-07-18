@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/core/coords"
 	"game_main/world/garrisongen"
 
 	"github.com/bytearena/ecs"
@@ -36,6 +36,36 @@ func GenerateGarrison(manager *common.EntityManager, floorCount int, commanderID
 	}
 
 	return raidEntityID
+}
+
+// DisposeRaidEntities removes every entity GenerateGarrison created: garrison and
+// reserve squads (along with their units), plus the room, alert, floor state,
+// deployment, and raid state entities. It is the inverse of GenerateGarrison.
+//
+// Player squads are deliberately left alone — they belong to the commander's
+// roster and outlive the raid.
+//
+// Entities are located by tag rather than through the ID lists on RoomData and
+// FloorStateData: combat teardown disposes the garrison squads of any room that
+// was actually fought (ExecuteCombatExit runs TeardownCombat before the
+// post-combat callback reaches finishRaid), so by the time a raid ends those
+// lists name entities that are already gone.
+func DisposeRaidEntities(manager *common.EntityManager) {
+	// Collect the squad IDs before disposing any of them: DisposeSquadAndUnits
+	// reads the squad-member view that disposal also mutates.
+	var garrisonSquadIDs []ecs.EntityID
+	for _, result := range manager.World.Query(GarrisonSquadTag) {
+		garrisonSquadIDs = append(garrisonSquadIDs, result.Entity.GetID())
+	}
+	for _, squadID := range garrisonSquadIDs {
+		squadcore.DisposeSquadAndUnits(squadID, manager)
+	}
+
+	manager.DisposeEntitiesByTag(RoomDataTag)
+	manager.DisposeEntitiesByTag(AlertDataTag)
+	manager.DisposeEntitiesByTag(FloorStateTag)
+	manager.DisposeEntitiesByTag(DeploymentTag)
+	manager.DisposeEntitiesByTag(RaidStateTag)
 }
 
 // generateFloor builds one garrison floor: DAG, rooms, alert, and garrison squads.

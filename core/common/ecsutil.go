@@ -261,6 +261,21 @@ func (em *EntityManager) CleanDisposeEntity(entity *ecs.Entity, position *coords
 	em.World.DisposeEntities(entity)
 }
 
+// DisposeEntitiesByTag disposes every entity carrying tag, unregistering any
+// positioned entity from the spatial grid before removing it from the world.
+// Returns the number of entities disposed. Safe to call when the tag matches
+// nothing (returns 0).
+func (em *EntityManager) DisposeEntitiesByTag(tag ecs.Tag) int {
+	count := 0
+	for _, result := range em.World.Query(tag) {
+		entity := result.Entity
+		pos := GetComponentType[*coords.LogicalPosition](entity, PositionComponent)
+		em.CleanDisposeEntity(entity, pos)
+		count++
+	}
+	return count
+}
+
 // ========================================
 // SUBSYSTEM SELF-REGISTRATION PATTERN
 // ========================================

@@ -3,8 +3,8 @@ package guiraid
 import (
 	"fmt"
 
-	"game_main/gui/framework"
 	"game_main/campaign/raid"
+	"game_main/gui/framework"
 	"game_main/tactical/commander"
 	rstr "game_main/tactical/squads/roster"
 	"game_main/world/garrisongen"
@@ -320,10 +320,19 @@ func (rm *RaidMode) OnCombatComplete(result *raid.RaidEncounterResult) {
 	rm.summaryPanel.Refresh(result)
 }
 
-// OnSummaryDismissed returns to the floor map after viewing the summary.
+// OnSummaryDismissed returns to the floor map after viewing the summary, or to
+// exploration if the encounter ended the raid.
 func (rm *RaidMode) OnSummaryDismissed() {
 	rm.state.ShowingSummary = false
 	rm.state.SummaryData = nil
+
+	// The raid ends on the encounter that wins or loses it, and finishing it
+	// disposes its rooms and floors — there is no floor map left to go back to.
+	if rm.raidRunner != nil && !rm.raidRunner.IsActive() {
+		rm.ModeManager.SetMode("exploration")
+		return
+	}
+
 	rm.showPanel(PanelFloorMap)
 	rm.updateFloorMapDisplay()
 	rm.checkFloorAdvancement()

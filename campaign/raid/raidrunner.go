@@ -245,11 +245,16 @@ func (rr *RaidRunner) ResolveEncounter(reason combatlifecycle.CombatExitReason, 
 		rewardText = resolution.RewardText
 	}
 
+	// Look the alert component up before PostEncounterProcessing: it raises the
+	// alert and may finish the raid, which disposes the alert entity. Holding the
+	// component pointer keeps the post-increment level readable afterwards, which
+	// is what the summary should report.
+	alertData := GetAlertData(rr.manager, raidState.CurrentFloor)
+
 	rr.PostEncounterProcessing()
 
 	// Build encounter result for GUI display
 	alertLevel := 0
-	alertData := GetAlertData(rr.manager, raidState.CurrentFloor)
 	if alertData != nil {
 		alertLevel = alertData.CurrentLevel
 	}
@@ -335,9 +340,22 @@ func (rr *RaidRunner) RestoreFromSave(raidEntityID ecs.EntityID) {
 	rr.raidEntityID = raidEntityID
 }
 
-// finishRaid clears the runner state after the raid ends.
+// finishRaid clears the runner state after the raid ends and disposes every
+// entity the garrison generation created.
+//
+// Only terminal outcomes reach here (victory or defeat). Retreat deliberately
+// does not: it preserves the raid so RaidMode.Enter can resume it later.
+//
+// LastEncounterResult is intentionally left set — the caller (ResolveEncounter)
+// populates it right after this returns, and RaidMode reads it to build the
+// post-combat summary once the raid entities are already gone.
 func (rr *RaidRunner) finishRaid(status RaidStatus) {
 	// Clear callback to avoid stale references
 	rr.encounterService.ClearPostCombatCallback()
+
+	DisposeRaidEntities(rr.manager)
+
 	rr.raidEntityID = 0
+	rr.preCombatAliveCounts = nil
+	rr.currentRoomNodeID = 0
 }
