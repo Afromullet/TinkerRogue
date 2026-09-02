@@ -19,6 +19,8 @@ type AITurnController interface {
 	HasQueuedAttacks() bool
 	GetQueuedAttacks() []QueuedAttack
 	ClearAttackQueue()
+	// Reset drops per-combat threat evaluator state at teardown.
+	Reset()
 }
 
 // ThreatProvider provides faction-level threat data (base threat values per squad).
@@ -28,6 +30,8 @@ type ThreatProvider interface {
 	AddFaction(factionID ecs.EntityID)
 	UpdateAllFactions()
 	GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool)
+	// Reset drops all tracked faction threat state at combat teardown.
+	Reset()
 }
 
 // ThreatSnapshot holds all threat layer values at a single map position.

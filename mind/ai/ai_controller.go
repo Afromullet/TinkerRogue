@@ -2,13 +2,13 @@ package ai
 
 import (
 	"game_main/core/common"
+	"game_main/core/coords"
 	"game_main/mind/behavior"
 	"game_main/tactical/combat/combatcore"
 	"game_main/tactical/combat/combatservices"
 	"game_main/tactical/combat/combatstate"
 	"game_main/tactical/squads/squadcore"
 	"game_main/tactical/squads/unitdefs"
-	"game_main/core/coords"
 
 	"github.com/bytearena/ecs"
 )
@@ -263,6 +263,15 @@ func (aic *AIController) HasQueuedAttacks() bool {
 
 // ClearAttackQueue clears all queued attacks
 func (aic *AIController) ClearAttackQueue() {
+	aic.attackQueue = aic.attackQueue[:0]
+}
+
+// Reset drops per-combat threat state so the next combat starts clean. The shared
+// threatManager is reset by the AICoordinator (it is the installed ThreatProvider),
+// so this only clears the per-faction evaluator cache and any queued attacks that
+// still reference now-disposed combat entities.
+func (aic *AIController) Reset() {
+	aic.layerEvaluators = make(map[ecs.EntityID]*behavior.CompositeThreatEvaluator)
 	aic.attackQueue = aic.attackQueue[:0]
 }
 

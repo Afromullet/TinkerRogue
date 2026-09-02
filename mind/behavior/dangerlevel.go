@@ -38,6 +38,14 @@ func (ftlm *FactionThreatLevelManager) UpdateAllFactions() {
 	}
 }
 
+// Reset drops all tracked faction threat state. Called at combat teardown so the
+// next combat starts from an empty map. Entity IDs are never recycled, so without
+// this the map would otherwise accumulate one dead entry per disposed faction for
+// the whole session.
+func (ftlm *FactionThreatLevelManager) Reset() {
+	ftlm.factions = make(map[ecs.EntityID]*FactionThreatLevel)
+}
+
 // GetSquadThreatAtRange returns the threat value for a specific squad at a given distance.
 // Returns (value, true) if found, (0, false) if faction or squad not tracked.
 func (ftlm *FactionThreatLevelManager) GetSquadThreatAtRange(factionID, squadID ecs.EntityID, distance int) (float64, bool) {

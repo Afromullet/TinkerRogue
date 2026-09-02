@@ -241,6 +241,11 @@ func (cs *CombatService) TeardownCombat(enemySquadIDs []ecs.EntityID) {
 		return memberData != nil && enemySquadSet[memberData.SquadID]
 	})
 
+	// Drop per-combat threat/AI state now that the factions it was keyed on are
+	// disposed. The GUI's visualization manager holds a parallel evaluator cache
+	// and resets itself in CombatMode.Exit.
+	cs.AI.Reset()
+
 	cs.logger.Log("service", 0, "=== Combat Teardown Complete ===")
 }
 

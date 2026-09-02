@@ -77,6 +77,21 @@ func (a *AICoordinator) GetThreatEvaluator(factionID ecs.EntityID) ThreatLayerEv
 	return eval
 }
 
+// Reset drops all per-combat AI/threat state at combat teardown: the shared
+// threat provider's faction map, the AI controller's evaluator cache, and this
+// coordinator's own evaluator cache. Without it, each combat leaves one dead
+// entry per disposed faction behind (entity IDs are never recycled), so a long
+// session of test combats grows these maps without bound.
+func (a *AICoordinator) Reset() {
+	if a.threatProvider != nil {
+		a.threatProvider.Reset()
+	}
+	if a.controller != nil {
+		a.controller.Reset()
+	}
+	a.layerEvaluators = make(map[ecs.EntityID]ThreatLayerEvaluator)
+}
+
 // UpdateThreatLayers refreshes base threat data and every cached composite
 // evaluator. Called at the start of an AI turn.
 func (a *AICoordinator) UpdateThreatLayers() {

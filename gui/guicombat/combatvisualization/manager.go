@@ -188,3 +188,16 @@ func (cvm *CombatVisualizationManager) ClearAllVisualizations() {
 		cvm.threatVisualizer.ClearVisualization()
 	}
 }
+
+// ResetThreatState drops the per-faction evaluator cache built from CombatService
+// at combat teardown. The shared threat provider is reset by
+// CombatService.TeardownCombat; this clears the GUI-side parallel cache (and the
+// visualizer's references to it) so the next combat rebuilds evaluators for its
+// own factions via RefreshFactions instead of retaining disposed ones.
+func (cvm *CombatVisualizationManager) ResetThreatState() {
+	cvm.layerEvaluators = make(map[ecs.EntityID]combatservices.ThreatLayerEvaluator)
+	if cvm.threatVisualizer != nil {
+		cvm.threatVisualizer.SetFactions(nil)
+		cvm.threatVisualizer.SetEvaluators(cvm.layerEvaluators)
+	}
+}

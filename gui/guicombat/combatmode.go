@@ -163,6 +163,11 @@ func (cm *CombatMode) Exit(toMode framework.UIMode) error {
 
 		// Clear cached victory/flee state
 		cm.combatService.ClearExitState()
+
+		// TeardownCombat (run inside ExitCombat above) reset the AI-side threat
+		// maps; drop the GUI-side evaluator cache too so it doesn't retain the
+		// disposed factions. Only on real exit — not when handing off to animation.
+		cm.visualization.ResetThreatState()
 	}
 
 	cm.visualization.ClearAllVisualizations()
